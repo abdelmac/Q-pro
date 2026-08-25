@@ -1,7 +1,7 @@
 import { useLanguage } from '@/lib/LanguageContext';
 import LanguageSwitcher from './LanguageSwitcher';
 import SpecialistToggle from './SpecialistToggle';
-import { Stethoscope, Brain, HeartPulse, Sparkles, ArrowRight, Compass, BookOpen, GitCompare } from 'lucide-react';
+import { Stethoscope, Brain, HeartPulse, Sparkles, ArrowRight, Compass, BookOpen } from 'lucide-react';
 
 interface IntroProps {
   onStart: () => void;
