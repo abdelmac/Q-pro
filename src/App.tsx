@@ -2,11 +2,9 @@ import { useState, useMemo, useCallback } from 'react';
 import { RATING_SECTIONS, ALL_QUESTION_IDS } from '@/data/questions';
 import { translateSection } from '@/data/i18n';
 import {
-  rankSpecialties,
   reRankWithPriorities,
   calculateTraits,
   type SpecialtyScore,
-  type PriorityWeights,
 } from '@/lib/scoring';
 import { DEFAULT_PRIORITY_WEIGHTS } from '@/data/dimensions';
 import { LanguageProvider, useLanguage } from '@/lib/LanguageContext';
@@ -20,14 +18,13 @@ import LanguageSwitcher from '@/components/LanguageSwitcher';
 import SpecialistToggle from '@/components/SpecialistToggle';
 import SpecialistPrompt from '@/components/SpecialistPrompt';
 import QProfile from '@/components/QProfile';
-import AdjustablePriorities from '@/components/AdjustablePriorities';
 import SpecialtyExplorer from '@/components/SpecialtyExplorer';
 import SpecialtyDetail from '@/components/SpecialtyDetail';
 import SpecialtyComparison from '@/components/SpecialtyComparison';
 import MethodologyPage from '@/components/MethodologyPage';
 import { ArrowLeft, ArrowRight, Stethoscope } from 'lucide-react';
 
-type Phase = 'intro' | 'quiz' | 'qprofile' | 'priorities' | 'results' | 'specialist' | 'explorer' | 'detail' | 'methodology' | 'comparison';
+type Phase = 'intro' | 'quiz' | 'qprofile' | 'results' | 'specialist' | 'explorer' | 'detail' | 'methodology' | 'comparison';
 
 const TOTAL_QUESTIONS = ALL_QUESTION_IDS.length + 2;
 
@@ -73,20 +70,10 @@ function AppContent() {
     setPhase('qprofile');
   };
 
-  const showPriorities = () => {
-    setPhase('priorities');
-  };
-
   const computeAndShowResults = () => {
     const result = reRankWithPriorities({ ratings, selectedValues, preferredSpecialty }, priorities);
     setScores(result);
     setPhase('results');
-  };
-
-  const handlePriorityChange = (newWeights: PriorityWeights) => {
-    setPriorities(newWeights);
-    const result = reRankWithPriorities({ ratings, selectedValues, preferredSpecialty }, newWeights);
-    setScores(result);
   };
 
   const restart = () => {
@@ -153,33 +140,7 @@ function AppContent() {
           </div>
           <LanguageSwitcher />
         </header>
-        <QProfile traits={studentTraits} onContinue={showPriorities} />
-      </div>
-    );
-  }
-
-  if (phase === 'priorities') {
-    return (
-      <div className="min-h-screen bg-ink-50">
-        <header className="px-6 py-5 sm:px-10 sm:py-7 flex items-center justify-between border-b border-ink-100 bg-white/80 backdrop-blur sticky top-0 z-10">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center text-white shadow-soft">
-              <Stethoscope className="w-5 h-5" strokeWidth={2.2} />
-            </div>
-            <span className="font-display text-lg font-semibold tracking-tight text-ink-900">{t.appName}</span>
-          </div>
-          <LanguageSwitcher />
-        </header>
-        <AdjustablePriorities
-          weights={priorities}
-          onChange={handlePriorityChange}
-          onContinue={computeAndShowResults}
-          onReset={() => {
-            setPriorities(DEFAULT_PRIORITY_WEIGHTS);
-            const result = rankSpecialties({ ratings, selectedValues, preferredSpecialty });
-            setScores(result);
-          }}
-        />
+        <QProfile traits={studentTraits} onContinue={computeAndShowResults} />
       </div>
     );
   }
