@@ -14,7 +14,7 @@ import { translateSpecialtyName, translateCategory, translateBlurb } from '@/dat
 import { useLanguage } from '@/lib/LanguageContext';
 import LanguageSwitcher from './LanguageSwitcher';
 import {
-  Stethoscope, Trophy, RotateCcw, ChevronDown, Heart, ArrowUpRight,
+  Stethoscope, Trophy, RotateCcw, ChevronDown, Heart,
   FlaskConical, Compass, BookOpen, AlertCircle, X,
 } from 'lucide-react';
 
@@ -369,9 +369,6 @@ export default function Results({
           <button onClick={onRestart} className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-full bg-ink-900 text-white font-semibold text-sm shadow-lift hover:bg-ink-800 transition-all hover:scale-[1.03] active:scale-[0.98]">
             <RotateCcw className="w-4 h-4" /> {t.retakeAssessment}
           </button>
-          <a href="https://bolt.new" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-sm text-ink-400 hover:text-ink-600 transition-colors">
-            {t.builtWithBolt} <ArrowUpRight className="w-3.5 h-3.5" />
-          </a>
         </div>
       </main>
 
