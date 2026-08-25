@@ -1,7 +1,14 @@
 import { useState, useMemo, useCallback } from 'react';
 import { RATING_SECTIONS, ALL_QUESTION_IDS } from '@/data/questions';
 import { translateSection } from '@/data/i18n';
-import { rankSpecialties, type SpecialtyScore } from '@/lib/scoring';
+import {
+  rankSpecialties,
+  reRankWithPriorities,
+  calculateTraits,
+  type SpecialtyScore,
+  type PriorityWeights,
+} from '@/lib/scoring';
+import { DEFAULT_PRIORITY_WEIGHTS } from '@/data/dimensions';
 import { LanguageProvider, useLanguage } from '@/lib/LanguageContext';
 import Intro from '@/components/Intro';
 import ProgressBar from '@/components/ProgressBar';
@@ -12,9 +19,15 @@ import Results from '@/components/Results';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import SpecialistToggle from '@/components/SpecialistToggle';
 import SpecialistPrompt from '@/components/SpecialistPrompt';
+import QProfile from '@/components/QProfile';
+import AdjustablePriorities from '@/components/AdjustablePriorities';
+import SpecialtyExplorer from '@/components/SpecialtyExplorer';
+import SpecialtyDetail from '@/components/SpecialtyDetail';
+import SpecialtyComparison from '@/components/SpecialtyComparison';
+import MethodologyPage from '@/components/MethodologyPage';
 import { ArrowLeft, ArrowRight, Stethoscope } from 'lucide-react';
 
-type Phase = 'intro' | 'quiz' | 'results' | 'specialist';
+type Phase = 'intro' | 'quiz' | 'qprofile' | 'priorities' | 'results' | 'specialist' | 'explorer' | 'detail' | 'methodology' | 'comparison';
 
 const TOTAL_QUESTIONS = ALL_QUESTION_IDS.length + 2;
 
@@ -33,6 +46,13 @@ function AppContent() {
   const [ratings, setRatings] = useState<Record<string, number>>({});
   const [scores, setScores] = useState<SpecialtyScore[]>([]);
   const [isSpecialist, setIsSpecialist] = useState(false);
+  const [priorities, setPriorities] = useState<PriorityWeights>(DEFAULT_PRIORITY_WEIGHTS);
+  const [explorerSpecialty, setExplorerSpecialty] = useState<string | null>(null);
+
+  const studentTraits = useMemo(
+    () => calculateTraits(ratings, selectedValues),
+    [ratings, selectedValues]
+  );
 
   const startQuiz = () => {
     setPhase('quiz');
@@ -49,10 +69,24 @@ function AppContent() {
     setRatings((prev) => ({ ...prev, [id]: value }));
   };
 
+  const computeAndShowQProfile = () => {
+    setPhase('qprofile');
+  };
+
+  const showPriorities = () => {
+    setPhase('priorities');
+  };
+
   const computeAndShowResults = () => {
-    const result = rankSpecialties({ ratings, selectedValues, preferredSpecialty });
+    const result = reRankWithPriorities({ ratings, selectedValues, preferredSpecialty }, priorities);
     setScores(result);
     setPhase('results');
+  };
+
+  const handlePriorityChange = (newWeights: PriorityWeights) => {
+    setPriorities(newWeights);
+    const result = reRankWithPriorities({ ratings, selectedValues, preferredSpecialty }, newWeights);
+    setScores(result);
   };
 
   const restart = () => {
@@ -61,6 +95,8 @@ function AppContent() {
     setRatings({});
     setScores([]);
     setStepIndex(0);
+    setPriorities(DEFAULT_PRIORITY_WEIGHTS);
+    setExplorerSpecialty(null);
     setPhase('intro');
   };
 
@@ -74,7 +110,7 @@ function AppContent() {
 
   const handleNext = useCallback(() => {
     if (isLastStep) {
-      computeAndShowResults();
+      computeAndShowQProfile();
     } else {
       setStepIndex((i) => i + 1);
     }
@@ -88,11 +124,68 @@ function AppContent() {
     }
   }, [stepIndex]);
 
+  // Prevent accidental data loss
+  const handleBeforeUnload = useCallback((e: BeforeUnloadEvent) => {
+    if (Object.keys(ratings).length > 0 && phase !== 'results' && phase !== 'intro') {
+      e.preventDefault();
+      e.returnValue = '';
+    }
+  }, [ratings, phase]);
+
+  useMemo(() => {
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [handleBeforeUnload]);
+
   if (phase === 'intro') {
-    return <Intro onStart={startQuiz} totalQuestions={TOTAL_QUESTIONS} isSpecialist={isSpecialist} onSpecialistToggle={setIsSpecialist} />;
+    return <Intro onStart={startQuiz} totalQuestions={TOTAL_QUESTIONS} isSpecialist={isSpecialist} onSpecialistToggle={setIsSpecialist} onOpenExplorer={() => setPhase('explorer')} onOpenMethodology={() => setPhase('methodology')} />;
+  }
+
+  if (phase === 'qprofile') {
+    return (
+      <div className="min-h-screen bg-ink-50">
+        <header className="px-6 py-5 sm:px-10 sm:py-7 flex items-center justify-between border-b border-ink-100 bg-white/80 backdrop-blur sticky top-0 z-10">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center text-white shadow-soft">
+              <Stethoscope className="w-5 h-5" strokeWidth={2.2} />
+            </div>
+            <span className="font-display text-lg font-semibold tracking-tight text-ink-900">{t.appName}</span>
+          </div>
+          <LanguageSwitcher />
+        </header>
+        <QProfile traits={studentTraits} onContinue={showPriorities} />
+      </div>
+    );
+  }
+
+  if (phase === 'priorities') {
+    return (
+      <div className="min-h-screen bg-ink-50">
+        <header className="px-6 py-5 sm:px-10 sm:py-7 flex items-center justify-between border-b border-ink-100 bg-white/80 backdrop-blur sticky top-0 z-10">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center text-white shadow-soft">
+              <Stethoscope className="w-5 h-5" strokeWidth={2.2} />
+            </div>
+            <span className="font-display text-lg font-semibold tracking-tight text-ink-900">{t.appName}</span>
+          </div>
+          <LanguageSwitcher />
+        </header>
+        <AdjustablePriorities
+          weights={priorities}
+          onChange={handlePriorityChange}
+          onContinue={computeAndShowResults}
+          onReset={() => {
+            setPriorities(DEFAULT_PRIORITY_WEIGHTS);
+            const result = rankSpecialties({ ratings, selectedValues, preferredSpecialty });
+            setScores(result);
+          }}
+        />
+      </div>
+    );
   }
 
   if (phase === 'results') {
+    const scoreForExplorer = scores.map((s) => ({ specialty: s.specialty, score: s.score }));
     return (
       <Results
         scores={scores}
@@ -100,6 +193,9 @@ function AppContent() {
         onRestart={restart}
         isSpecialist={isSpecialist}
         onContributeData={() => setPhase('specialist')}
+        onOpenExplorer={() => setPhase('explorer')}
+        onOpenComparison={() => setPhase('comparison')}
+        onOpenMethodology={() => setPhase('methodology')}
       />
     );
   }
@@ -112,9 +208,7 @@ function AppContent() {
             <div className="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center text-white shadow-soft">
               <Stethoscope className="w-5 h-5" strokeWidth={2.2} />
             </div>
-            <span className="font-display text-lg font-semibold tracking-tight text-ink-900">
-              {t.appName}
-            </span>
+            <span className="font-display text-lg font-semibold tracking-tight text-ink-900">{t.appName}</span>
           </div>
           <LanguageSwitcher />
         </header>
@@ -128,6 +222,45 @@ function AppContent() {
     );
   }
 
+  if (phase === 'explorer') {
+    const scoreForExplorer = scores.length > 0 ? scores.map((s) => ({ specialty: s.specialty, score: s.score })) : undefined;
+    return (
+      <SpecialtyExplorer
+        scores={scoreForExplorer}
+        onSelectSpecialty={(name) => {
+          setExplorerSpecialty(name);
+          setPhase('detail');
+        }}
+        onBack={() => setPhase(scores.length > 0 ? 'results' : 'intro')}
+      />
+    );
+  }
+
+  if (phase === 'detail' && explorerSpecialty) {
+    const score = scores.find((s) => s.specialty.name === explorerSpecialty)?.score;
+    return (
+      <SpecialtyDetail
+        specialtyName={explorerSpecialty}
+        score={score}
+        onBack={() => setPhase('explorer')}
+      />
+    );
+  }
+
+  if (phase === 'methodology') {
+    return <MethodologyPage onBack={() => setPhase(scores.length > 0 ? 'results' : 'intro')} />;
+  }
+
+  if (phase === 'comparison') {
+    return (
+      <SpecialtyComparison
+        studentTraits={studentTraits}
+        onBack={() => setPhase('results')}
+      />
+    );
+  }
+
+  // Quiz phase
   const progressCurrent = stepIndex + 1;
   const progressTotal = QUIZ_STEPS.length;
 

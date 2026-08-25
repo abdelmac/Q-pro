@@ -205,6 +205,31 @@ export interface UIStrings {
   methodologyDisclaimer: string;
   methodologyDisclaimerDesc: string;
   methodologyBack: string;
+  methodologyOverview: string;
+  methodologyOverviewDesc: string;
+  methodologyQuestionnaireStructure: string;
+  methodologyQuestionnaireStructureDesc: string;
+  methodologyTraitModelDetailed: string;
+  methodologyTraitModelDetailedDesc: string;
+  methodologyScoringFormula: string;
+  methodologyScoringFormulaDesc: string;
+  methodologySubScoresDesc: string;
+  methodologyTradeOffsDesc: string;
+  methodologyPriorityWeightsDesc: string;
+  methodologyProfilesDetailed: string;
+  methodologyProfilesDetailedDesc: string;
+  methodologyCalibrationDetailed: string;
+  methodologyCalibrationDetailedDesc: string;
+  methodologyValidationDetailed: string;
+  methodologyValidationDetailedDesc: string;
+  methodologyDataPrivacy: string;
+  methodologyDataPrivacyDesc: string;
+  methodologyTechStack: string;
+  methodologyTechStackDesc: string;
+  methodologyDimensions: string;
+  methodologyDimensionsDesc: string;
+  methodologyValuesStep: string;
+  methodologyValuesStepDesc: string;
 
   // Navigation
   navExplorer: string;
@@ -397,6 +422,31 @@ const en: UIStrings = {
   methodologyDisclaimer: 'Career-orientation tool, not a diagnosis',
   methodologyDisclaimerDesc: 'Specialty Match is a self-reflection and career-exploration tool. It is not a psychological assessment, personality test, or clinical instrument. Results are guidance, not a verdict.',
   methodologyBack: 'Back',
+  methodologyOverview: 'Project Overview',
+  methodologyOverviewDesc: 'Specialty Match is a career-orientation tool for medical students. It uses a 81-item questionnaire to build a trait profile, then compares that profile against the demands of 40+ medical specialties. The goal is to help students reflect on their natural tendencies and explore which fields align with who they are — not to tell them what to do.',
+  methodologyQuestionnaireStructure: 'Questionnaire Structure',
+  methodologyQuestionnaireStructureDesc: 'The questionnaire has 7 sections, each targeting a different facet of the medical personality: Thinking Style (12 items), Working Style (13 items), Interpersonal Skills (11 items), Motivations (12 items), Personality (13 items), Special Skills (9 items), and Values & Lifestyle (11 items). Before the rating sections, students optionally pick a preferred specialty and select up to 4 career values. Each rating item uses a 1–10 scale anchored at "Not at all like me" and "Very much like me".',
+  methodologyTraitModelDetailed: 'Trait Model — How Answers Become Traits',
+  methodologyTraitModelDetailedDesc: 'Each question maps to one or more latent traits via a directional weighted mapping. Direction (+1 or -1) determines whether a high answer increases or decreases the trait. Weight (1.0–2.0) reflects how informative the question is for that trait. When multiple questions contribute to the same trait, the weighted average is used. The model tracks 97 distinct traits across all sections, from scientific curiosity to mortality tolerance.',
+  methodologyScoringFormula: 'Scoring Formula',
+  methodologyScoringFormulaDesc: 'For each specialty and each trait, similarity = 100 - |student_value - target_value|. This similarity is multiplied by the trait importance weight (defined per specialty), then summed and divided by total importance to produce the overall match percentage. The formula: Score = Σ(similarity × importance) / Σ(importance). A score of 100 means perfect alignment; 50 means neutral.',
+  methodologySubScoresDesc: 'Beyond the overall score, each specialty is broken down into 5 dimension sub-scores: Thinking Style, Working Style, Interpersonal Fit, Technical/Practical, and Lifestyle & Values. Each sub-score is the importance-weighted average of trait similarities within that dimension. This lets students see not just how well they match overall, but where the match is strongest and weakest.',
+  methodologyTradeOffsDesc: 'For every recommended specialty, the algorithm identifies the top 3–5 traits where the student profile differs most from the specialty demands (gap ≥ 20 points and importance ≥ 2). These are presented as potential trade-offs — areas where the work may feel less natural, not barriers to success.',
+  methodologyPriorityWeightsDesc: 'After seeing their trait profile, students can adjust 5 sliders (one per dimension) to emphasize what matters most to them. Each slider maps to a multiplier: 0 → 0.5×, 50 (neutral) → 1.0×, 100 → 1.5×. The multiplier scales the importance of all traits in that dimension, reweighting the entire ranking in real time.',
+  methodologyProfilesDetailed: 'Specialty Profiles — How Fields Are Defined',
+  methodologyProfilesDetailedDesc: 'Each of the 40+ specialties is defined by a trait profile: a set of target trait values (0–100) and importance weights (0–5) for each relevant trait. Profiles are built from validated base archetypes — surgical, cognitive-clinical, longitudinal, people-oriented, technical, diagnostic, laboratory, pediatric, and population — then adjusted using clinical practice guidelines and specialist calibration data. For example, Neurosurgery demands high manual dexterity (importance 5), while Psychiatry demands high affective empathy (importance 5).',
+  methodologyCalibrationDetailed: 'Calibration — Learning from Real Specialists',
+  methodologyCalibrationDetailedDesc: 'Practicing specialists answer the same 81 questions and provide calibration metadata: their actual specialty, years of experience, career satisfaction (1–5), whether they would choose the same specialty again, intention to change, and how voluntarily they chose it. This data is stored anonymously and used to refine target trait profiles. If specialists in a field consistently score higher on a trait than the current target suggests, the target is adjusted.',
+  methodologyValidationDetailed: 'Validation Strategy',
+  methodologyValidationDetailedDesc: 'Convergent validity: if the algorithm ranks a specialist own field highly for them, the model is working. We track the rank position of each specialist self-identified field. Test-retest reliability: the same student taking the questionnaire twice should get similar rankings. As the specialist dataset grows, profiles converge toward real-world distributions.',
+  methodologyDataPrivacy: 'Data Privacy',
+  methodologyDataPrivacyDesc: 'All responses are stored anonymously in a secure database. No personally identifiable information is collected. Specialist calibration data is used solely for algorithm refinement. Students can retake the assessment at any time — previous responses are not retained.',
+  methodologyTechStack: 'Technical Implementation',
+  methodologyTechStackDesc: 'The scoring engine runs entirely in the browser — no server-side computation. Trait calculation, similarity scoring, priority weighting, and trade-off detection are all performed client-side. Specialist calibration data is stored in a Supabase PostgreSQL database with row-level security. The application is built with React, TypeScript, and Tailwind CSS.',
+  methodologyDimensions: 'The Five Dimensions',
+  methodologyDimensionsDesc: 'Traits are grouped into 5 dimensions for sub-scores and priority adjustment. Thinking (18 traits): curiosity, precision, logic, reasoning. Working (16 traits): structure, flexibility, persistence, initiative. Interpersonal (18 traits): empathy, communication, teamwork, care motivation. Technical (15 traits): dexterity, observation, crisis calmness, stress resistance. Lifestyle (29 traits): income, independence, achievement, resilience, values.',
+  methodologyValuesStep: 'Value Selection — The Bonus System',
+  methodologyValuesStepDesc: 'Before the rating sections, students pick up to 4 career values from 14 options (free time, achievement, prestige, independence, intellectual activity, manual work, people, security, variety, income, creativity, feedback, caring, decision-making). Each selected value adds a flat bonus (8–12 points) to one or two related traits, boosting them beyond what the questionnaire alone captures.',
 
   navExplorer: 'Explorer',
   navMethodology: 'Methodology',
@@ -588,6 +638,31 @@ const ro: UIStrings = {
   methodologyDisclaimer: 'Instrument de orientare, nu un diagnostic',
   methodologyDisclaimerDesc: 'Specialty Match este un instrument de auto-reflecție și explorare a carierei. Nu este o evaluare psihologică, un test de personalitate sau un instrument clinic. Rezultatele sunt orientative, nu un verdict.',
   methodologyBack: 'Înapoi',
+  methodologyOverview: 'Prezentare generală',
+  methodologyOverviewDesc: 'Specialty Match este un instrument de orientare profesională pentru studenții la medicină. Folosește un chestionar de 81 de itemi pentru a construi un profil de trăsături, apoi compară acel profil cu cerințele a peste 40 de specialități medicale. Scopul este să ajute studenții să reflecteze asupra tendințelor lor naturale și să exploreze ce domenii se aliniază cu ceea ce sunt — nu să le spună ce să facă.',
+  methodologyQuestionnaireStructure: 'Structura chestionarului',
+  methodologyQuestionnaireStructureDesc: 'Chestionarul are 7 secțiuni, fiecare vizând o altă fațetă a personalității medicale: Stil de gândire (12 itemi), Stil de lucru (13 itemi), Abilități interpersonale (11 itemi), Motivații (12 itemi), Personalitate (13 itemi), Abilități speciale (9 itemi), Valori și stil de viață (11 itemi). Înainte de secțiunile de evaluare, studenții aleg opțional o specialitate preferată și selectează până la 4 valori profesionale. Fiecare item folosește o scară 1–10 ancorată la „Deloc ca mine" și „Foarte mult ca mine".',
+  methodologyTraitModelDetailed: 'Model de trăsături — Cum devin răspunsurile trăsături',
+  methodologyTraitModelDetailedDesc: 'Fiecare întrebare se mapăază la una sau mai multe trăsături latente printr-o mapare direcțională ponderată. Direcția (+1 sau -1) determină dacă un răspuns ridicat crește sau scade trăsătura. Pondere (1.0–2.0) reflectă cât de informativă este întrebarea pentru acea trăsătură. Când mai multe întrebări contribuie la aceeași trăsătură, se folosește media ponderată. Modelul urmărește 97 de trăsături distincte, de la curiozitate științifică la toleranța la mortalitate.',
+  methodologyScoringFormula: 'Formula de scorare',
+  methodologyScoringFormulaDesc: 'Pentru fiecare specialitate și fiecare trăsătură, similaritatea = 100 - |valoare_student - valoare_țintă|. Această similaritate se înmulțește cu ponderea de importanță a trăsăturii (definită per specialitate), apoi se însumează și se împarte la importanța totală pentru a produce procentul general de potrivire. Formula: Scor = Σ(similaritate × importanță) / Σ(importanță). Un scor de 100 înseamnă aliniere perfectă; 50 înseamnă neutru.',
+  methodologySubScoresDesc: 'Dincolo de scorul general, fiecare specialitate se descompune în 5 sub-scoruri pe dimensiuni: Stil de gândire, Stil de lucru, Potrivire interpersonală, Tehnic/Practic și Stil de viață și valori. Fiecare sub-scor este media ponderată după importanță a similarităților trăsăturilor din acea dimensiune. Astfel, studenții pot vedea nu doar cât de bine se potrivesc overall, ci unde potrivirea este cea mai puternică și cea mai slabă.',
+  methodologyTradeOffsDesc: 'Pentru fiecare specialitate recomandată, algoritmul identifică primele 3–5 trăsături unde profilul studentului diferă cel mai mult de cerințele specialității (diferență ≥ 20 puncte și importanță ≥ 2). Acestea sunt prezentate ca compromisuri potențiale — zone unde munca poate părea mai puțin naturală, nu bariere pentru succes.',
+  methodologyPriorityWeightsDesc: 'După ce își văd profilul de trăsături, studenții pot ajusta 5 cursoare (unul per dimensiune) pentru a accentua ce contează cel mai mult. Fiecursor se mapăază la un multiplicator: 0 → 0.5×, 50 (neutru) → 1.0×, 100 → 1.5×. Multiplicatorul scalează importanța tuturor trăsăturilor din acea dimensiune, recalculând întregul clasament în timp real.',
+  methodologyProfilesDetailed: 'Profiluri de specialitate — Cum sunt definite domeniile',
+  methodologyProfilesDetailedDesc: 'Fiecare dintre cele 40+ specialități este definită printr-un profil de trăsături: un set de valori țintă (0–100) și ponderi de importanță (0–5) pentru fiecare trăsătură relevantă. Profilurile sunt construite din arhetipuri de bază validate — chirurgical, cognitiv-clinic, longitudinal, orientat spre oameni, tehnic, diagnostic, laborator, pediatric și populație — apoi ajustate folosind ghiduri clinice și date de calibrare de la specialiști. De exemplu, Neurochirurgia necesită dexteritate manuală ridicată (importanță 5), în timp ce Psihiatria necesită empatie afectivă ridicată (importanță 5).',
+  methodologyCalibrationDetailed: 'Calibrare — Învățăm de la specialiști reali',
+  methodologyCalibrationDetailedDesc: 'Specialiștii în exercițiu răspund la aceleași 81 de întrebări și furnizează metadate de calibrare: specialitatea reală, ani de experiență, satisfacție în carieră (1–5), dacă ar alege aceeași specialitate din nou, intenția de a schimba și cât de voluntar au ales-o. Aceste date se stochează anonim și se folosesc pentru a rafina profilurile țintă. Dacă specialiștii dintr-un domeniu au constant scoruri mai mari la o trăsătură decât sugerează ținta actuală, ținta se ajustează.',
+  methodologyValidationDetailed: 'Strategie de validare',
+  methodologyValidationDetailedDesc: 'Validitate convergentă: dacă algoritmul clasează domeniul propriu al unui specialist ridicat pentru el, modelul funcționează. Urmărim poziția în clasament a domeniului auto-identificat al fiecărui specialist. Fiabilitate test-retest: același student care parcurge chestionarul de două ori ar trebui să obțină clasamente similare. Pe măsură ce setul de date al specialiștilor crește, profilurile converg spre distribuțiile din lumea reală.',
+  methodologyDataPrivacy: 'Confidențialitatea datelor',
+  methodologyDataPrivacyDesc: 'Toate răspunsurile sunt stocate anonim într-o bază de date securizată. Nu se colectează informații de identificare personală. Datele de calibrare ale specialiștilor se folosesc exclusiv pentru rafinarea algoritmului. Studenții pot reface evaluarea oricând — răspunsurile anterioare nu se păstrează.',
+  methodologyTechStack: 'Implementare tehnică',
+  methodologyTechStackDesc: 'Motorul de scorare rulează integral în browser — fără calcul pe server. Calculul trăsăturilor, scorarea similarității, ponderarea priorităților și detectarea compromisurilor se efectuează toate pe partea clientului. Datele de calibrare ale specialiștilor sunt stocate într-o bază de date PostgreSQL Supabase cu securitate la nivel de rând. Aplicația este construită cu React, TypeScript și Tailwind CSS.',
+  methodologyDimensions: 'Cele cinci dimensiuni',
+  methodologyDimensionsDesc: 'Trăsăturile sunt grupate în 5 dimensiuni pentru sub-scoruri și ajustarea priorităților. Gândire (18 trăsături): curiozitate, precizie, logică, raționament. Lucru (16 trăsături): structură, flexibilitate, perseverență, inițiativă. Interpersonal (18 trăsături): empatie, comunicare, lucru în echipă, motivație de îngrijire. Tehnic (15 trăsături): dexteritate, observație, calm în criză, rezistență la stres. Stil de viață (29 trăsături): venit, independență, performanță, reziliență, valori.',
+  methodologyValuesStep: 'Selecția valorilor — Sistemul de bonus',
+  methodologyValuesStepDesc: 'Înainte de secțiunile de evaluare, studenții aleg până la 4 valori profesionale din 14 opțiuni (timp liber, performanță, prestigiu, independență, activitate intelectuală, muncă manuală, oameni, securitate, varietate, venit, creativitate, feedback, îngrijire, luarea deciziilor). Fiecare valoare selectată adaugă un bonus fix (8–12 puncte) la una sau două trăsături corelate, crescându-le dincolo de ce captează chestionarul singur.',
 
   navExplorer: 'Explorator',
   navMethodology: 'Metodologie',
@@ -779,6 +854,31 @@ const fr: UIStrings = {
   methodologyDisclaimer: 'Outil d\'orientation, non un diagnostic',
   methodologyDisclaimerDesc: 'Specialty Match est un outil d\'auto-réflexion et d\'exploration de carrière. Ce n\'est pas une évaluation psychologique, un test de personnalité ou un instrument clinique. Les résultats sont indicatifs, non un verdict.',
   methodologyBack: 'Retour',
+  methodologyOverview: 'Aperçu du projet',
+  methodologyOverviewDesc: 'Specialty Match est un outil d\'orientation professionnelle pour les étudiants en médecine. Il utilise un questionnaire de 81 items pour construire un profil de traits, puis compare ce profil aux exigences de plus de 40 spécialités médicales. L\'objectif est d\'aider les étudiants à réfléchir à leurs tendances naturelles et à explorer quels domaines s\'alignent avec qui ils sont — pas à leur dire quoi faire.',
+  methodologyQuestionnaireStructure: 'Structure du questionnaire',
+  methodologyQuestionnaireStructureDesc: 'Le questionnaire comporte 7 sections, chacune ciblant un aspect différent de la personnalité médicale : Style de pensée (12 items), Style de travail (13 items), Compétences interpersonnelles (11 items), Motivations (12 items), Personnalité (13 items), Compétences spéciales (9 items), Valeurs et mode de vie (11 items). Avant les sections d\'évaluation, les étudiants choisissent optionnellement une spécialité préférée et sélectionnent jusqu\'à 4 valeurs professionnelles. Chaque item utilise une échelle de 1 à 10 ancrée à « Pas du tout moi » et « Très beaucoup moi ».',
+  methodologyTraitModelDetailed: 'Modèle de traits — Comment les réponses deviennent des traits',
+  methodologyTraitModelDetailedDesc: 'Chaque question est mappée à un ou plusieurs traits latents via un mappage directionnel pondéré. La direction (+1 ou -1) détermine si une réponse élevée augmente ou diminue le trait. Le poids (1.0–2.0) reflète le caractère informatif de la question pour ce trait. Lorsque plusieurs questions contribuent au même trait, la moyenne pondérée est utilisée. Le modèle suit 97 traits distincts, de la curiosité scientifique à la tolérance à la mortalité.',
+  methodologyScoringFormula: 'Formule de scoring',
+  methodologyScoringFormulaDesc: 'Pour chaque spécialité et chaque trait, similarité = 100 - |valeur_étudiant - valeur_cible|. Cette similarité est multipliée par le poids d\'importance du trait (défini par spécialité), puis sommée et divisée par l\'importance totale pour produire le pourcentage global de correspondance. Formule : Score = Σ(similarité × importance) / Σ(importance). Un score de 100 signifie un alignement parfait ; 50 signifie neutre.',
+  methodologySubScoresDesc: 'Au-delà du score global, chaque spécialité est décomposée en 5 sous-scores par dimension : Style de pensée, Style de travail, Adéquation interpersonnelle, Technique/Pratique et Mode de vie et valeurs. Chaque sous-score est la moyenne pondérée par l\'importance des similarités de traits dans cette dimension. Cela permet aux étudiants de voir non seulement leur correspondance globale, mais aussi où la correspondance est la plus forte et la plus faible.',
+  methodologyTradeOffsDesc: 'Pour chaque spécialité recommandée, l\'algorithme identifie les 3–5 traits où le profil de l\'étudiant diffère le plus des exigences de la spécialité (écart ≥ 20 points et importance ≥ 2). Ils sont présentés comme des compromis potentiels — des domaines où le travail peut sembler moins naturel, pas des barrières au succès.',
+  methodologyPriorityWeightsDesc: 'Après avoir vu leur profil de traits, les étudiants peuvent ajuster 5 curseurs (un par dimension) pour souligner ce qui compte le plus. Chaque curseur correspond à un multiplicateur : 0 → 0.5×, 50 (neutre) → 1.0×, 100 → 1.5×. Le multiplicateur pondère l\'importance de tous les traits de cette dimension, recalculant tout le classement en temps réel.',
+  methodologyProfilesDetailed: 'Profils de spécialités — Comment les domaines sont définis',
+  methodologyProfilesDetailedDesc: 'Chacune des 40+ spécialités est définie par un profil de traits : un ensemble de valeurs cibles (0–100) et de poids d\'importance (0–5) pour chaque trait pertinent. Les profils sont construits à partir d\'archétypes de base validés — chirurgical, cognitif-clinique, longitudinal, orienté personnes, technique, diagnostique, laboratoire, pédiatrique et population — puis ajustés avec des guides de pratique clinique et des données de calibration de spécialistes. Par exemple, la neurochirurgie exige une dextérité manuelle élevée (importance 5), tandis que la psychiatrie exige une empathie affective élevée (importance 5).',
+  methodologyCalibrationDetailed: 'Calibration — Apprendre des vrais spécialistes',
+  methodologyCalibrationDetailedDesc: 'Les spécialistes en exercice répondent aux mêmes 81 questions et fournissent des métadonnées de calibration : leur spécialité réelle, années d\'expérience, satisfaction professionnelle (1–5), s\'ils choisiraient à nouveau la même spécialité, intention de changer, et le caractère volontaire de leur choix. Ces données sont stockées anonymement et utilisées pour affiner les profils de traits cibles. Si les spécialistes d\'un domaine obtiennent systématiquement des scores plus élevés sur un trait que ne le suggère la cible actuelle, la cible est ajustée.',
+  methodologyValidationDetailed: 'Stratégie de validation',
+  methodologyValidationDetailedDesc: 'Validité convergente : si l\'algorithme classe le domaine propre d\'un spécialiste haut pour lui, le modèle fonctionne. Nous suivons la position au classement du domaine auto-identifié de chaque spécialiste. Fiabilité test-retest : le même étudiant passant le questionnaire deux fois devrait obtenir des classements similaires. À mesure que le jeu de données de spécialistes grandit, les profils convergent vers les distributions du monde réel.',
+  methodologyDataPrivacy: 'Confidentialité des données',
+  methodologyDataPrivacyDesc: 'Toutes les réponses sont stockées anonymement dans une base de données sécurisée. Aucune information d\'identification personnelle n\'est collectée. Les données de calibration des spécialistes sont utilisées uniquement pour l\'affinage de l\'algorithme. Les étudiants peuvent refaire l\'évaluation à tout moment — les réponses précédentes ne sont pas conservées.',
+  methodologyTechStack: 'Implémentation technique',
+  methodologyTechStackDesc: 'Le moteur de scoring fonctionne entièrement dans le navigateur — aucun calcul côté serveur. Le calcul des traits, le scoring de similarité, la pondération des priorités et la détection des compromis sont tous effectués côté client. Les données de calibration des spécialistes sont stockées dans une base de données PostgreSQL Supabase avec sécurité au niveau des lignes. L\'application est construite avec React, TypeScript et Tailwind CSS.',
+  methodologyDimensions: 'Les cinq dimensions',
+  methodologyDimensionsDesc: 'Les traits sont regroupés en 5 dimensions pour les sous-scores et l\'ajustement des priorités. Pensée (18 traits) : curiosité, précision, logique, raisonnement. Travail (16 traits) : structure, flexibilité, persévérance, initiative. Interpersonnel (18 traits) : empathie, communication, travail en équipe, motivation de soin. Technique (15 traits) : dextérité, observation, calme en crise, résistance au stress. Mode de vie (29 traits) : revenu, indépendance, performance, résilience, valeurs.',
+  methodologyValuesStep: 'Sélection des valeurs — Le système de bonus',
+  methodologyValuesStepDesc: 'Avant les sections d\'évaluation, les étudiants choisissent jusqu\'à 4 valeurs professionnelles parmi 14 options (temps libre, performance, prestige, indépendance, activité intellectuelle, travail manuel, personnes, sécurité, variété, revenu, créativité, feedback, soin, prise de décision). Chaque valeur sélectionnée ajoute un bonus fixe (8–12 points) à un ou deux traits corrélés, les renforçant au-delà de ce que le questionnaire seul capture.',
 
   navExplorer: 'Explorateur',
   navMethodology: 'Méthodologie',

@@ -16,6 +16,11 @@ export default function SpecialistPrompt({ ratings, selectedValues, language, on
   const { t, lang } = useLanguage();
   const [actualSpecialty, setActualSpecialty] = useState<string | null>(null);
   const [query, setQuery] = useState('');
+  const [yearsExperience, setYearsExperience] = useState<string>('');
+  const [careerSatisfaction, setCareerSatisfaction] = useState<number | null>(null);
+  const [wouldChooseAgain, setWouldChooseAgain] = useState<string | null>(null);
+  const [intentionToChange, setIntentionToChange] = useState<string | null>(null);
+  const [voluntaryChoice, setVoluntaryChoice] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -38,6 +43,11 @@ export default function SpecialistPrompt({ ratings, selectedValues, language, on
       ratings,
       selected_values: selectedValues,
       language,
+      years_of_experience: yearsExperience ? Number(yearsExperience) : null,
+      career_satisfaction: careerSatisfaction,
+      would_choose_again: wouldChooseAgain,
+      intention_to_change: intentionToChange,
+      voluntary_choice: voluntaryChoice,
     });
     setSubmitting(false);
     if (result.success) {
@@ -84,6 +94,7 @@ export default function SpecialistPrompt({ ratings, selectedValues, language, on
         </p>
       </div>
 
+      {/* Specialty selector */}
       <div className="mb-2">
         <label className="text-sm font-semibold text-ink-700 mb-3 block">
           {t.specialistActualSpecialty}
@@ -134,6 +145,89 @@ export default function SpecialistPrompt({ ratings, selectedValues, language, on
         })}
       </div>
 
+      {/* Calibration fields */}
+      {actualSpecialty && (
+        <div className="space-y-6 mb-8 p-5 rounded-2xl bg-ink-50 border border-ink-100 animate-fade-in">
+          {/* Years of experience */}
+          <div>
+            <label className="text-sm font-semibold text-ink-700 mb-2 block">
+              {t.specialistYearsExperience}
+            </label>
+            <input
+              type="number"
+              min={0}
+              max={60}
+              value={yearsExperience}
+              onChange={(e) => setYearsExperience(e.target.value)}
+              placeholder={t.specialistYearsPlaceholder}
+              className="w-full px-4 py-2.5 rounded-xl bg-white border border-ink-200 text-sm text-ink-900 placeholder:text-ink-400 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 transition-all"
+            />
+          </div>
+
+          {/* Career satisfaction */}
+          <div>
+            <label className="text-sm font-semibold text-ink-700 mb-2 block">
+              {t.specialistCareerSatisfaction}
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { val: 5, label: t.specialistVerySatisfied },
+                { val: 4, label: t.specialistSatisfied },
+                { val: 3, label: t.specialistNeutral },
+                { val: 2, label: t.specialistDissatisfied },
+                { val: 1, label: t.specialistVeryDissatisfied },
+              ].map((opt) => (
+                <ChipButton key={opt.val} active={careerSatisfaction === opt.val} onClick={() => setCareerSatisfaction(opt.val)}>
+                  {opt.label}
+                </ChipButton>
+              ))}
+            </div>
+          </div>
+
+          {/* Would choose again */}
+          <div>
+            <label className="text-sm font-semibold text-ink-700 mb-2 block">
+              {t.specialistWouldChooseAgain}
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {[t.specialistYes, t.specialistNo, t.specialistNotSure].map((opt) => (
+                <ChipButton key={opt} active={wouldChooseAgain === opt} onClick={() => setWouldChooseAgain(opt)}>
+                  {opt}
+                </ChipButton>
+              ))}
+            </div>
+          </div>
+
+          {/* Intention to change */}
+          <div>
+            <label className="text-sm font-semibold text-ink-700 mb-2 block">
+              {t.specialistIntentionToChange}
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {[t.specialistDefinitely, t.specialistProbably, t.specialistProbablyNot, t.specialistDefinitelyNot].map((opt) => (
+                <ChipButton key={opt} active={intentionToChange === opt} onClick={() => setIntentionToChange(opt)}>
+                  {opt}
+                </ChipButton>
+              ))}
+            </div>
+          </div>
+
+          {/* Voluntary choice */}
+          <div>
+            <label className="text-sm font-semibold text-ink-700 mb-2 block">
+              {t.specialistVoluntaryChoice}
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {[t.specialistFullyVoluntary, t.specialistSomewhatVoluntary, t.specialistNotVoluntary].map((opt) => (
+                <ChipButton key={opt} active={voluntaryChoice === opt} onClick={() => setVoluntaryChoice(opt)}>
+                  {opt}
+                </ChipButton>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {error && (
         <div className="mb-4 p-3.5 rounded-xl bg-red-50 border border-red-200 flex items-center gap-2.5 text-sm text-red-700">
           <AlertCircle className="w-4 h-4 shrink-0" />
@@ -156,5 +250,20 @@ export default function SpecialistPrompt({ ratings, selectedValues, language, on
         )}
       </button>
     </div>
+  );
+}
+
+function ChipButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`px-3.5 py-2 rounded-full text-xs font-semibold border transition-all duration-150 ${
+        active
+          ? 'border-brand-500 bg-brand-50 text-brand-700 shadow-soft'
+          : 'border-ink-200 bg-white text-ink-600 hover:border-ink-300'
+      }`}
+    >
+      {children}
+    </button>
   );
 }

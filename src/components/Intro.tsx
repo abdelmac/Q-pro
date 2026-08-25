@@ -1,16 +1,18 @@
 import { useLanguage } from '@/lib/LanguageContext';
 import LanguageSwitcher from './LanguageSwitcher';
 import SpecialistToggle from './SpecialistToggle';
-import { Stethoscope, Brain, HeartPulse, Sparkles, ArrowRight } from 'lucide-react';
+import { Stethoscope, Brain, HeartPulse, Sparkles, ArrowRight, Compass, BookOpen, GitCompare } from 'lucide-react';
 
 interface IntroProps {
   onStart: () => void;
   totalQuestions: number;
   isSpecialist: boolean;
   onSpecialistToggle: (value: boolean) => void;
+  onOpenExplorer: () => void;
+  onOpenMethodology: () => void;
 }
 
-export default function Intro({ onStart, totalQuestions, isSpecialist, onSpecialistToggle }: IntroProps) {
+export default function Intro({ onStart, totalQuestions, isSpecialist, onSpecialistToggle, onOpenExplorer, onOpenMethodology }: IntroProps) {
   const { t } = useLanguage();
 
   return (
@@ -93,8 +95,16 @@ export default function Intro({ onStart, totalQuestions, isSpecialist, onSpecial
         </div>
       </main>
 
-      <footer className="px-6 py-6 text-center text-xs text-ink-400">
-        {t.footerNote}
+      <footer className="px-6 py-8 text-center">
+        <div className="flex items-center justify-center gap-2 mb-5">
+          <button onClick={onOpenExplorer} className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold text-ink-500 hover:text-ink-900 hover:bg-ink-100 transition-colors">
+            <Compass className="w-3.5 h-3.5" /> {t.navExplorer}
+          </button>
+          <button onClick={onOpenMethodology} className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold text-ink-500 hover:text-ink-900 hover:bg-ink-100 transition-colors">
+            <BookOpen className="w-3.5 h-3.5" /> {t.navMethodology}
+          </button>
+        </div>
+        <p className="text-xs text-ink-400">{t.footerNote}</p>
       </footer>
     </div>
   );

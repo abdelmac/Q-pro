@@ -3,9 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-export const supabase = supabaseUrl && supabaseAnonKey
-  ? createClient(supabaseUrl, supabaseAnonKey)
-  : null;
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export interface SpecialistResponse {
   actual_specialty: string;
@@ -20,10 +18,6 @@ export interface SpecialistResponse {
 }
 
 export async function submitSpecialistResponse(data: SpecialistResponse): Promise<{ success: boolean; error?: string }> {
-  if (!supabase) {
-    return { success: false, error: 'Supabase is not configured.' };
-  }
-
   const { error } = await supabase.from('specialist_responses').insert({
     actual_specialty: data.actual_specialty,
     ratings: data.ratings,
