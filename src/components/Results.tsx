@@ -15,7 +15,7 @@ import { useLanguage } from '@/lib/LanguageContext';
 import LanguageSwitcher from './LanguageSwitcher';
 import {
   Stethoscope, Trophy, RotateCcw, ChevronDown, Heart, ArrowUpRight,
-  FlaskConical, GitCompare, Compass, BookOpen, AlertCircle, X,
+  FlaskConical, Compass, BookOpen, AlertCircle, X,
 } from 'lucide-react';
 
 interface ResultsProps {
@@ -25,7 +25,6 @@ interface ResultsProps {
   isSpecialist: boolean;
   onContributeData: () => void;
   onOpenExplorer: () => void;
-  onOpenComparison: () => void;
   onOpenMethodology: () => void;
 }
 
@@ -86,7 +85,7 @@ const DIMENSION_LABELS: Record<Dimension, string> = {
 
 export default function Results({
   scores, preferredSpecialty, onRestart, isSpecialist, onContributeData,
-  onOpenExplorer, onOpenComparison, onOpenMethodology,
+  onOpenExplorer, onOpenMethodology,
 }: ResultsProps) {
   const { lang, t } = useLanguage();
   const [expanded, setExpanded] = useState<number | null>(0);
@@ -119,9 +118,6 @@ export default function Results({
         <div className="flex items-center gap-2">
           <button onClick={onOpenExplorer} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold text-ink-600 hover:text-ink-900 hover:bg-ink-100 transition-colors">
             <Compass className="w-4 h-4" /> {t.navExplorer}
-          </button>
-          <button onClick={onOpenComparison} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold text-ink-600 hover:text-ink-900 hover:bg-ink-100 transition-colors">
-            <GitCompare className="w-4 h-4" /> {t.comparisonTitle}
           </button>
           <button onClick={onOpenMethodology} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold text-ink-600 hover:text-ink-900 hover:bg-ink-100 transition-colors">
             <BookOpen className="w-4 h-4" /> {t.navMethodology}

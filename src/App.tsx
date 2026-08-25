@@ -155,7 +155,6 @@ function AppContent() {
         isSpecialist={isSpecialist}
         onContributeData={() => setPhase('specialist')}
         onOpenExplorer={() => setPhase('explorer')}
-        onOpenComparison={() => setPhase('comparison')}
         onOpenMethodology={() => setPhase('methodology')}
       />
     );
