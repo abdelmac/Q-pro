@@ -152,8 +152,6 @@ function AppContent() {
         scores={scores}
         preferredSpecialty={preferredSpecialty}
         onRestart={restart}
-        isSpecialist={isSpecialist}
-        onContributeData={() => setPhase('specialist')}
         onOpenExplorer={() => setPhase('explorer')}
         onOpenMethodology={() => setPhase('methodology')}
       />

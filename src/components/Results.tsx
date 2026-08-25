@@ -15,15 +15,13 @@ import { useLanguage } from '@/lib/LanguageContext';
 import LanguageSwitcher from './LanguageSwitcher';
 import {
   Stethoscope, Trophy, RotateCcw, ChevronDown, Heart,
-  FlaskConical, Compass, BookOpen, AlertCircle, X,
+  Compass, BookOpen, AlertCircle, X,
 } from 'lucide-react';
 
 interface ResultsProps {
   scores: SpecialtyScore[];
   preferredSpecialty: string | null;
   onRestart: () => void;
-  isSpecialist: boolean;
-  onContributeData: () => void;
   onOpenExplorer: () => void;
   onOpenMethodology: () => void;
 }
@@ -84,7 +82,7 @@ const DIMENSION_LABELS: Record<Dimension, string> = {
 };
 
 export default function Results({
-  scores, preferredSpecialty, onRestart, isSpecialist, onContributeData,
+  scores, preferredSpecialty, onRestart,
   onOpenExplorer, onOpenMethodology,
 }: ResultsProps) {
   const { lang, t } = useLanguage();
@@ -221,21 +219,6 @@ export default function Results({
               <p className="text-sm text-ink-600 leading-relaxed">
                 {t.preferredCallout(translateSpecialtyName(preferredSpecialty!, lang), preferredRank.rank, Math.round(preferredRank.score.score))}
               </p>
-            </div>
-          </div>
-        )}
-
-        {/* Specialist contribution CTA */}
-        {!isSpecialist && (
-          <div className="mb-10 p-5 rounded-2xl bg-brand-50 border border-brand-100 flex items-start gap-4 animate-fade-up" style={{ animationDelay: '160ms' }}>
-            <div className="w-10 h-10 rounded-xl bg-white border border-brand-200 flex items-center justify-center text-brand-600 shrink-0">
-              <FlaskConical className="w-5 h-5" />
-            </div>
-            <div className="flex-1">
-              <p className="text-sm text-brand-900 leading-relaxed mb-3">{t.specialistSubtitle}</p>
-              <button onClick={onContributeData} className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand-600 text-white text-sm font-semibold hover:bg-brand-700 transition-all hover:scale-[1.02] active:scale-[0.98]">
-                {t.specialistPromptTitle}
-              </button>
             </div>
           </div>
         )}
