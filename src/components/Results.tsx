@@ -14,14 +14,16 @@ import { translateSpecialtyName, translateCategory, translateBlurb } from '@/dat
 import { useLanguage } from '@/lib/LanguageContext';
 import LanguageSwitcher from './LanguageSwitcher';
 import {
-  Stethoscope, Trophy, RotateCcw, ChevronDown, Heart,
-  Compass, BookOpen, AlertCircle, X,
+  Stethoscope, Trophy, RotateCcw, ChevronDown, Heart, ArrowUpRight,
+  FlaskConical, Compass, BookOpen, AlertCircle, X,
 } from 'lucide-react';
 
 interface ResultsProps {
   scores: SpecialtyScore[];
   preferredSpecialty: string | null;
   onRestart: () => void;
+  isSpecialist: boolean;
+  onContributeData: () => void;
   onOpenExplorer: () => void;
   onOpenMethodology: () => void;
 }
@@ -82,7 +84,7 @@ const DIMENSION_LABELS: Record<Dimension, string> = {
 };
 
 export default function Results({
-  scores, preferredSpecialty, onRestart,
+  scores, preferredSpecialty, onRestart, isSpecialist, onContributeData,
   onOpenExplorer, onOpenMethodology,
 }: ResultsProps) {
   const { lang, t } = useLanguage();
@@ -223,6 +225,21 @@ export default function Results({
           </div>
         )}
 
+        {/* Specialist contribution CTA */}
+        {!isSpecialist && (
+          <div className="mb-10 p-5 rounded-2xl bg-brand-50 border border-brand-100 flex items-start gap-4 animate-fade-up" style={{ animationDelay: '160ms' }}>
+            <div className="w-10 h-10 rounded-xl bg-white border border-brand-200 flex items-center justify-center text-brand-600 shrink-0">
+              <FlaskConical className="w-5 h-5" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm text-brand-900 leading-relaxed mb-3">{t.specialistSubtitle}</p>
+              <button onClick={onContributeData} className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand-600 text-white text-sm font-semibold hover:bg-brand-700 transition-all hover:scale-[1.02] active:scale-[0.98]">
+                {t.specialistPromptTitle}
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Runner ups */}
         <div className="mb-4">
           <h2 className="font-display text-2xl font-semibold text-ink-900 mb-1">{t.otherMatches}</h2>
@@ -352,6 +369,9 @@ export default function Results({
           <button onClick={onRestart} className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-full bg-ink-900 text-white font-semibold text-sm shadow-lift hover:bg-ink-800 transition-all hover:scale-[1.03] active:scale-[0.98]">
             <RotateCcw className="w-4 h-4" /> {t.retakeAssessment}
           </button>
+          <a href="" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-sm text-ink-400 hover:text-ink-600 transition-colors">
+            {t.test} <ArrowUpRight className="w-3.5 h-3.5" />
+          </a>
         </div>
       </main>
 

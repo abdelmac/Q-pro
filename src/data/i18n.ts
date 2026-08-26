@@ -1,3 +1,5 @@
+import { ReactNode } from "react";
+
 export type Language = 'en' | 'ro' | 'fr';
 
 export const LANGUAGES: { code: Language; label: string; flag: string }[] = [
@@ -11,6 +13,7 @@ export const LANGUAGES: { code: Language; label: string; flag: string }[] = [
 // ============================================================
 
 export interface UIStrings {
+  test: ReactNode;
   // Intro
   appName: string;
   forMedicalStudents: string;
@@ -284,8 +287,7 @@ const en: UIStrings = {
   topMatch: 'Your top match',
   matchPercent: '% match',
   whyItFits: 'Why it fits you',
-  preferredCallout: (name: string, rank: number, percent: number) =>
-    `The specialty you picked — ${name} — ranked #${rank} for you, at a ${percent}% match.`,
+  preferredCallout: (name: string, rank: number, percent: number) => `The specialty you picked — ${name} — ranked #${rank} for you, at a ${percent}% match.`,
   otherMatches: 'Other strong matches',
   otherMatchesDesc: 'Specialties that also align well with your profile.',
   fullRanking: 'Full ranking',
@@ -452,6 +454,7 @@ const en: UIStrings = {
   navMethodology: 'Methodology',
   navResults: 'Results',
   navHome: 'Home',
+  test: undefined
 };
 
 // ============================================================
@@ -500,8 +503,7 @@ const ro: UIStrings = {
   topMatch: 'Cea mai bună potrivire',
   matchPercent: '% potrivire',
   whyItFits: 'De ce ți se potrivește',
-  preferredCallout: (name: string, rank: number, percent: number) =>
-    `Specialitatea pe care ai ales-o — ${name} — s-a clasat pe locul #${rank}, cu ${percent}% potrivire.`,
+  preferredCallout: (name: string, rank: number, percent: number) => `Specialitatea pe care ai ales-o — ${name} — s-a clasat pe locul #${rank}, cu ${percent}% potrivire.`,
   otherMatches: 'Alte potriviri bune',
   otherMatchesDesc: 'Specialități care se aliniază bine cu profilul tău.',
   fullRanking: 'Clasament complet',
@@ -668,6 +670,7 @@ const ro: UIStrings = {
   navMethodology: 'Metodologie',
   navResults: 'Rezultate',
   navHome: 'Acasă',
+  test: undefined
 };
 
 // ============================================================
@@ -716,8 +719,7 @@ const fr: UIStrings = {
   topMatch: 'Votre meilleure correspondance',
   matchPercent: '% correspondance',
   whyItFits: 'Pourquoi cela vous correspond',
-  preferredCallout: (name: string, rank: number, percent: number) =>
-    `La spécialité que vous avez choisie — ${name} — s'est classée #${rank}, avec ${percent}% de correspondance.`,
+  preferredCallout: (name: string, rank: number, percent: number) => `La spécialité que vous avez choisie — ${name} — s'est classée #${rank}, avec ${percent}% de correspondance.`,
   otherMatches: 'Autres bonnes correspondances',
   otherMatchesDesc: 'Spécialités qui correspondent également bien à votre profil.',
   fullRanking: 'Classement complet',
@@ -884,6 +886,7 @@ const fr: UIStrings = {
   navMethodology: 'Méthodologie',
   navResults: 'Résultats',
   navHome: 'Accueil',
+  test: undefined
 };
 
 // ============================================================
