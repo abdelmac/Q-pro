@@ -69,10 +69,14 @@ export interface UIStrings {
   specialistBadge: string;
   specialistTitle: string;
   specialistSubtitle: string;
+  specialistSpecialtyTitle: string;
+  specialistSpecialtySubtitle: string;
+  specialistSpecialtyRequired: string;
   specialistPromptTitle: string;
   specialistPromptDesc: string;
   specialistActualSpecialty: string;
   specialistSelectSpecialty: string;
+  specialistChangeSpecialty: string;
   specialistSubmit: string;
   specialistSubmitting: string;
   specialistSuccess: string;
@@ -302,10 +306,14 @@ const en: UIStrings = {
   specialistBadge: 'Specialist mode',
   specialistTitle: 'Are you a medical specialist?',
   specialistSubtitle: 'Help us improve the matching algorithm. Data is stored only if you explicitly submit it for research, without your name or email.',
-  specialistPromptTitle: 'Tell us your specialty',
-  specialistPromptDesc: 'Select the specialty you practice. By submitting, you agree that your 81 answers, selected values, and optional calibration data are stored without direct identifiers for research.',
+  specialistSpecialtyTitle: 'What specialty do you practice?',
+  specialistSpecialtySubtitle: 'Select your current specialty so we can compare your profile with your field.',
+  specialistSpecialtyRequired: 'Required — select the specialty you currently practice.',
+  specialistPromptTitle: 'Tell us about your practice',
+  specialistPromptDesc: 'You can add optional details about your experience. By submitting, you agree that your specialty, 81 answers, selected values, and calibration data are stored without direct identifiers for research.',
   specialistActualSpecialty: 'Your actual specialty',
   specialistSelectSpecialty: 'Select your specialty',
+  specialistChangeSpecialty: 'Change',
   specialistSubmit: 'Consent and submit for research',
   specialistSubmitting: 'Submitting...',
   specialistSuccess: 'Thank you! Your responses have been submitted for research.',
@@ -525,10 +533,14 @@ const ro: UIStrings = {
   specialistBadge: 'Mod specialist',
   specialistTitle: 'Ești specialist medical?',
   specialistSubtitle: 'Ajută-ne să îmbunătățim algoritmul. Datele sunt stocate numai dacă le trimiți explicit pentru cercetare, fără nume sau adresă de e-mail.',
-  specialistPromptTitle: 'Spune-ne specialitatea ta',
-  specialistPromptDesc: 'Selectează specialitatea pe care o practici. Prin trimitere, accepți stocarea pentru cercetare a celor 81 de răspunsuri, a valorilor și a datelor opționale de calibrare, fără identificatori direcți.',
+  specialistSpecialtyTitle: 'Ce specialitate practici?',
+  specialistSpecialtySubtitle: 'Selectează specialitatea în care profesezi în prezent, pentru a-ți putea compara profilul cu domeniul tău.',
+  specialistSpecialtyRequired: 'Obligatoriu — selectează specialitatea pe care o practici în prezent.',
+  specialistPromptTitle: 'Spune-ne despre experiența ta profesională',
+  specialistPromptDesc: 'Poți adăuga câteva detalii opționale despre experiența ta. Prin trimitere, accepți stocarea pentru cercetare a specialității, a celor 81 de răspunsuri, a valorilor și a datelor de calibrare, fără identificatori direcți.',
   specialistActualSpecialty: 'Specialitatea ta reală',
   specialistSelectSpecialty: 'Selectează specialitatea',
+  specialistChangeSpecialty: 'Modifică',
   specialistSubmit: 'Acceptă și trimite pentru cercetare',
   specialistSubmitting: 'Se trimite...',
   specialistSuccess: 'Mulțumim! Răspunsurile tale au fost trimise pentru cercetare.',
@@ -748,10 +760,14 @@ const fr: UIStrings = {
   specialistBadge: 'Mode spécialiste',
   specialistTitle: 'Êtes-vous un spécialiste médical ?',
   specialistSubtitle: 'Aidez-nous à améliorer l\'algorithme. Les données ne sont conservées que si vous les soumettez explicitement pour la recherche, sans nom ni adresse e-mail.',
-  specialistPromptTitle: 'Indiquez-nous votre spécialité',
-  specialistPromptDesc: 'Sélectionnez la spécialité que vous pratiquez. En envoyant, vous acceptez que vos 81 réponses, vos valeurs et les données facultatives de calibration soient conservées sans identifiant direct à des fins de recherche.',
+  specialistSpecialtyTitle: 'Quelle spécialité exercez-vous ?',
+  specialistSpecialtySubtitle: 'Sélectionnez votre spécialité actuelle afin que nous puissions comparer votre profil à votre domaine.',
+  specialistSpecialtyRequired: 'Obligatoire — sélectionnez la spécialité que vous exercez actuellement.',
+  specialistPromptTitle: 'Parlez-nous de votre pratique',
+  specialistPromptDesc: 'Vous pouvez ajouter quelques précisions facultatives sur votre expérience. En envoyant, vous acceptez que votre spécialité, vos 81 réponses, vos valeurs et les données de calibration soient conservées sans identifiant direct à des fins de recherche.',
   specialistActualSpecialty: 'Votre spécialité réelle',
   specialistSelectSpecialty: 'Sélectionnez votre spécialité',
+  specialistChangeSpecialty: 'Modifier',
   specialistSubmit: 'Consentir et soumettre pour la recherche',
   specialistSubmitting: 'Envoi en cours...',
   specialistSuccess: 'Merci ! Vos réponses ont été soumises pour la recherche.',

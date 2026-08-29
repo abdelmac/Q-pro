@@ -42,6 +42,7 @@ function AppContent() {
   const [phase, setPhase] = useState<Phase>('intro');
   const [stepIndex, setStepIndex] = useState(0);
   const [preferredSpecialty, setPreferredSpecialty] = useState<string | null>(null);
+  const [actualSpecialty, setActualSpecialty] = useState<string | null>(null);
   const [selectedValues, setSelectedValues] = useState<string[]>([]);
   const [ratings, setRatings] = useState<Record<string, number>>({});
   const [scores, setScores] = useState<SpecialtyScore[]>([]);
@@ -74,13 +75,18 @@ function AppContent() {
   };
 
   const computeAndShowResults = () => {
-    const result = reRankWithPriorities({ ratings, selectedValues, preferredSpecialty }, priorities);
+    const result = reRankWithPriorities({
+      ratings,
+      selectedValues,
+      preferredSpecialty: isSpecialist ? null : preferredSpecialty,
+    }, priorities);
     setScores(result);
     setPhase(isSpecialist ? 'specialist' : 'student');
   };
 
   const restart = () => {
     setPreferredSpecialty(null);
+    setActualSpecialty(null);
     setSelectedValues([]);
     setRatings({});
     setScores([]);
@@ -94,13 +100,14 @@ function AppContent() {
   const isLastStep = stepIndex === QUIZ_STEPS.length - 1;
 
   const canProceed = useMemo(() => {
+    if (currentStep.type === 'specialty') return !isSpecialist || actualSpecialty !== null;
     if (currentStep.type === 'values') return selectedValues.length > 0;
     if (currentStep.type === 'rating' && currentStep.sectionId) {
       const section = RATING_SECTIONS.find((item) => item.id === currentStep.sectionId);
       return section?.questions.every((question) => ratings[question.id] !== undefined) ?? false;
     }
     return true;
-  }, [currentStep.sectionId, currentStep.type, ratings, selectedValues.length]);
+  }, [actualSpecialty, currentStep.sectionId, currentStep.type, isSpecialist, ratings, selectedValues.length]);
 
   const handleNext = useCallback(() => {
     if (isLastStep) {
@@ -156,7 +163,7 @@ function AppContent() {
     return (
       <Results
         scores={scores}
-        preferredSpecialty={preferredSpecialty}
+        preferredSpecialty={isSpecialist ? null : preferredSpecialty}
         onRestart={restart}
         isSpecialist={isSpecialist}
         onContributeData={() => setPhase('specialist')}
@@ -199,6 +206,7 @@ function AppContent() {
           <LanguageSwitcher />
         </header>
         <SpecialistPrompt
+          initialSpecialty={isSpecialist ? actualSpecialty : null}
           ratings={ratings}
           selectedValues={selectedValues}
           language={lang}
@@ -289,12 +297,16 @@ function AppContent() {
             {currentStep.type === 'specialty' && (
               <div>
                 <h2 className="font-display text-2xl sm:text-3xl font-semibold text-ink-900 mb-2 text-balance">
-                  {t.specialtyTitle}
+                  {isSpecialist ? t.specialistSpecialtyTitle : t.specialtyTitle}
                 </h2>
                 <p className="text-ink-500 mb-6 text-balance">
-                  {t.specialtySubtitle}
+                  {isSpecialist ? t.specialistSpecialtySubtitle : t.specialtySubtitle}
                 </p>
-                <SpecialtyStep selected={preferredSpecialty} onChange={setPreferredSpecialty} />
+                <SpecialtyStep
+                  selected={isSpecialist ? actualSpecialty : preferredSpecialty}
+                  onChange={isSpecialist ? setActualSpecialty : setPreferredSpecialty}
+                  emptyMessage={isSpecialist ? t.specialistSpecialtyRequired : undefined}
+                />
               </div>
             )}
 

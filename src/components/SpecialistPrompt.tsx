@@ -9,18 +9,26 @@ import {
   type VoluntaryChoiceCode,
   type WouldChooseAgainCode,
 } from '@/lib/supabase';
-import { Check, Search, Loader2, AlertCircle, PartyPopper } from 'lucide-react';
+import { Check, Search, Loader2, AlertCircle, PartyPopper, Pencil } from 'lucide-react';
 
 interface SpecialistPromptProps {
+  initialSpecialty?: string | null;
   ratings: Record<string, number>;
   selectedValues: string[];
   language: SupportedLanguage;
   onDone: () => void;
 }
 
-export default function SpecialistPrompt({ ratings, selectedValues, language, onDone }: SpecialistPromptProps) {
+export default function SpecialistPrompt({
+  initialSpecialty = null,
+  ratings,
+  selectedValues,
+  language,
+  onDone,
+}: SpecialistPromptProps) {
   const { t, lang } = useLanguage();
-  const [actualSpecialty, setActualSpecialty] = useState<string | null>(null);
+  const [actualSpecialty, setActualSpecialty] = useState<string | null>(initialSpecialty);
+  const [editingSpecialty, setEditingSpecialty] = useState(!initialSpecialty);
   const [query, setQuery] = useState('');
   const [yearsExperience, setYearsExperience] = useState<string>('');
   const [careerSatisfaction, setCareerSatisfaction] = useState<number | null>(null);
@@ -81,6 +89,7 @@ export default function SpecialistPrompt({ ratings, selectedValues, language, on
           onClick={() => {
             setSuccess(false);
             setActualSpecialty(null);
+            setEditingSpecialty(true);
             onDone();
           }}
           className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-ink-900 text-white font-semibold text-sm shadow-lift hover:bg-ink-800 transition-all hover:scale-[1.03] active:scale-[0.98]"
@@ -102,60 +111,87 @@ export default function SpecialistPrompt({ ratings, selectedValues, language, on
         </p>
       </div>
 
-      {/* Specialty selector */}
-      <div className="mb-2">
+      {/* Specialty confirmation */}
+      <div className="mb-8">
         <label className="text-sm font-semibold text-ink-700 mb-3 block">
           {t.specialistActualSpecialty}
         </label>
-      </div>
 
-      <div className="relative mb-4">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-ink-400" />
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder={t.searchPlaceholder}
-          className="w-full pl-11 pr-4 py-3 rounded-xl bg-white border border-ink-200 text-sm text-ink-900 placeholder:text-ink-400 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 transition-all"
-        />
-      </div>
-
-      <div className="space-y-5 mb-8 max-h-80 overflow-y-auto scrollbar-thin pr-1">
-        {CATEGORY_ORDER.map((cat) => {
-          const items = grouped[cat];
-          if (!items || items.length === 0) return null;
-          return (
-            <div key={cat}>
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-400 mb-2.5">
-                {translateCategory(cat, lang)}
-              </h3>
-              <div className="grid grid-cols-1 gap-2">
-                {items.map((s) => {
-                  const active = actualSpecialty === s.name;
-                  return (
-                    <button
-                      key={s.name}
-                      onClick={() => setActualSpecialty(active ? null : s.name)}
-                      className={`flex items-center justify-between gap-3 px-4 py-2.5 rounded-xl border text-left text-sm transition-all duration-150 ${
-                        active
-                          ? 'border-brand-500 bg-brand-50 text-brand-900 shadow-soft'
-                          : 'border-ink-200 bg-white text-ink-700 hover:border-ink-300 hover:bg-ink-50'
-                      }`}
-                    >
-                      <span className="font-medium leading-snug">{translateSpecialtyName(s.name, lang)}</span>
-                      {active && <Check className="w-4 h-4 text-brand-600 shrink-0" strokeWidth={3} />}
-                    </button>
-                  );
-                })}
-              </div>
+        {actualSpecialty && !editingSpecialty ? (
+          <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-brand-200 bg-brand-50 text-brand-900">
+            <span className="inline-flex items-center gap-2 text-sm font-medium">
+              <Check className="w-4 h-4 text-brand-600 shrink-0" strokeWidth={3} />
+              {translateSpecialtyName(actualSpecialty, lang)}
+            </span>
+            <button
+              onClick={() => setEditingSpecialty(true)}
+              disabled={submitting}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-700 hover:text-brand-900 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+              {t.specialistChangeSpecialty}
+            </button>
+          </div>
+        ) : (
+          <>
+            <div className="relative mb-4">
+              <Search aria-hidden="true" className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-ink-400" />
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={t.searchPlaceholder}
+                aria-label={t.searchPlaceholder}
+                disabled={submitting}
+                className="w-full pl-11 pr-4 py-3 rounded-xl bg-white border border-ink-200 text-sm text-ink-900 placeholder:text-ink-400 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              />
             </div>
-          );
-        })}
+
+            <div className="space-y-5 max-h-80 overflow-y-auto scrollbar-thin pr-1">
+              {CATEGORY_ORDER.map((cat) => {
+                const items = grouped[cat];
+                if (!items || items.length === 0) return null;
+                return (
+                  <div key={cat}>
+                    <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-400 mb-2.5">
+                      {translateCategory(cat, lang)}
+                    </h3>
+                    <div className="grid grid-cols-1 gap-2">
+                      {items.map((s) => {
+                        const active = actualSpecialty === s.name;
+                        return (
+                          <button
+                            key={s.name}
+                            disabled={submitting}
+                            onClick={() => {
+                              setActualSpecialty(s.name);
+                              setEditingSpecialty(false);
+                              setQuery('');
+                            }}
+                            aria-pressed={active}
+                            className={`flex items-center justify-between gap-3 px-4 py-2.5 rounded-xl border text-left text-sm transition-all duration-150 ${
+                              active
+                                ? 'border-brand-500 bg-brand-50 text-brand-900 shadow-soft'
+                                : 'border-ink-200 bg-white text-ink-700 hover:border-ink-300 hover:bg-ink-50'
+                            } disabled:opacity-50 disabled:cursor-not-allowed`}
+                          >
+                            <span className="font-medium leading-snug">{translateSpecialtyName(s.name, lang)}</span>
+                            {active && <Check className="w-4 h-4 text-brand-600 shrink-0" strokeWidth={3} />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
       </div>
 
       {/* Calibration fields */}
       {actualSpecialty && (
-        <div className="space-y-6 mb-8 p-5 rounded-2xl bg-ink-50 border border-ink-100 animate-fade-in">
+        <fieldset disabled={submitting} className="space-y-6 mb-8 p-5 rounded-2xl bg-ink-50 border border-ink-100 animate-fade-in disabled:opacity-70">
           {/* Years of experience */}
           <div>
             <label className="text-sm font-semibold text-ink-700 mb-2 block">
@@ -246,7 +282,7 @@ export default function SpecialistPrompt({ ratings, selectedValues, language, on
               ))}
             </div>
           </div>
-        </div>
+        </fieldset>
       )}
 
       {error && (

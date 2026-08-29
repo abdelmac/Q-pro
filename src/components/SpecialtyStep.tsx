@@ -7,9 +7,10 @@ import { Check, Search } from 'lucide-react';
 interface SpecialtyStepProps {
   selected: string | null;
   onChange: (name: string | null) => void;
+  emptyMessage?: string;
 }
 
-export default function SpecialtyStep({ selected, onChange }: SpecialtyStepProps) {
+export default function SpecialtyStep({ selected, onChange, emptyMessage }: SpecialtyStepProps) {
   const { lang, t } = useLanguage();
   const [query, setQuery] = useState('');
 
@@ -23,26 +24,27 @@ export default function SpecialtyStep({ selected, onChange }: SpecialtyStepProps
   }
 
   return (
-    <div>
+    <div role="group" aria-describedby="specialty-selection-status">
       <div className="relative mb-6">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-ink-400" />
+        <Search aria-hidden="true" className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-ink-400" />
         <input
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={t.searchPlaceholder}
+          aria-label={t.searchPlaceholder}
           className="w-full pl-11 pr-4 py-3 rounded-xl bg-white border border-ink-200 text-sm text-ink-900 placeholder:text-ink-400 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 transition-all"
         />
       </div>
 
-      <div className="mb-5 text-sm text-ink-500">
+      <div id="specialty-selection-status" role="status" aria-live="polite" className="mb-5 text-sm text-ink-500">
         {selected ? (
           <span className="inline-flex items-center gap-1.5 text-brand-700 font-medium">
             <Check className="w-4 h-4" />
             {translateSpecialtyName(selected, lang)} {t.specialtySelected}
           </span>
         ) : (
-          <span>{t.specialtyOptional}</span>
+          <span>{emptyMessage ?? t.specialtyOptional}</span>
         )}
       </div>
 
@@ -62,6 +64,7 @@ export default function SpecialtyStep({ selected, onChange }: SpecialtyStepProps
                     <button
                       key={s.name}
                       onClick={() => onChange(active ? null : s.name)}
+                      aria-pressed={active}
                       className={`group flex items-center justify-between gap-3 px-4 py-3 rounded-xl border text-left text-sm transition-all duration-150 ${
                         active
                           ? 'border-brand-500 bg-brand-50 text-brand-900 shadow-soft'
