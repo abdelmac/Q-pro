@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { lazy, Suspense, useState, useMemo, useCallback, useEffect } from 'react';
 import { RATING_SECTIONS, ALL_QUESTION_IDS } from '@/data/questions';
 import { translateSection } from '@/data/i18n';
 import {
@@ -7,6 +7,7 @@ import {
   type SpecialtyScore,
 } from '@/lib/scoring';
 import { DEFAULT_PRIORITY_WEIGHTS } from '@/data/dimensions';
+import type { PriorityWeights } from '@/lib/scoring';
 import { LanguageProvider, useLanguage } from '@/lib/LanguageContext';
 import Intro from '@/components/Intro';
 import ProgressBar from '@/components/ProgressBar';
@@ -15,8 +16,8 @@ import ValuesStep from '@/components/ValuesStep';
 import RatingStep from '@/components/RatingStep';
 import Results from '@/components/Results';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
-import SpecialistToggle from '@/components/SpecialistToggle';
 import SpecialistPrompt from '@/components/SpecialistPrompt';
+import StudentPrompt from '@/components/StudentPrompt';
 import QProfile from '@/components/QProfile';
 import SpecialtyExplorer from '@/components/SpecialtyExplorer';
 import SpecialtyDetail from '@/components/SpecialtyDetail';
@@ -24,7 +25,9 @@ import SpecialtyComparison from '@/components/SpecialtyComparison';
 import MethodologyPage from '@/components/MethodologyPage';
 import { ArrowLeft, ArrowRight, Stethoscope } from 'lucide-react';
 
-type Phase = 'intro' | 'quiz' | 'qprofile' | 'results' | 'specialist' | 'explorer' | 'detail' | 'methodology' | 'comparison';
+const Dashboard = lazy(() => import('@/components/Dashboard'));
+
+type Phase = 'intro' | 'quiz' | 'qprofile' | 'student' | 'results' | 'specialist' | 'dashboard' | 'explorer' | 'detail' | 'methodology' | 'comparison';
 
 const TOTAL_QUESTIONS = ALL_QUESTION_IDS.length + 2;
 
@@ -73,7 +76,7 @@ function AppContent() {
   const computeAndShowResults = () => {
     const result = reRankWithPriorities({ ratings, selectedValues, preferredSpecialty }, priorities);
     setScores(result);
-    setPhase('results');
+    setPhase(isSpecialist ? 'specialist' : 'student');
   };
 
   const restart = () => {
@@ -92,8 +95,12 @@ function AppContent() {
 
   const canProceed = useMemo(() => {
     if (currentStep.type === 'values') return selectedValues.length > 0;
+    if (currentStep.type === 'rating' && currentStep.sectionId) {
+      const section = RATING_SECTIONS.find((item) => item.id === currentStep.sectionId);
+      return section?.questions.every((question) => ratings[question.id] !== undefined) ?? false;
+    }
     return true;
-  }, [currentStep.type, selectedValues.length]);
+  }, [currentStep.sectionId, currentStep.type, ratings, selectedValues.length]);
 
   const handleNext = useCallback(() => {
     if (isLastStep) {
@@ -119,13 +126,13 @@ function AppContent() {
     }
   }, [ratings, phase]);
 
-  useMemo(() => {
+  useEffect(() => {
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [handleBeforeUnload]);
 
   if (phase === 'intro') {
-    return <Intro onStart={startQuiz} totalQuestions={TOTAL_QUESTIONS} isSpecialist={isSpecialist} onSpecialistToggle={setIsSpecialist} onOpenExplorer={() => setPhase('explorer')} onOpenMethodology={() => setPhase('methodology')} />;
+    return <Intro onStart={startQuiz} totalQuestions={TOTAL_QUESTIONS} isSpecialist={isSpecialist} onSpecialistToggle={setIsSpecialist} onOpenExplorer={() => setPhase('explorer')} onOpenMethodology={() => setPhase('methodology')} onOpenDashboard={() => setPhase('dashboard')} />;
   }
 
   if (phase === 'qprofile') {
@@ -146,7 +153,6 @@ function AppContent() {
   }
 
   if (phase === 'results') {
-    const scoreForExplorer = scores.map((s) => ({ specialty: s.specialty, score: s.score }));
     return (
       <Results
         scores={scores}
@@ -158,6 +164,25 @@ function AppContent() {
         onOpenComparison={() => setPhase('comparison')}
         onOpenMethodology={() => setPhase('methodology')}
       />
+    );
+  }
+
+  if (phase === 'student') {
+    return (
+      <div className="min-h-screen">
+        <header className="px-6 py-5 sm:px-10 sm:py-7 flex items-center justify-between border-b border-ink-100 bg-white/80 backdrop-blur sticky top-0 z-10">
+          <span className="font-display text-lg font-semibold tracking-tight text-ink-900">{t.appName}</span>
+          <LanguageSwitcher />
+        </header>
+        <StudentPrompt
+          preferredSpecialty={preferredSpecialty}
+          ratings={ratings}
+          selectedValues={selectedValues}
+          scores={scores}
+          language={lang}
+          onDone={() => setPhase('results')}
+        />
+      </div>
     );
   }
 
@@ -180,6 +205,14 @@ function AppContent() {
           onDone={() => setPhase('results')}
         />
       </div>
+    );
+  }
+
+  if (phase === 'dashboard') {
+    return (
+      <Suspense fallback={<main className="min-h-screen bg-ink-50 flex items-center justify-center text-sm text-ink-500">{lang === 'fr' ? 'Chargement du dashboard…' : 'Loading dashboard…'}</main>}>
+        <Dashboard onBack={() => setPhase('intro')} />
+      </Suspense>
     );
   }
 

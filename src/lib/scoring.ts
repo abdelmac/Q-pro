@@ -5,9 +5,15 @@
 // and adjustable priority weights.
 // ============================================================
 
-import { QUESTION_TRAITS, VALUE_MAPPING, prettyTrait, type Trait } from '@/data/traits';
+import { QUESTION_TRAITS, VALUE_MAPPING, type Trait } from '@/data/traits';
 import { SPECIALTIES, type Specialty, type TraitProfile } from '@/data/specialties';
 import { DIMENSIONS, DEFAULT_PRIORITY_WEIGHTS, dimensionForTrait, type Dimension } from '@/data/dimensions';
+import { translateSpecialtyName, type Language } from '@/data/i18n';
+import { translateTrait } from '@/data/specialtyDisplayI18n';
+
+// Bump this value whenever the scoring equations or ranking semantics change.
+// Research exports combine it with checksums of profiles and mappings.
+export const SCORING_ENGINE_REVISION = 'scoring-engine-v1';
 
 export interface QuizAnswers {
   ratings: Record<string, number>;
@@ -239,38 +245,67 @@ export function weakestMatches(result: SpecialtyScore, number = 4): TraitContrib
 // Generate a human-readable explanation for a match.
 // Uses ONLY traits produced by the scoring engine.
 // --------------------------------------------------------
-export function generateExplanation(result: SpecialtyScore): string {
+function joinLocalizedList(items: string[], lang: Language): string {
+  if (items.length <= 1) return items[0] ?? '';
+  const conjunction = lang === 'ro' ? 'și' : lang === 'fr' ? 'et' : 'and';
+  if (items.length === 2) return `${items[0]} ${conjunction} ${items[1]}`;
+  const separator = lang === 'en' ? `, ${conjunction} ` : ` ${conjunction} `;
+  return `${items.slice(0, -1).join(', ')}${separator}${items[items.length - 1]}`;
+}
+
+export function generateExplanation(result: SpecialtyScore, lang: Language = 'en'): string {
   const strongest = strongestMatches(result, 4);
-  const traitNames = strongest.map((x) => prettyTrait(x.trait));
+  const traitNames = strongest.map((x) => translateTrait(x.trait, lang).toLocaleLowerCase(lang));
 
-  if (traitNames.length === 0) return 'Not enough data.';
-
-  let traitsText: string;
-  if (traitNames.length === 1) {
-    traitsText = traitNames[0];
-  } else {
-    traitsText = traitNames.slice(0, -1).join(', ') + ' and ' + traitNames[traitNames.length - 1];
+  if (traitNames.length === 0) {
+    if (lang === 'ro') return 'Nu sunt suficiente date.';
+    if (lang === 'fr') return 'Données insuffisantes.';
+    return 'Not enough data.';
   }
 
-  return `${result.specialty.name} aligns with several characteristics in your profile, particularly ${traitsText}. These traits overlap with important working demands represented in the Q Project profile for this specialty.`;
+  const traitsText = joinLocalizedList(traitNames, lang);
+  const specialtyName = translateSpecialtyName(result.specialty.name, lang);
+
+  if (lang === 'ro') {
+    return `${specialtyName} se aliniază cu mai multe caracteristici ale profilului tău, în special ${traitsText}. Aceste trăsături se suprapun cu cerințe profesionale importante reprezentate în profilul Q Project pentru această specialitate.`;
+  }
+  if (lang === 'fr') {
+    return `${specialtyName} correspond à plusieurs caractéristiques de votre profil, notamment ${traitsText}. Ces traits recoupent des exigences professionnelles importantes représentées dans le profil Q Project de cette spécialité.`;
+  }
+
+  return `${specialtyName} aligns with several characteristics in your profile, particularly ${traitsText}. These traits overlap with important working demands represented in the Q Project profile for this specialty.`;
 }
 
 // --------------------------------------------------------
 // Generate trade-off explanation (potential mismatches).
 // Uses ONLY traits from the scoring engine — no invention.
 // --------------------------------------------------------
-export function generateTradeOffExplanation(result: SpecialtyScore): string {
+export function generateTradeOffExplanation(result: SpecialtyScore, lang: Language = 'en'): string {
   const tradeOffs = result.tradeOffs;
   if (tradeOffs.length === 0) return '';
 
   const parts = tradeOffs.slice(0, 3).map((t) => {
-    const traitName = prettyTrait(t.trait);
+    const traitName = translateTrait(t.trait, lang).toLocaleLowerCase(lang);
+    if (lang === 'ro') {
+      const studentDesc = t.student < t.target ? 'mai scăzut' : 'mai ridicat';
+      return `nivelul tău de ${traitName} este ${studentDesc} decât în profilul tipic al acestei specialități}`;
+    }
+    if (lang === 'fr') {
+      const studentDesc = t.student < t.target ? 'inférieur' : 'supérieur';
+      return `votre niveau de ${traitName} est ${studentDesc} à celui du profil type de cette spécialité`;
+    }
     const studentDesc = t.student < t.target ? 'lower' : 'higher';
     return `your ${traitName.toLowerCase()} score is ${studentDesc} than the typical profile for this specialty`;
   });
 
   if (parts.length === 0) return '';
-  const text = parts.length === 1 ? parts[0] : parts.slice(0, -1).join(', ') + ', and ' + parts[parts.length - 1];
+  const text = joinLocalizedList(parts, lang);
+  if (lang === 'ro') {
+    return `Posibile zone de dificultate: ${text}. Acest lucru nu înseamnă că nu poți reuși — înseamnă că aceste aspecte ale muncii ți s-ar putea părea mai puțin naturale.`;
+  }
+  if (lang === 'fr') {
+    return `Points de friction possibles : ${text}. Cela ne signifie pas que vous ne pouvez pas réussir — simplement que ces aspects du travail pourraient vous sembler moins naturels.`;
+  }
   return `Some areas of potential friction: ${text}. This does not mean you cannot succeed — it means these aspects of the work may feel less natural to you.`;
 }
 
@@ -278,17 +313,31 @@ export function generateTradeOffExplanation(result: SpecialtyScore): string {
 // Generate opposite-fit explanation for low-ranked specialties.
 // Uses ONLY the largest trait gaps from the scoring engine.
 // --------------------------------------------------------
-export function generateOppositeFitExplanation(result: SpecialtyScore): string {
+export function generateOppositeFitExplanation(result: SpecialtyScore, lang: Language = 'en'): string {
   const weakest = weakestMatches(result, 4);
   if (weakest.length === 0) return '';
 
   const parts = weakest.map((w) => {
-    const traitName = prettyTrait(w.trait);
+    const traitName = translateTrait(w.trait, lang).toLocaleLowerCase(lang);
+    if (lang === 'ro') {
+      const studentDesc = w.student < w.target ? 'mai scăzut' : 'mai ridicat';
+      return `ai tendința spre un nivel ${studentDesc} de ${traitName} decât presupune de obicei această specialitate`;
+    }
+    if (lang === 'fr') {
+      const studentDesc = w.student < w.target ? 'moins' : 'plus';
+      return `vous avez tendance à présenter ${studentDesc} de ${traitName} que cette spécialité n’en requiert habituellement`;
+    }
     const studentDesc = w.student < w.target ? 'less' : 'more';
     return `you tend toward ${studentDesc} ${traitName.toLowerCase()} than this specialty typically involves`;
   });
 
-  const text = parts.length === 1 ? parts[0] : parts.slice(0, -1).join(', ') + ', and ' + parts[parts.length - 1];
+  const text = joinLocalizedList(parts, lang);
+  if (lang === 'ro') {
+    return `Această specialitate a obținut un scor mai mic deoarece ${text}. Acestea sunt diferențe de potrivire, nu slăbiciuni personale — ele arată unde tendințele tale naturale și cerințele domeniului se despart.`;
+  }
+  if (lang === 'fr') {
+    return `Cette spécialité a obtenu un score plus faible parce que ${text}. Il s’agit de différences d’adéquation, et non de faiblesses personnelles — elles indiquent où vos tendances naturelles divergent des exigences du domaine.`;
+  }
   return `This specialty scored lower because ${text}. These are differences in fit, not personal weaknesses — they reflect where your natural tendencies and the demands of this field diverge.`;
 }
 

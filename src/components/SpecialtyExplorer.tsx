@@ -2,7 +2,7 @@ import { useLanguage } from '@/lib/LanguageContext';
 import { SPECIALTIES, type Specialty, CATEGORY_ORDER } from '@/data/specialties';
 import { SPECIALTY_METADATA } from '@/data/specialtyMetadata';
 import { translateSpecialtyName, translateCategory, translateBlurb } from '@/data/i18n';
-import { prettyTrait } from '@/data/traits';
+import { translateCareType, translatePatientContact, translateWorkStyle } from '@/data/specialtyDisplayI18n';
 import { Search, ArrowLeft, ChevronRight } from 'lucide-react';
 import { useState, useMemo } from 'react';
 
@@ -98,9 +98,9 @@ export default function SpecialtyExplorer({ scores, onSelectSpecialty, onBack }:
                     <p className="text-sm text-ink-500 leading-relaxed line-clamp-2">{blurb}</p>
                     {meta && (
                       <div className="flex flex-wrap gap-2 mt-3">
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-ink-50 text-ink-500">{meta.workStyle}</span>
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-ink-50 text-ink-500">{meta.patientContact} contact</span>
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-ink-50 text-ink-500">{meta.careType}</span>
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-ink-50 text-ink-500">{translateWorkStyle(meta.workStyle, lang)}</span>
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-ink-50 text-ink-500">{t.explorerPatientContact}: {translatePatientContact(meta.patientContact, lang)}</span>
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-ink-50 text-ink-500">{translateCareType(meta.careType, lang)}</span>
                       </div>
                     )}
                   </div>

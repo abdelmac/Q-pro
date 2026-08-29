@@ -9,12 +9,13 @@ import {
   type Dimension,
 } from '@/lib/scoring';
 import { CATEGORY_ORDER } from '@/data/specialties';
-import { prettyTrait } from '@/data/traits';
+import { translateTrait } from '@/data/specialtyDisplayI18n';
 import { translateSpecialtyName, translateCategory, translateBlurb } from '@/data/i18n';
+import { FEATURE_FLAGS } from '@/config/features';
 import { useLanguage } from '@/lib/LanguageContext';
 import LanguageSwitcher from './LanguageSwitcher';
 import {
-  Stethoscope, Trophy, RotateCcw, ChevronDown, Heart, ArrowUpRight,
+  Stethoscope, Trophy, RotateCcw, ChevronDown, Heart,
   FlaskConical, GitCompare, Compass, BookOpen, AlertCircle, X,
 } from 'lucide-react';
 
@@ -120,12 +121,16 @@ export default function Results({
           <button onClick={onOpenExplorer} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold text-ink-600 hover:text-ink-900 hover:bg-ink-100 transition-colors">
             <Compass className="w-4 h-4" /> {t.navExplorer}
           </button>
-          <button onClick={onOpenComparison} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold text-ink-600 hover:text-ink-900 hover:bg-ink-100 transition-colors">
-            <GitCompare className="w-4 h-4" /> {t.comparisonTitle}
-          </button>
-          <button onClick={onOpenMethodology} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold text-ink-600 hover:text-ink-900 hover:bg-ink-100 transition-colors">
-            <BookOpen className="w-4 h-4" /> {t.navMethodology}
-          </button>
+          {FEATURE_FLAGS.specialtyComparison && (
+            <button onClick={onOpenComparison} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold text-ink-600 hover:text-ink-900 hover:bg-ink-100 transition-colors">
+              <GitCompare className="w-4 h-4" /> {t.comparisonTitle}
+            </button>
+          )}
+          {FEATURE_FLAGS.methodology && (
+            <button onClick={onOpenMethodology} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold text-ink-600 hover:text-ink-900 hover:bg-ink-100 transition-colors">
+              <BookOpen className="w-4 h-4" /> {t.navMethodology}
+            </button>
+          )}
           <button onClick={onRestart} className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium text-ink-600 hover:text-ink-900 hover:bg-ink-100 transition-colors">
             <RotateCcw className="w-4 h-4" /> {t.resultsRetake}
           </button>
@@ -156,11 +161,11 @@ export default function Results({
             <p className="text-base sm:text-lg text-ink-600 leading-relaxed mb-5">{topBlurb}</p>
             <div>
               <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-400 mb-3">{t.whyItFits}</h3>
-              <p className="text-sm text-ink-600 leading-relaxed mb-4">{generateExplanation(top)}</p>
+              <p className="text-sm text-ink-600 leading-relaxed mb-4">{generateExplanation(top, lang)}</p>
               <div className="flex flex-wrap gap-2">
                 {topStrongest.map((d) => (
                   <span key={d.trait} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-brand-50 border border-brand-100 text-brand-700 text-xs font-medium">
-                    {prettyTrait(d.trait)}
+                    {translateTrait(d.trait, lang)}
                   </span>
                 ))}
               </div>
@@ -211,7 +216,7 @@ export default function Results({
               <AlertCircle className="w-4 h-4" /> {t.tradeOffsTitle}
             </h3>
             <p className="text-sm text-amber-700 leading-relaxed mb-3">{t.tradeOffsDesc}</p>
-            <p className="text-sm text-ink-600 leading-relaxed">{generateTradeOffExplanation(top)}</p>
+            <p className="text-sm text-ink-600 leading-relaxed">{generateTradeOffExplanation(top, lang)}</p>
           </div>
         )}
 
@@ -230,7 +235,7 @@ export default function Results({
         )}
 
         {/* Specialist contribution CTA */}
-        {!isSpecialist && (
+        {FEATURE_FLAGS.researchContributionCta && !isSpecialist && (
           <div className="mb-10 p-5 rounded-2xl bg-brand-50 border border-brand-100 flex items-start gap-4 animate-fade-up" style={{ animationDelay: '160ms' }}>
             <div className="w-10 h-10 rounded-xl bg-white border border-brand-200 flex items-center justify-center text-brand-600 shrink-0">
               <FlaskConical className="w-5 h-5" />
@@ -275,7 +280,7 @@ export default function Results({
                 {isOpen && (
                   <div className="px-4 sm:px-5 pb-5 pl-16 animate-fade-in">
                     <p className="text-sm text-ink-600 leading-relaxed mb-2">{blurb}</p>
-                    <p className="text-sm text-ink-500 leading-relaxed mb-4">{generateExplanation(s)}</p>
+                    <p className="text-sm text-ink-500 leading-relaxed mb-4">{generateExplanation(s, lang)}</p>
 
                     {/* Sub-scores for runner-up */}
                     <div className="flex flex-wrap gap-3 mb-4">
@@ -293,7 +298,7 @@ export default function Results({
                     {/* Trade-offs for runner-up */}
                     {s.tradeOffs.length > 0 && (
                       <div className="mb-4 p-3 rounded-xl bg-amber-50 border border-amber-100">
-                        <p className="text-xs text-amber-700 leading-relaxed">{generateTradeOffExplanation(s)}</p>
+                        <p className="text-xs text-amber-700 leading-relaxed">{generateTradeOffExplanation(s, lang)}</p>
                       </div>
                     )}
 
@@ -302,7 +307,7 @@ export default function Results({
                         const pct = Math.round(d.similarity);
                         return (
                           <div key={d.trait} className="flex items-center gap-3">
-                            <span className="w-40 text-xs font-medium text-ink-500 shrink-0">{prettyTrait(d.trait)}</span>
+                            <span className="w-40 text-xs font-medium text-ink-500 shrink-0">{translateTrait(d.trait, lang)}</span>
                             <div className="flex-1 h-1.5 rounded-full bg-ink-100 overflow-hidden">
                               <div className="h-full rounded-full bg-brand-400 origin-left animate-grow-bar" style={{ width: `${Math.min(100, pct)}%` }} />
                             </div>
@@ -319,23 +324,27 @@ export default function Results({
         </div>
 
         {/* Opposite-fit section */}
-        <div className="mt-14 mb-4">
-          <h2 className="font-display text-2xl font-semibold text-ink-900 mb-1">{t.oppositeFitTitle}</h2>
-          <p className="text-sm text-ink-500">{t.oppositeFitDesc}</p>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-          {lowerRanked.slice(0, 8).map((s) => (
-            <button
-              key={s.specialty.name}
-              onClick={() => setOppositeFitSpecialty(s)}
-              className="p-4 rounded-2xl bg-white border border-ink-100 hover:border-ink-200 hover:shadow-soft transition-all text-left group"
-            >
-              <h3 className="text-sm font-semibold text-ink-800 leading-snug mb-1">{translateSpecialtyName(s.specialty.name, lang)}</h3>
-              <span className="text-xs text-ink-400 tabular-nums">{Math.round(s.score)}%</span>
-              <span className="block mt-2 text-xs text-brand-600 font-medium group-hover:text-brand-700">{t.oppositeFitExplore}</span>
-            </button>
-          ))}
-        </div>
+        {FEATURE_FLAGS.oppositeFitExploration && (
+          <>
+            <div className="mt-14 mb-4">
+              <h2 className="font-display text-2xl font-semibold text-ink-900 mb-1">{t.oppositeFitTitle}</h2>
+              <p className="text-sm text-ink-500">{t.oppositeFitDesc}</p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+              {lowerRanked.slice(0, 8).map((s) => (
+                <button
+                  key={s.specialty.name}
+                  onClick={() => setOppositeFitSpecialty(s)}
+                  className="p-4 rounded-2xl bg-white border border-ink-100 hover:border-ink-200 hover:shadow-soft transition-all text-left group"
+                >
+                  <h3 className="text-sm font-semibold text-ink-800 leading-snug mb-1">{translateSpecialtyName(s.specialty.name, lang)}</h3>
+                  <span className="text-xs text-ink-400 tabular-nums">{Math.round(s.score)}%</span>
+                  <span className="block mt-2 text-xs text-brand-600 font-medium group-hover:text-brand-700">{t.oppositeFitExplore}</span>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
 
         {/* Full ranking by category */}
         <div className="mt-14">
@@ -373,14 +382,11 @@ export default function Results({
           <button onClick={onRestart} className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-full bg-ink-900 text-white font-semibold text-sm shadow-lift hover:bg-ink-800 transition-all hover:scale-[1.03] active:scale-[0.98]">
             <RotateCcw className="w-4 h-4" /> {t.retakeAssessment}
           </button>
-          <a href="https://bolt.new" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-sm text-ink-400 hover:text-ink-600 transition-colors">
-            {t.builtWithBolt} <ArrowUpRight className="w-3.5 h-3.5" />
-          </a>
         </div>
       </main>
 
       {/* Opposite-fit modal */}
-      {oppositeFitSpecialty && (
+      {FEATURE_FLAGS.oppositeFitExploration && oppositeFitSpecialty && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in" onClick={() => setOppositeFitSpecialty(null)}>
           <div className="max-w-lg w-full p-6 rounded-3xl bg-white shadow-xl animate-fade-up max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-start justify-between mb-4">
@@ -392,13 +398,13 @@ export default function Results({
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <p className="text-sm text-ink-600 leading-relaxed mb-4">{generateOppositeFitExplanation(oppositeFitSpecialty)}</p>
+            <p className="text-sm text-ink-600 leading-relaxed mb-4">{generateOppositeFitExplanation(oppositeFitSpecialty, lang)}</p>
             <div className="space-y-2.5">
               {weakestMatches(oppositeFitSpecialty, 5).map((w) => {
                 const gap = Math.round(Math.abs(w.student - w.target));
                 return (
                   <div key={w.trait} className="flex items-center gap-3">
-                    <span className="w-40 text-xs font-medium text-ink-500 shrink-0">{prettyTrait(w.trait)}</span>
+                    <span className="w-40 text-xs font-medium text-ink-500 shrink-0">{translateTrait(w.trait, lang)}</span>
                     <div className="flex-1 flex items-center gap-1">
                       <div className="flex-1 h-1.5 rounded-full bg-ink-100 overflow-hidden">
                         <div className="h-full rounded-full bg-ink-300" style={{ width: `${Math.round(w.student)}%` }} />
@@ -414,7 +420,7 @@ export default function Results({
               })}
             </div>
             <div className="mt-4 text-xs text-ink-400">
-              <span>You vs specialty profile</span>
+              <span>{lang === 'ro' ? 'Tu vs. profilul specialității' : lang === 'fr' ? 'Vous vs profil de la spécialité' : 'You vs specialty profile'}</span>
             </div>
           </div>
         </div>

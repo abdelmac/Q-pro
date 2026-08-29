@@ -1,5 +1,5 @@
 import { useLanguage } from '@/lib/LanguageContext';
-import { prettyTrait } from '@/data/traits';
+import { translateTrait } from '@/data/specialtyDisplayI18n';
 import { getTopTraits, getBottomTraits } from '@/lib/scoring';
 import { ArrowRight } from 'lucide-react';
 
@@ -9,7 +9,7 @@ interface QProfileProps {
 }
 
 export default function QProfile({ traits, onContinue }: QProfileProps) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const top = getTopTraits(traits, 12);
   const bottom = getBottomTraits(traits, 6);
 
@@ -32,7 +32,7 @@ export default function QProfile({ traits, onContinue }: QProfileProps) {
           {top.map(({ trait, score }) => (
             <div key={trait} className="flex items-center gap-3">
               <span className="w-44 text-sm font-medium text-ink-700 shrink-0">
-                {prettyTrait(trait)}
+                {translateTrait(trait, lang)}
               </span>
               <div className="flex-1 h-2 rounded-full bg-ink-100 overflow-hidden">
                 <div
@@ -54,7 +54,7 @@ export default function QProfile({ traits, onContinue }: QProfileProps) {
           {bottom.map(({ trait, score }) => (
             <div key={trait} className="flex items-center gap-3">
               <span className="w-44 text-sm font-medium text-ink-500 shrink-0">
-                {prettyTrait(trait)}
+                {translateTrait(trait, lang)}
               </span>
               <div className="flex-1 h-2 rounded-full bg-ink-100 overflow-hidden">
                 <div

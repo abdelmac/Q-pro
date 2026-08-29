@@ -2,13 +2,19 @@ import { useState } from 'react';
 import { useLanguage } from '@/lib/LanguageContext';
 import { SPECIALTIES, CATEGORY_ORDER, type Specialty } from '@/data/specialties';
 import { translateSpecialtyName, translateCategory } from '@/data/i18n';
-import { submitSpecialistResponse } from '@/lib/supabase';
+import {
+  submitSpecialistResponse,
+  type IntentionToChangeCode,
+  type SupportedLanguage,
+  type VoluntaryChoiceCode,
+  type WouldChooseAgainCode,
+} from '@/lib/supabase';
 import { Check, Search, Loader2, AlertCircle, PartyPopper } from 'lucide-react';
 
 interface SpecialistPromptProps {
   ratings: Record<string, number>;
   selectedValues: string[];
-  language: string;
+  language: SupportedLanguage;
   onDone: () => void;
 }
 
@@ -18,9 +24,10 @@ export default function SpecialistPrompt({ ratings, selectedValues, language, on
   const [query, setQuery] = useState('');
   const [yearsExperience, setYearsExperience] = useState<string>('');
   const [careerSatisfaction, setCareerSatisfaction] = useState<number | null>(null);
-  const [wouldChooseAgain, setWouldChooseAgain] = useState<string | null>(null);
-  const [intentionToChange, setIntentionToChange] = useState<string | null>(null);
-  const [voluntaryChoice, setVoluntaryChoice] = useState<string | null>(null);
+  const [wouldChooseAgain, setWouldChooseAgain] = useState<WouldChooseAgainCode | null>(null);
+  const [intentionToChange, setIntentionToChange] = useState<IntentionToChangeCode | null>(null);
+  const [voluntaryChoice, setVoluntaryChoice] = useState<VoluntaryChoiceCode | null>(null);
+  const [submissionId] = useState(() => crypto.randomUUID());
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -39,15 +46,16 @@ export default function SpecialistPrompt({ ratings, selectedValues, language, on
     setSubmitting(true);
     setError(null);
     const result = await submitSpecialistResponse({
+      submission_id: submissionId,
       actual_specialty: actualSpecialty,
       ratings,
       selected_values: selectedValues,
       language,
       years_of_experience: yearsExperience ? Number(yearsExperience) : null,
       career_satisfaction: careerSatisfaction,
-      would_choose_again: wouldChooseAgain,
-      intention_to_change: intentionToChange,
-      voluntary_choice: voluntaryChoice,
+      would_choose_again_code: wouldChooseAgain,
+      intention_to_change_code: intentionToChange,
+      voluntary_choice_code: voluntaryChoice,
     });
     setSubmitting(false);
     if (result.success) {
@@ -190,9 +198,13 @@ export default function SpecialistPrompt({ ratings, selectedValues, language, on
               {t.specialistWouldChooseAgain}
             </label>
             <div className="flex flex-wrap gap-2">
-              {[t.specialistYes, t.specialistNo, t.specialistNotSure].map((opt) => (
-                <ChipButton key={opt} active={wouldChooseAgain === opt} onClick={() => setWouldChooseAgain(opt)}>
-                  {opt}
+              {([
+                { code: 'yes', label: t.specialistYes },
+                { code: 'no', label: t.specialistNo },
+                { code: 'unsure', label: t.specialistNotSure },
+              ] as const).map((option) => (
+                <ChipButton key={option.code} active={wouldChooseAgain === option.code} onClick={() => setWouldChooseAgain(option.code)}>
+                  {option.label}
                 </ChipButton>
               ))}
             </div>
@@ -204,9 +216,14 @@ export default function SpecialistPrompt({ ratings, selectedValues, language, on
               {t.specialistIntentionToChange}
             </label>
             <div className="flex flex-wrap gap-2">
-              {[t.specialistDefinitely, t.specialistProbably, t.specialistProbablyNot, t.specialistDefinitelyNot].map((opt) => (
-                <ChipButton key={opt} active={intentionToChange === opt} onClick={() => setIntentionToChange(opt)}>
-                  {opt}
+              {([
+                { code: 'definitely', label: t.specialistDefinitely },
+                { code: 'probably', label: t.specialistProbably },
+                { code: 'probably_not', label: t.specialistProbablyNot },
+                { code: 'definitely_not', label: t.specialistDefinitelyNot },
+              ] as const).map((option) => (
+                <ChipButton key={option.code} active={intentionToChange === option.code} onClick={() => setIntentionToChange(option.code)}>
+                  {option.label}
                 </ChipButton>
               ))}
             </div>
@@ -218,9 +235,13 @@ export default function SpecialistPrompt({ ratings, selectedValues, language, on
               {t.specialistVoluntaryChoice}
             </label>
             <div className="flex flex-wrap gap-2">
-              {[t.specialistFullyVoluntary, t.specialistSomewhatVoluntary, t.specialistNotVoluntary].map((opt) => (
-                <ChipButton key={opt} active={voluntaryChoice === opt} onClick={() => setVoluntaryChoice(opt)}>
-                  {opt}
+              {([
+                { code: 'fully_voluntary', label: t.specialistFullyVoluntary },
+                { code: 'somewhat_voluntary', label: t.specialistSomewhatVoluntary },
+                { code: 'not_voluntary', label: t.specialistNotVoluntary },
+              ] as const).map((option) => (
+                <ChipButton key={option.code} active={voluntaryChoice === option.code} onClick={() => setVoluntaryChoice(option.code)}>
+                  {option.label}
                 </ChipButton>
               ))}
             </div>
@@ -231,7 +252,7 @@ export default function SpecialistPrompt({ ratings, selectedValues, language, on
       {error && (
         <div className="mb-4 p-3.5 rounded-xl bg-red-50 border border-red-200 flex items-center gap-2.5 text-sm text-red-700">
           <AlertCircle className="w-4 h-4 shrink-0" />
-          {t.specialistError}
+          {error}
         </div>
       )}
 

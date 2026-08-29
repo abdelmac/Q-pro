@@ -1,5 +1,5 @@
 import { useLanguage } from '@/lib/LanguageContext';
-import { SPECIALTIES, type Specialty } from '@/data/specialties';
+import { SPECIALTIES } from '@/data/specialties';
 import { translateSpecialtyName, translateCategory } from '@/data/i18n';
 import { getSpecialtyAxisValue, getStudentAxisValue } from '@/lib/scoring';
 import { COMPARISON_AXES } from '@/data/dimensions';
@@ -134,7 +134,6 @@ export default function SpecialtyComparison({ studentTraits, onBack }: Specialty
 
               {/* Axis rows */}
               {COMPARISON_AXES.map((axis) => {
-                const studentVal = getStudentAxisValue(studentTraits, axis.traits, axis.positive);
                 return (
                   <div key={axis.key} className="grid border-b border-ink-100 last:border-b-0" style={{ gridTemplateColumns: `180px repeat(${selected.length}, 1fr)` }}>
                     <div className="p-4">

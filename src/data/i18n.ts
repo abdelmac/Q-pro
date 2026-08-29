@@ -64,7 +64,6 @@ export interface UIStrings {
   fullRanking: string;
   fullRankingDesc: (n: number) => string;
   retakeAssessment: string;
-  builtWithBolt: string;
 
   // Specialist mode
   specialistBadge: string;
@@ -108,6 +107,14 @@ export interface UIStrings {
   specialistFullyVoluntary: string;
   specialistSomewhatVoluntary: string;
   specialistNotVoluntary: string;
+  studentDataTitle: string;
+  studentDataDesc: string;
+  studentStudyYear: string;
+  studentPreferNotToSay: string;
+  studentYear: (n: number) => string;
+  studentContinue: string;
+  studentSkip: string;
+  studentSaving: string;
 
   // Q Profile
   qProfileTitle: string;
@@ -291,16 +298,15 @@ const en: UIStrings = {
   fullRanking: 'Full ranking',
   fullRankingDesc: (n: number) => `All ${n} specialties, grouped by field.`,
   retakeAssessment: 'Retake the assessment',
-  builtWithBolt: 'Built with Bolt',
 
   specialistBadge: 'Specialist mode',
   specialistTitle: 'Are you a medical specialist?',
-  specialistSubtitle: 'Help us improve the matching algorithm by answering the same questions. Your responses will be used anonymously for research.',
+  specialistSubtitle: 'Help us improve the matching algorithm. Data is stored only if you explicitly submit it for research, without your name or email.',
   specialistPromptTitle: 'Tell us your specialty',
-  specialistPromptDesc: 'Select the medical specialty you actually practice. Your answers will help calibrate the algorithm for future students.',
+  specialistPromptDesc: 'Select the specialty you practice. By submitting, you agree that your 81 answers, selected values, and optional calibration data are stored without direct identifiers for research.',
   specialistActualSpecialty: 'Your actual specialty',
   specialistSelectSpecialty: 'Select your specialty',
-  specialistSubmit: 'Submit for research',
+  specialistSubmit: 'Consent and submit for research',
   specialistSubmitting: 'Submitting...',
   specialistSuccess: 'Thank you! Your responses have been submitted for research.',
   specialistError: 'Something went wrong. Please try again.',
@@ -333,6 +339,14 @@ const en: UIStrings = {
   specialistFullyVoluntary: 'Fully voluntary',
   specialistSomewhatVoluntary: 'Somewhat voluntary',
   specialistNotVoluntary: 'Not voluntary',
+  studentDataTitle: 'Help us understand student profiles',
+  studentDataDesc: 'If you choose to save, your 81 answers, selected values, preferred specialty, optional study year, and browser-computed ranking are stored without your name or email for research. Saving records your consent; you can skip this step.',
+  studentStudyYear: 'Year of study',
+  studentPreferNotToSay: 'Prefer not to say',
+  studentYear: (n: number) => `Year ${n}`,
+  studentContinue: 'Consent, save, and view results',
+  studentSkip: 'Skip and view results',
+  studentSaving: 'Saving...',
 
   qProfileTitle: 'Your trait profile',
   qProfileSubtitle: 'Here\'s what your answers reveal about your strongest tendencies and preferences.',
@@ -440,7 +454,7 @@ const en: UIStrings = {
   methodologyValidationDetailed: 'Validation Strategy',
   methodologyValidationDetailedDesc: 'Convergent validity: if the algorithm ranks a specialist own field highly for them, the model is working. We track the rank position of each specialist self-identified field. Test-retest reliability: the same student taking the questionnaire twice should get similar rankings. As the specialist dataset grows, profiles converge toward real-world distributions.',
   methodologyDataPrivacy: 'Data Privacy',
-  methodologyDataPrivacyDesc: 'All responses are stored anonymously in a secure database. No personally identifiable information is collected. Specialist calibration data is used solely for algorithm refinement. Students can retake the assessment at any time — previous responses are not retained.',
+  methodologyDataPrivacyDesc: 'Responses are stored only when a participant explicitly submits them for research. The form requests no name, email, or account identifier. Student answers and specialist calibration data are retained in a secured database for analysis and algorithm refinement.',
   methodologyTechStack: 'Technical Implementation',
   methodologyTechStackDesc: 'The scoring engine runs entirely in the browser — no server-side computation. Trait calculation, similarity scoring, priority weighting, and trade-off detection are all performed client-side. Specialist calibration data is stored in a Supabase PostgreSQL database with row-level security. The application is built with React, TypeScript, and Tailwind CSS.',
   methodologyDimensions: 'The Five Dimensions',
@@ -507,16 +521,15 @@ const ro: UIStrings = {
   fullRanking: 'Clasament complet',
   fullRankingDesc: (n: number) => `Toate cele ${n} specialități, grupate pe domenii.`,
   retakeAssessment: 'Reia evaluarea',
-  builtWithBolt: 'Construit cu Bolt',
 
   specialistBadge: 'Mod specialist',
   specialistTitle: 'Ești specialist medical?',
-  specialistSubtitle: 'Ajută-ne să îmbunătățim algoritmul de potrivire răspunzând la aceleași întrebări. Răspunsurile tale vor fi folosite anonim pentru cercetare.',
+  specialistSubtitle: 'Ajută-ne să îmbunătățim algoritmul. Datele sunt stocate numai dacă le trimiți explicit pentru cercetare, fără nume sau adresă de e-mail.',
   specialistPromptTitle: 'Spune-ne specialitatea ta',
-  specialistPromptDesc: 'Selectează specialitatea medicală pe care o practici. Răspunsurile tale vor ajuta la calibrarea algoritmului pentru viitorii studenți.',
+  specialistPromptDesc: 'Selectează specialitatea pe care o practici. Prin trimitere, accepți stocarea pentru cercetare a celor 81 de răspunsuri, a valorilor și a datelor opționale de calibrare, fără identificatori direcți.',
   specialistActualSpecialty: 'Specialitatea ta reală',
   specialistSelectSpecialty: 'Selectează specialitatea',
-  specialistSubmit: 'Trimite pentru cercetare',
+  specialistSubmit: 'Acceptă și trimite pentru cercetare',
   specialistSubmitting: 'Se trimite...',
   specialistSuccess: 'Mulțumim! Răspunsurile tale au fost trimise pentru cercetare.',
   specialistError: 'Ceva a mers greșit. Te rugăm să încerci din nou.',
@@ -549,6 +562,14 @@ const ro: UIStrings = {
   specialistFullyVoluntary: 'Pe deplin voluntar',
   specialistSomewhatVoluntary: 'Oarecum voluntar',
   specialistNotVoluntary: 'Nu voluntar',
+  studentDataTitle: 'Ajută-ne să înțelegem profilurile studenților',
+  studentDataDesc: 'Dacă alegi salvarea, cele 81 de răspunsuri, valorile, specialitatea preferată, anul opțional și clasamentul calculat în browser sunt stocate fără nume sau e-mail pentru cercetare. Salvarea înregistrează consimțământul; poți omite acest pas.',
+  studentStudyYear: 'Anul de studiu',
+  studentPreferNotToSay: 'Prefer să nu spun',
+  studentYear: (n: number) => `Anul ${n}`,
+  studentContinue: 'Acceptă, salvează și vezi rezultatele',
+  studentSkip: 'Omite și vezi rezultatele',
+  studentSaving: 'Se salvează...',
 
   qProfileTitle: 'Profilul tău de trăsături',
   qProfileSubtitle: 'Iată ce relevă răspunsurile tale despre cele mai puternice tendințe și preferințe.',
@@ -656,7 +677,7 @@ const ro: UIStrings = {
   methodologyValidationDetailed: 'Strategie de validare',
   methodologyValidationDetailedDesc: 'Validitate convergentă: dacă algoritmul clasează domeniul propriu al unui specialist ridicat pentru el, modelul funcționează. Urmărim poziția în clasament a domeniului auto-identificat al fiecărui specialist. Fiabilitate test-retest: același student care parcurge chestionarul de două ori ar trebui să obțină clasamente similare. Pe măsură ce setul de date al specialiștilor crește, profilurile converg spre distribuțiile din lumea reală.',
   methodologyDataPrivacy: 'Confidențialitatea datelor',
-  methodologyDataPrivacyDesc: 'Toate răspunsurile sunt stocate anonim într-o bază de date securizată. Nu se colectează informații de identificare personală. Datele de calibrare ale specialiștilor se folosesc exclusiv pentru rafinarea algoritmului. Studenții pot reface evaluarea oricând — răspunsurile anterioare nu se păstrează.',
+  methodologyDataPrivacyDesc: 'Răspunsurile sunt stocate numai când participantul le trimite explicit pentru cercetare. Formularul nu solicită nume, e-mail sau identificator de cont. Răspunsurile studenților și datele de calibrare sunt păstrate într-o bază securizată pentru analiză și rafinarea algoritmului.',
   methodologyTechStack: 'Implementare tehnică',
   methodologyTechStackDesc: 'Motorul de scorare rulează integral în browser — fără calcul pe server. Calculul trăsăturilor, scorarea similarității, ponderarea priorităților și detectarea compromisurilor se efectuează toate pe partea clientului. Datele de calibrare ale specialiștilor sunt stocate într-o bază de date PostgreSQL Supabase cu securitate la nivel de rând. Aplicația este construită cu React, TypeScript și Tailwind CSS.',
   methodologyDimensions: 'Cele cinci dimensiuni',
@@ -723,16 +744,15 @@ const fr: UIStrings = {
   fullRanking: 'Classement complet',
   fullRankingDesc: (n: number) => `Les ${n} spécialités, groupées par domaine.`,
   retakeAssessment: 'Recommencer l\'évaluation',
-  builtWithBolt: 'Construit avec Bolt',
 
   specialistBadge: 'Mode spécialiste',
   specialistTitle: 'Êtes-vous un spécialiste médical ?',
-  specialistSubtitle: 'Aidez-nous à améliorer l\'algorithme en répondant aux mêmes questions. Vos réponses seront utilisées anonymement pour la recherche.',
+  specialistSubtitle: 'Aidez-nous à améliorer l\'algorithme. Les données ne sont conservées que si vous les soumettez explicitement pour la recherche, sans nom ni adresse e-mail.',
   specialistPromptTitle: 'Indiquez-nous votre spécialité',
-  specialistPromptDesc: 'Sélectionnez la spécialité médicale que vous pratiquez. Vos réponses aideront à calibrer l\'algorithme pour les futurs étudiants.',
+  specialistPromptDesc: 'Sélectionnez la spécialité que vous pratiquez. En envoyant, vous acceptez que vos 81 réponses, vos valeurs et les données facultatives de calibration soient conservées sans identifiant direct à des fins de recherche.',
   specialistActualSpecialty: 'Votre spécialité réelle',
   specialistSelectSpecialty: 'Sélectionnez votre spécialité',
-  specialistSubmit: 'Soumettre pour la recherche',
+  specialistSubmit: 'Consentir et soumettre pour la recherche',
   specialistSubmitting: 'Envoi en cours...',
   specialistSuccess: 'Merci ! Vos réponses ont été soumises pour la recherche.',
   specialistError: 'Une erreur est survenue. Veuillez réessayer.',
@@ -765,6 +785,14 @@ const fr: UIStrings = {
   specialistFullyVoluntary: 'Totalement volontaire',
   specialistSomewhatVoluntary: 'Plutôt volontaire',
   specialistNotVoluntary: 'Non volontaire',
+  studentDataTitle: 'Aidez-nous à comprendre les profils étudiants',
+  studentDataDesc: 'Si vous choisissez l’enregistrement, vos 81 réponses, vos valeurs, votre spécialité préférée, votre année facultative et le classement calculé dans le navigateur sont conservés sans nom ni e-mail pour la recherche. Enregistrer vaut consentement ; vous pouvez passer cette étape.',
+  studentStudyYear: 'Année d’études',
+  studentPreferNotToSay: 'Je préfère ne pas répondre',
+  studentYear: (n: number) => `${n}e année`,
+  studentContinue: 'Consentir, enregistrer et voir les résultats',
+  studentSkip: 'Passer et voir les résultats',
+  studentSaving: 'Enregistrement...',
 
   qProfileTitle: 'Votre profil de traits',
   qProfileSubtitle: 'Voici ce que vos réponses révèlent sur vos tendances et préférences les plus fortes.',
@@ -872,7 +900,7 @@ const fr: UIStrings = {
   methodologyValidationDetailed: 'Stratégie de validation',
   methodologyValidationDetailedDesc: 'Validité convergente : si l\'algorithme classe le domaine propre d\'un spécialiste haut pour lui, le modèle fonctionne. Nous suivons la position au classement du domaine auto-identifié de chaque spécialiste. Fiabilité test-retest : le même étudiant passant le questionnaire deux fois devrait obtenir des classements similaires. À mesure que le jeu de données de spécialistes grandit, les profils convergent vers les distributions du monde réel.',
   methodologyDataPrivacy: 'Confidentialité des données',
-  methodologyDataPrivacyDesc: 'Toutes les réponses sont stockées anonymement dans une base de données sécurisée. Aucune information d\'identification personnelle n\'est collectée. Les données de calibration des spécialistes sont utilisées uniquement pour l\'affinage de l\'algorithme. Les étudiants peuvent refaire l\'évaluation à tout moment — les réponses précédentes ne sont pas conservées.',
+  methodologyDataPrivacyDesc: 'Les réponses ne sont conservées que lorsqu’une personne les soumet explicitement pour la recherche. Le formulaire ne demande ni nom, ni e-mail, ni identifiant de compte. Les réponses étudiantes et les données de calibration sont conservées dans une base sécurisée pour l’analyse et l’amélioration de l’algorithme.',
   methodologyTechStack: 'Implémentation technique',
   methodologyTechStackDesc: 'Le moteur de scoring fonctionne entièrement dans le navigateur — aucun calcul côté serveur. Le calcul des traits, le scoring de similarité, la pondération des priorités et la détection des compromis sont tous effectués côté client. Les données de calibration des spécialistes sont stockées dans une base de données PostgreSQL Supabase avec sécurité au niveau des lignes. L\'application est construite avec React, TypeScript et Tailwind CSS.',
   methodologyDimensions: 'Les cinq dimensions',

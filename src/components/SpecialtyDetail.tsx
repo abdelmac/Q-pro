@@ -1,8 +1,14 @@
 import { useLanguage } from '@/lib/LanguageContext';
-import { SPECIALTIES, type Specialty } from '@/data/specialties';
+import { SPECIALTIES } from '@/data/specialties';
 import { SPECIALTY_METADATA } from '@/data/specialtyMetadata';
 import { translateSpecialtyName, translateCategory, translateBlurb } from '@/data/i18n';
-import { prettyTrait } from '@/data/traits';
+import {
+  translateCareType,
+  translatePatientContact,
+  translateProceduralIntensity,
+  translateTrait,
+  translateWorkStyle,
+} from '@/data/specialtyDisplayI18n';
 import { ArrowLeft } from 'lucide-react';
 
 interface SpecialtyDetailProps {
@@ -45,10 +51,10 @@ export default function SpecialtyDetail({ specialtyName, score, onBack }: Specia
         {meta && (
           <>
             <div className="grid grid-cols-2 gap-4 mb-8">
-              <InfoCard label={t.explorerWorkStyle} value={meta.workStyle} />
-              <InfoCard label={t.explorerPatientContact} value={meta.patientContact} />
-              <InfoCard label={t.explorerCareType} value={meta.careType} />
-              <InfoCard label={t.explorerProceduralIntensity} value={meta.proceduralIntensity} />
+              <InfoCard label={t.explorerWorkStyle} value={translateWorkStyle(meta.workStyle, lang)} />
+              <InfoCard label={t.explorerPatientContact} value={translatePatientContact(meta.patientContact, lang)} />
+              <InfoCard label={t.explorerCareType} value={translateCareType(meta.careType, lang)} />
+              <InfoCard label={t.explorerProceduralIntensity} value={translateProceduralIntensity(meta.proceduralIntensity, lang)} />
             </div>
 
             <div className="mb-8">
@@ -56,7 +62,7 @@ export default function SpecialtyDetail({ specialtyName, score, onBack }: Specia
               <div className="flex flex-wrap gap-2">
                 {meta.keyTraits.map((trait) => (
                   <span key={trait} className="inline-flex items-center px-3 py-1.5 rounded-full bg-brand-50 border border-brand-100 text-brand-700 text-xs font-medium">
-                    {prettyTrait(trait)}
+                    {translateTrait(trait, lang)}
                   </span>
                 ))}
               </div>
