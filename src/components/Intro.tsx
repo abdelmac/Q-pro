@@ -1,8 +1,7 @@
 import { useLanguage } from '@/lib/LanguageContext';
-import { FEATURE_FLAGS } from '@/config/features';
 import LanguageSwitcher from './LanguageSwitcher';
 import SpecialistToggle from './SpecialistToggle';
-import { Stethoscope, Brain, HeartPulse, Sparkles, ArrowRight, Compass, BookOpen, BarChart3 } from 'lucide-react';
+import { Stethoscope, Brain, HeartPulse, Sparkles, ArrowRight, Compass, BookOpen } from 'lucide-react';
 
 interface IntroProps {
   onStart: () => void;
@@ -11,10 +10,9 @@ interface IntroProps {
   onSpecialistToggle: (value: boolean) => void;
   onOpenExplorer: () => void;
   onOpenMethodology: () => void;
-  onOpenDashboard: () => void;
 }
 
-export default function Intro({ onStart, totalQuestions, isSpecialist, onSpecialistToggle, onOpenExplorer, onOpenMethodology, onOpenDashboard }: IntroProps) {
+export default function Intro({ onStart, totalQuestions, isSpecialist, onSpecialistToggle, onOpenExplorer, onOpenMethodology }: IntroProps) {
   const { t } = useLanguage();
 
   return (
@@ -102,13 +100,8 @@ export default function Intro({ onStart, totalQuestions, isSpecialist, onSpecial
           <button onClick={onOpenExplorer} className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold text-ink-500 hover:text-ink-900 hover:bg-ink-100 transition-colors">
             <Compass className="w-3.5 h-3.5" /> {t.navExplorer}
           </button>
-          {FEATURE_FLAGS.methodology && (
-            <button onClick={onOpenMethodology} className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold text-ink-500 hover:text-ink-900 hover:bg-ink-100 transition-colors">
-              <BookOpen className="w-3.5 h-3.5" /> {t.navMethodology}
-            </button>
-          )}
-          <button onClick={onOpenDashboard} className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold text-ink-500 hover:text-ink-900 hover:bg-ink-100 transition-colors">
-            <BarChart3 className="w-3.5 h-3.5" /> Dashboard
+          <button onClick={onOpenMethodology} className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold text-ink-500 hover:text-ink-900 hover:bg-ink-100 transition-colors">
+            <BookOpen className="w-3.5 h-3.5" /> {t.navMethodology}
           </button>
         </div>
         <p className="text-xs text-ink-400">{t.footerNote}</p>

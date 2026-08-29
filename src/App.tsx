@@ -5,6 +5,7 @@ import {
   reRankWithPriorities,
   calculateTraits,
   type SpecialtyScore,
+  PriorityWeights,
 } from '@/lib/scoring';
 import { DEFAULT_PRIORITY_WEIGHTS } from '@/data/dimensions';
 import type { PriorityWeights } from '@/lib/scoring';
@@ -161,7 +162,6 @@ function AppContent() {
         isSpecialist={isSpecialist}
         onContributeData={() => setPhase('specialist')}
         onOpenExplorer={() => setPhase('explorer')}
-        onOpenComparison={() => setPhase('comparison')}
         onOpenMethodology={() => setPhase('methodology')}
       />
     );
