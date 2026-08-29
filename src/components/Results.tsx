@@ -16,7 +16,7 @@ import { useLanguage } from '@/lib/LanguageContext';
 import LanguageSwitcher from './LanguageSwitcher';
 import {
   Stethoscope, Trophy, RotateCcw, ChevronDown, Heart,
-  FlaskConical, Compass, BookOpen, AlertCircle, X,
+  FlaskConical, GitCompare, Compass, BookOpen, AlertCircle, X,
 } from 'lucide-react';
 
 interface ResultsProps {
@@ -26,6 +26,7 @@ interface ResultsProps {
   isSpecialist: boolean;
   onContributeData: () => void;
   onOpenExplorer: () => void;
+  onOpenComparison: () => void;
   onOpenMethodology: () => void;
 }
 
@@ -86,7 +87,7 @@ const DIMENSION_LABELS: Record<Dimension, string> = {
 
 export default function Results({
   scores, preferredSpecialty, onRestart, isSpecialist, onContributeData,
-  onOpenExplorer, onOpenMethodology,
+  onOpenExplorer, onOpenComparison, onOpenMethodology,
 }: ResultsProps) {
   const { lang, t } = useLanguage();
   const [expanded, setExpanded] = useState<number | null>(0);
@@ -120,9 +121,16 @@ export default function Results({
           <button onClick={onOpenExplorer} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold text-ink-600 hover:text-ink-900 hover:bg-ink-100 transition-colors">
             <Compass className="w-4 h-4" /> {t.navExplorer}
           </button>
-          <button onClick={onOpenMethodology} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold text-ink-600 hover:text-ink-900 hover:bg-ink-100 transition-colors">
-            <BookOpen className="w-4 h-4" /> {t.navMethodology}
-          </button>
+          {FEATURE_FLAGS.specialtyComparison && (
+            <button onClick={onOpenComparison} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold text-ink-600 hover:text-ink-900 hover:bg-ink-100 transition-colors">
+              <GitCompare className="w-4 h-4" /> {t.comparisonTitle}
+            </button>
+          )}
+          {FEATURE_FLAGS.methodology && (
+            <button onClick={onOpenMethodology} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold text-ink-600 hover:text-ink-900 hover:bg-ink-100 transition-colors">
+              <BookOpen className="w-4 h-4" /> {t.navMethodology}
+            </button>
+          )}
           <button onClick={onRestart} className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium text-ink-600 hover:text-ink-900 hover:bg-ink-100 transition-colors">
             <RotateCcw className="w-4 h-4" /> {t.resultsRetake}
           </button>
@@ -232,12 +240,12 @@ export default function Results({
             <div className="w-10 h-10 rounded-xl bg-white border border-brand-200 flex items-center justify-center text-brand-600 shrink-0">
               <FlaskConical className="w-5 h-5" />
             </div>
-            {/* <div className="flex-1">
+            <div className="flex-1">
               <p className="text-sm text-brand-900 leading-relaxed mb-3">{t.specialistSubtitle}</p>
               <button onClick={onContributeData} className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand-600 text-white text-sm font-semibold hover:bg-brand-700 transition-all hover:scale-[1.02] active:scale-[0.98]">
                 {t.specialistPromptTitle}
               </button>
-            </div> */}
+            </div>
           </div>
         )}
 
@@ -374,9 +382,6 @@ export default function Results({
           <button onClick={onRestart} className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-full bg-ink-900 text-white font-semibold text-sm shadow-lift hover:bg-ink-800 transition-all hover:scale-[1.03] active:scale-[0.98]">
             <RotateCcw className="w-4 h-4" /> {t.retakeAssessment}
           </button>
-          <a href="" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-sm text-ink-400 hover:text-ink-600 transition-colors">
-            {t.test} <ArrowUpRight className="w-3.5 h-3.5" />
-          </a>
         </div>
       </main>
 

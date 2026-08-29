@@ -24,7 +24,31 @@ export type VoluntaryChoiceCode =
   | 'somewhat_voluntary'
   | 'not_voluntary';
 
-export const supabase = supabaseUrl && supabaseBrowserKey
+function validateSupabaseConfiguration(): string | null {
+  if (!supabaseUrl && !supabaseBrowserKey) {
+    return 'Supabase is not configured for this deployment.';
+  }
+  if (!supabaseUrl || !supabaseBrowserKey) {
+    return 'Supabase configuration is incomplete.';
+  }
+
+  try {
+    const parsedUrl = new URL(supabaseUrl);
+    const isLocalhost = parsedUrl.hostname === '127.0.0.1' || parsedUrl.hostname === 'localhost';
+    const isAllowedProtocol = parsedUrl.protocol === 'https:' || (isLocalhost && parsedUrl.protocol === 'http:');
+    if (!isAllowedProtocol) {
+      return 'Supabase URL must use HTTPS outside local development.';
+    }
+  } catch {
+    return 'Supabase URL is invalid.';
+  }
+
+  return null;
+}
+
+const supabaseConfigurationError = validateSupabaseConfiguration();
+
+export const supabase = !supabaseConfigurationError && supabaseUrl && supabaseBrowserKey
   ? createClient<Database>(supabaseUrl, supabaseBrowserKey, {
       auth: {
         autoRefreshToken: true,
@@ -35,27 +59,7 @@ export const supabase = supabaseUrl && supabaseBrowserKey
   : null;
 
 export function getSupabaseConfigurationError(): string | null {
-  if (!supabaseUrl && !supabaseBrowserKey) {
-    return 'Supabase is not configured for this deployment.';
-  }
-  if (!supabaseUrl || !supabaseBrowserKey) {
-    return 'Supabase configuration is incomplete.';
-  }
-
-  try {
-    const parsedUrl = new URL(supabaseUrl);
-    if (
-      parsedUrl.protocol !== 'https:'
-      && parsedUrl.hostname !== '127.0.0.1'
-      && parsedUrl.hostname !== 'localhost'
-    ) {
-      return 'Supabase URL must use HTTPS outside local development.';
-    }
-  } catch {
-    return 'Supabase URL is invalid.';
-  }
-
-  return null;
+  return supabaseConfigurationError;
 }
 
 type SupabaseErrorLike = string | { code?: string; message: string };

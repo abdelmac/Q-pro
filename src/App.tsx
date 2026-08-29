@@ -5,10 +5,9 @@ import {
   reRankWithPriorities,
   calculateTraits,
   type SpecialtyScore,
-  PriorityWeights,
+  type PriorityWeights,
 } from '@/lib/scoring';
 import { DEFAULT_PRIORITY_WEIGHTS } from '@/data/dimensions';
-import type { PriorityWeights } from '@/lib/scoring';
 import { LanguageProvider, useLanguage } from '@/lib/LanguageContext';
 import Intro from '@/components/Intro';
 import ProgressBar from '@/components/ProgressBar';
@@ -162,6 +161,7 @@ function AppContent() {
         isSpecialist={isSpecialist}
         onContributeData={() => setPhase('specialist')}
         onOpenExplorer={() => setPhase('explorer')}
+        onOpenComparison={() => setPhase('comparison')}
         onOpenMethodology={() => setPhase('methodology')}
       />
     );

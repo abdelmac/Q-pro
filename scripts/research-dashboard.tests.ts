@@ -19,7 +19,7 @@ import {
   type StudentResponseRow,
 } from '../src/lib/researchDashboard';
 import { DASHBOARD_ANALYSIS_VERSION, DATA_VERSIONS } from '../src/lib/researchVersions';
-import { SCORING_ENGINE_REVISION } from '../src/lib/scoring';
+import { calculateTraits, SCORING_ENGINE_REVISION } from '../src/lib/scoring';
 
 function parseCsv(csv: string): string[][] {
   const input = csv.charCodeAt(0) === 0xfeff ? csv.slice(1) : csv;
@@ -55,6 +55,13 @@ function parseCsv(csv: string): string[][] {
 }
 
 const ratings = Object.fromEntries(ALL_QUESTION_IDS.map((id, index) => [id, (index % 10) + 1]));
+const maximumTraits = calculateTraits(
+  Object.fromEntries(ALL_QUESTION_IDS.map((id) => [id, 10])),
+  [],
+);
+assert.ok(Object.values(maximumTraits).every((score) => score >= 0 && score <= 100));
+assert.equal(maximumTraits.communication, 100);
+
 const specialist: SpecialistResponseRow = {
   id: '00000000-0000-4000-8000-000000000001',
   created_at: '2026-08-28T12:00:00.000Z',

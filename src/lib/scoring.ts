@@ -87,7 +87,8 @@ export function calculateTraits(
 
   const traits: Record<string, number> = {};
   for (const trait of Object.keys(scores)) {
-    traits[trait] = scores[trait] / weights[trait];
+    const average = scores[trait] / weights[trait];
+    traits[trait] = Math.min(100, Math.max(0, average));
   }
 
   for (const selected of selectedValues) {
