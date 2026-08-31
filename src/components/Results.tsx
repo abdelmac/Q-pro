@@ -10,9 +10,10 @@ import {
 } from '@/lib/scoring';
 import { CATEGORY_ORDER } from '@/data/specialties';
 import { translateTrait } from '@/data/specialtyDisplayI18n';
-import { translateSpecialtyName, translateCategory, translateBlurb } from '@/data/i18n';
+import { translateSpecialtyName, translateCategory } from '@/data/i18n';
 import { FEATURE_FLAGS } from '@/config/features';
 import { useLanguage } from '@/lib/LanguageContext';
+import { useSpecialtyCatalog } from '@/lib/SpecialtyCatalogContext';
 import LanguageSwitcher from './LanguageSwitcher';
 import {
   Stethoscope, Trophy, RotateCcw, ChevronDown, Heart,
@@ -90,6 +91,7 @@ export default function Results({
   onOpenExplorer, onOpenComparison, onOpenMethodology,
 }: ResultsProps) {
   const { lang, t } = useLanguage();
+  const { getDescription } = useSpecialtyCatalog();
   const [expanded, setExpanded] = useState<number | null>(0);
   const [oppositeFitSpecialty, setOppositeFitSpecialty] = useState<SpecialtyScore | null>(null);
 
@@ -104,7 +106,7 @@ export default function Results({
 
   const topMatchPercent = Math.round(top.score);
   const topStrongest = strongestMatches(top, 5);
-  const topBlurb = translateBlurb(top.specialty.name, lang) || top.specialty.blurb;
+  const topBlurb = getDescription(top.specialty.name, lang) || top.specialty.blurb;
   const topTradeOffs = top.tradeOffs;
   const topSubScores = top.subScores;
 
@@ -259,7 +261,7 @@ export default function Results({
           {runnerUps.map((s, idx) => {
             const isOpen = expanded === idx;
             const strongest = strongestMatches(s, 5);
-            const blurb = translateBlurb(s.specialty.name, lang) || s.specialty.blurb;
+            const blurb = getDescription(s.specialty.name, lang) || s.specialty.blurb;
             return (
               <div key={s.specialty.name} className="rounded-2xl bg-white border border-ink-100 overflow-hidden animate-fade-up" style={{ animationDelay: `${180 + idx * 60}ms` }}>
                 <button onClick={() => setExpanded(isOpen ? null : idx)} className="w-full flex items-center gap-4 p-4 sm:p-5 text-left hover:bg-ink-50/50 transition-colors">

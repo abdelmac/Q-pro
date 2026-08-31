@@ -77,6 +77,8 @@ const specialist: SpecialistResponseRow = {
   language: 'fr',
   ratings,
   selected_values: [VALUE_OPTIONS[0]],
+  specialty_config_version_id: '50000000-0000-4000-8000-000000000001',
+  specialty_config_revision: 1,
   submission_schema_version: 1,
   questionnaire_version: DATA_VERSIONS.questionnaire,
   value_catalog_version: DATA_VERSIONS.valueCatalog,
@@ -94,6 +96,8 @@ const student: StudentResponseRow = {
   ratings,
   selected_values: [VALUE_OPTIONS[0]],
   client_scores: SPECIALTIES.map(({ name }, index) => ({ specialty: name, score: 100 - index })),
+  specialty_config_version_id: '50000000-0000-4000-8000-000000000001',
+  specialty_config_revision: 1,
   submission_schema_version: 1,
   questionnaire_version: DATA_VERSIONS.questionnaire,
   value_catalog_version: DATA_VERSIONS.valueCatalog,
@@ -109,6 +113,18 @@ assert.ok(validAnalysis.ranking.every(({ rankMin, rankMax }) => rankMin <= rankM
 assert.equal(analyzeStudentResponse(student).eligible, true);
 assert.match(DASHBOARD_MODEL_CHECKSUM, /^fnv1a64-[0-9a-f]{16}$/);
 assert.equal(validAnalysis.modelChecksum, DASHBOARD_MODEL_CHECKSUM);
+const changedCatalog = SPECIALTIES.map((specialty, index) => index === 0
+  ? {
+      ...specialty,
+      profile: {
+        ...specialty.profile,
+        scientific_curiosity: [0, 3] as [number, number],
+      },
+    }
+  : specialty);
+const changedCatalogAnalysis = analyzeSpecialistResponse(specialist, changedCatalog);
+assert.notEqual(changedCatalogAnalysis.modelChecksum, DASHBOARD_MODEL_CHECKSUM);
+assert.equal(changedCatalogAnalysis.ranking.length, SPECIALTIES.length);
 // Deliberate provenance lock: if mappings, profiles, versions or rank parameters
 // change, bump the relevant revision/version and update this fixture together.
 assert.deepEqual({
@@ -229,6 +245,8 @@ assert.equal(rawValues[rawHeaders.indexOf('would_choose_again')], "'=2+2");
 assert.equal(rawValues[rawHeaders.indexOf('intention_to_change')], "'+SUM(1,1)");
 assert.equal(rawValues[rawHeaders.indexOf('voluntary_choice')], "'@legacy");
 assert.equal(rawValues[rawHeaders.indexOf('years_of_experience')], '-1');
+assert.equal(rawHeaders.includes('specialty_config_version_id'), true);
+assert.equal(rawHeaders.includes('specialty_config_revision'), true);
 
 const analyticLegacy = parseCsv(specialistAnalyticCsv([legacy]));
 const analyticHeaders = analyticLegacy[0];
@@ -246,6 +264,7 @@ console.log(JSON.stringify({
   tieAwareRanks: true,
   explicitDenominators: true,
   structuralCoverageFlagged: true,
+  runtimeCatalogAffectsProvenance: true,
   csvSafetyAndShape: true,
   modelProvenance: DASHBOARD_MODEL_CHECKSUM,
   currentLongRowsPerResponse: 81,

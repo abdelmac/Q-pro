@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useLanguage } from '@/lib/LanguageContext';
-import { SPECIALTIES, CATEGORY_ORDER, type Specialty } from '@/data/specialties';
+import { CATEGORY_ORDER, type Specialty } from '@/data/specialties';
 import { translateSpecialtyName, translateCategory } from '@/data/i18n';
 import {
   submitSpecialistResponse,
@@ -10,6 +10,7 @@ import {
   type WouldChooseAgainCode,
 } from '@/lib/supabase';
 import { Check, Search, Loader2, AlertCircle, PartyPopper, Pencil } from 'lucide-react';
+import { useSpecialtyCatalog } from '@/lib/SpecialtyCatalogContext';
 
 interface SpecialistPromptProps {
   initialSpecialty?: string | null;
@@ -27,6 +28,7 @@ export default function SpecialistPrompt({
   onDone,
 }: SpecialistPromptProps) {
   const { t, lang } = useLanguage();
+  const { specialties, version, source } = useSpecialtyCatalog();
   const [actualSpecialty, setActualSpecialty] = useState<string | null>(initialSpecialty);
   const [editingSpecialty, setEditingSpecialty] = useState(!initialSpecialty);
   const [query, setQuery] = useState('');
@@ -42,7 +44,7 @@ export default function SpecialistPrompt({
 
   const grouped: Record<string, Specialty[]> = {};
   for (const cat of CATEGORY_ORDER) grouped[cat] = [];
-  for (const s of SPECIALTIES) {
+  for (const s of specialties) {
     const translated = translateSpecialtyName(s.name, lang).toLowerCase();
     if (translated.includes(query.toLowerCase())) {
       grouped[s.category]?.push(s);
@@ -64,6 +66,7 @@ export default function SpecialistPrompt({
       would_choose_again_code: wouldChooseAgain,
       intention_to_change_code: intentionToChange,
       voluntary_choice_code: voluntaryChoice,
+      specialty_config_version_id: source === 'remote' ? version.id : null,
     });
     setSubmitting(false);
     if (result.success) {

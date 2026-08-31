@@ -73,6 +73,8 @@ export function formatSupabaseError(error: SupabaseErrorLike): string {
     || code === 'PGRST205'
     || message.includes('submit_student_response_v1')
     || message.includes('submit_specialist_response_v1')
+    || message.includes('submit_student_response_v2')
+    || message.includes('submit_specialist_response_v2')
   ) {
     return 'La base Supabase n’est pas à jour. Déployez toutes les migrations du dossier supabase/migrations.';
   }
@@ -99,6 +101,7 @@ export interface SpecialistResponse {
   would_choose_again_code?: WouldChooseAgainCode | null;
   intention_to_change_code?: IntentionToChangeCode | null;
   voluntary_choice_code?: VoluntaryChoiceCode | null;
+  specialty_config_version_id?: string | null;
 }
 
 export interface StudentResponse {
@@ -109,6 +112,7 @@ export interface StudentResponse {
   selected_values: string[];
   client_scores: Array<{ specialty: string; score: number }>;
   language: SupportedLanguage;
+  specialty_config_version_id?: string | null;
 }
 
 export interface SubmissionResult {
@@ -216,9 +220,7 @@ export async function submitSpecialistResponse(data: SpecialistResponse): Promis
   const validationError = validateSpecialistResponse(data);
   if (validationError) return { success: false, error: validationError };
 
-  const rpcArguments = asPostgresRoutineArgs<
-    Database['public']['Functions']['submit_specialist_response_v1']['Args']
-  >({
+  const rpcArguments = {
     p_submission_id: data.submission_id,
     p_actual_specialty: data.actual_specialty,
     p_ratings: data.ratings as Json,
@@ -234,8 +236,19 @@ export async function submitSpecialistResponse(data: SpecialistResponse): Promis
     p_specialty_catalog_version: DATA_VERSIONS.specialtyCatalog,
     p_calibration_version: DATA_VERSIONS.calibration,
     p_consent_version: DATA_VERSIONS.consent,
-  });
-  const { data: responseId, error } = await supabase.rpc('submit_specialist_response_v1', rpcArguments);
+  };
+  const { data: responseId, error } = data.specialty_config_version_id
+    ? await supabase.rpc(
+        'submit_specialist_response_v2',
+        asPostgresRoutineArgs<Database['public']['Functions']['submit_specialist_response_v2']['Args']>({
+          ...rpcArguments,
+          p_specialty_config_version_id: data.specialty_config_version_id,
+        }),
+      )
+    : await supabase.rpc(
+        'submit_specialist_response_v1',
+        asPostgresRoutineArgs<Database['public']['Functions']['submit_specialist_response_v1']['Args']>(rpcArguments),
+      );
 
   return error
     ? { success: false, error: formatSupabaseError(error) }
@@ -251,9 +264,7 @@ export async function submitStudentResponse(data: StudentResponse): Promise<Subm
   const validationError = validateStudentResponse(data);
   if (validationError) return { success: false, error: validationError };
 
-  const rpcArguments = asPostgresRoutineArgs<
-    Database['public']['Functions']['submit_student_response_v1']['Args']
-  >({
+  const rpcArguments = {
     p_submission_id: data.submission_id,
     p_study_year: data.study_year ?? null,
     p_preferred_specialty: data.preferred_specialty,
@@ -266,8 +277,19 @@ export async function submitStudentResponse(data: StudentResponse): Promise<Subm
     p_specialty_catalog_version: DATA_VERSIONS.specialtyCatalog,
     p_scoring_version: DATA_VERSIONS.scoring,
     p_consent_version: DATA_VERSIONS.consent,
-  });
-  const { data: responseId, error } = await supabase.rpc('submit_student_response_v1', rpcArguments);
+  };
+  const { data: responseId, error } = data.specialty_config_version_id
+    ? await supabase.rpc(
+        'submit_student_response_v2',
+        asPostgresRoutineArgs<Database['public']['Functions']['submit_student_response_v2']['Args']>({
+          ...rpcArguments,
+          p_specialty_config_version_id: data.specialty_config_version_id,
+        }),
+      )
+    : await supabase.rpc(
+        'submit_student_response_v1',
+        asPostgresRoutineArgs<Database['public']['Functions']['submit_student_response_v1']['Args']>(rpcArguments),
+      );
 
   return error
     ? { success: false, error: formatSupabaseError(error) }

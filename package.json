@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test:dashboard": "node scripts/verify-research-dashboard.mjs",
+    "test:supabase-runtime": "node scripts/verify-supabase-runtime.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json"
   },
   "dependencies": {

@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { RATING_SECTIONS } from '@/data/questions';
-import { SPECIALTIES } from '@/data/specialties';
 import {
   translateQuestion,
   translateSection,
@@ -18,6 +17,7 @@ import {
   type StudentResponseRow,
 } from '@/lib/researchDashboard';
 import { BarChart3, Braces, CheckCircle2, X } from 'lucide-react';
+import { useSpecialtyCatalog } from '@/lib/SpecialtyCatalogContext';
 
 export type DetailedResponse =
   | { kind: 'specialist'; row: SpecialistResponseRow }
@@ -62,17 +62,18 @@ function formatRank(minimum: number | null, maximum: number | null): string {
 
 export default function ResearchResponseDetail({ response, lang, onClose }: ResearchResponseDetailProps) {
   const french = lang === 'fr';
+  const { specialties, version: activeCatalogVersion } = useSpecialtyCatalog();
   const dialogRef = useRef<HTMLElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const row = response.row;
   const ratings = useMemo(() => parseRatings(row.ratings), [row.ratings]);
   const selectedValues = useMemo(() => parseSelectedValues(row.selected_values), [row.selected_values]);
   const analysis = useMemo(() => response.kind === 'specialist'
-    ? analyzeSpecialistResponse(response.row)
-    : analyzeStudentResponse(response.row), [response]);
+    ? analyzeSpecialistResponse(response.row, specialties)
+    : analyzeStudentResponse(response.row, specialties), [response, specialties]);
   const targetProfile = useMemo(() => response.kind === 'specialist'
-    ? SPECIALTIES.find(({ name }) => name === response.row.actual_specialty)?.profile
-    : undefined, [response]);
+    ? specialties.find(({ name }) => name === response.row.actual_specialty)?.profile
+    : undefined, [response, specialties]);
   const sortedTraits = useMemo(() => Array.from(new Set([
     ...Object.keys(analysis.baseTraits),
     ...Object.keys(analysis.adjustedTraits),
@@ -175,6 +176,19 @@ export default function ResearchResponseDetail({ response, lang, onClose }: Rese
                   ? 'Elle reste entièrement consultable et exportable. Motifs : '
                   : 'It remains fully viewable and exportable. Reasons: '}
                 <span className="font-mono">{analysis.exclusionReasons.join(', ')}</span>
+              </p>
+            </div>
+          )}
+
+          {row.specialty_config_version_id && row.specialty_config_version_id !== activeCatalogVersion.id && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950" role="status">
+              <p className="font-semibold">
+                {french ? 'Analyse recalculée avec la configuration active' : 'Analysis recomputed with the active configuration'}
+              </p>
+              <p className="mt-1 text-xs leading-relaxed">
+                {french
+                  ? `Cette réponse a été recueillie avec la révision ${row.specialty_config_revision ?? 'inconnue'}. Les données brutes et son UUID restent enregistrés pour une reconstruction historique exacte.`
+                  : `This response was collected under revision ${row.specialty_config_revision ?? 'unknown'}. Raw data and its UUID remain recorded for exact historical reconstruction.`}
               </p>
             </div>
           )}
@@ -311,6 +325,8 @@ export default function ResearchResponseDetail({ response, lang, onClose }: Rese
               <Version label="questionnaire" value={row.questionnaire_version} />
               <Version label="value_catalog" value={row.value_catalog_version} />
               <Version label="specialty_catalog" value={row.specialty_catalog_version} />
+              <Version label="specialty_config_id" value={row.specialty_config_version_id ?? (french ? 'legacy / non enregistrée' : 'legacy / not recorded')} />
+              <Version label="specialty_config_revision" value={row.specialty_config_revision?.toString() ?? (french ? 'legacy / non enregistrée' : 'legacy / not recorded')} />
               <Version label={response.kind === 'specialist' ? 'calibration' : 'scoring'} value={response.kind === 'specialist' ? response.row.calibration_version : response.row.scoring_version} />
               <Version label="consent" value={row.consent_version} />
               <Version label="dashboard_analysis" value={analysis.analysisVersion} />

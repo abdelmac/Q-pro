@@ -1,7 +1,8 @@
 import { useLanguage } from '@/lib/LanguageContext';
-import { SPECIALTIES, type Specialty, CATEGORY_ORDER } from '@/data/specialties';
+import { type Specialty, CATEGORY_ORDER } from '@/data/specialties';
 import { SPECIALTY_METADATA } from '@/data/specialtyMetadata';
-import { translateSpecialtyName, translateCategory, translateBlurb } from '@/data/i18n';
+import { translateSpecialtyName, translateCategory } from '@/data/i18n';
+import { useSpecialtyCatalog } from '@/lib/SpecialtyCatalogContext';
 import { translateCareType, translatePatientContact, translateWorkStyle } from '@/data/specialtyDisplayI18n';
 import { Search, ArrowLeft, ChevronRight } from 'lucide-react';
 import { useState, useMemo } from 'react';
@@ -14,6 +15,7 @@ interface SpecialtyExplorerProps {
 
 export default function SpecialtyExplorer({ scores, onSelectSpecialty, onBack }: SpecialtyExplorerProps) {
   const { t, lang } = useLanguage();
+  const { specialties, getDescription } = useSpecialtyCatalog();
   const [query, setQuery] = useState('');
   const [filterCat, setFilterCat] = useState<string | null>(null);
 
@@ -24,13 +26,13 @@ export default function SpecialtyExplorer({ scores, onSelectSpecialty, onBack }:
   }, [scores]);
 
   const filtered = useMemo(() => {
-    return SPECIALTIES.filter((s) => {
+    return specialties.filter((s) => {
       const name = translateSpecialtyName(s.name, lang).toLowerCase();
       const matchesQuery = name.includes(query.toLowerCase());
       const matchesCat = !filterCat || s.category === filterCat;
       return matchesQuery && matchesCat;
     });
-  }, [query, filterCat, lang]);
+  }, [query, filterCat, lang, specialties]);
 
   return (
     <div className="min-h-screen">
@@ -81,7 +83,7 @@ export default function SpecialtyExplorer({ scores, onSelectSpecialty, onBack }:
         <div className="space-y-3">
           {filtered.map((s) => {
             const meta = SPECIALTY_METADATA[s.name];
-            const blurb = translateBlurb(s.name, lang) || s.blurb;
+            const blurb = getDescription(s.name, lang) || s.blurb;
             const score = scoreMap[s.name];
             return (
               <button

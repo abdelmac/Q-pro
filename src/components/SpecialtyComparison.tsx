@@ -1,5 +1,5 @@
 import { useLanguage } from '@/lib/LanguageContext';
-import { SPECIALTIES } from '@/data/specialties';
+import { useSpecialtyCatalog } from '@/lib/SpecialtyCatalogContext';
 import { translateSpecialtyName, translateCategory } from '@/data/i18n';
 import { getSpecialtyAxisValue, getStudentAxisValue } from '@/lib/scoring';
 import { COMPARISON_AXES } from '@/data/dimensions';
@@ -13,12 +13,13 @@ interface SpecialtyComparisonProps {
 
 export default function SpecialtyComparison({ studentTraits, onBack }: SpecialtyComparisonProps) {
   const { t, lang } = useLanguage();
+  const { specialties } = useSpecialtyCatalog();
   const [selected, setSelected] = useState<string[]>([]);
   const [showPicker, setShowPicker] = useState(false);
 
   const selectedSpecialties = useMemo(
-    () => selected.map((n) => SPECIALTIES.find((s) => s.name === n)!).filter(Boolean),
-    [selected]
+    () => selected.map((n) => specialties.find((s) => s.name === n)!).filter(Boolean),
+    [selected, specialties]
   );
 
   const axisLabels: Record<string, string> = {
@@ -60,7 +61,7 @@ export default function SpecialtyComparison({ studentTraits, onBack }: Specialty
         {showPicker && (
           <div className="mb-6 p-4 rounded-2xl bg-white border border-ink-100 shadow-soft max-h-64 overflow-y-auto">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {SPECIALTIES.map((s) => {
+              {specialties.map((s) => {
                 const isSelected = selected.includes(s.name);
                 return (
                   <button

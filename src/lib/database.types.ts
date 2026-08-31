@@ -28,6 +28,8 @@ export type Database = {
           questionnaire_version: string
           ratings: Json
           selected_values: Json
+          specialty_config_revision: number | null
+          specialty_config_version_id: string | null
           specialty_catalog_version: string
           submission_schema_version: number
           value_catalog_version: string
@@ -50,6 +52,8 @@ export type Database = {
           questionnaire_version?: string
           ratings: Json
           selected_values: Json
+          specialty_config_revision?: number | null
+          specialty_config_version_id?: string | null
           specialty_catalog_version?: string
           submission_schema_version?: number
           value_catalog_version?: string
@@ -72,6 +76,8 @@ export type Database = {
           questionnaire_version?: string
           ratings?: Json
           selected_values?: Json
+          specialty_config_revision?: number | null
+          specialty_config_version_id?: string | null
           specialty_catalog_version?: string
           submission_schema_version?: number
           value_catalog_version?: string
@@ -95,6 +101,8 @@ export type Database = {
           ratings: Json
           scoring_version: string
           selected_values: Json
+          specialty_config_revision: number | null
+          specialty_config_version_id: string | null
           specialty_catalog_version: string
           study_year: number | null
           submission_schema_version: number
@@ -111,6 +119,8 @@ export type Database = {
           ratings: Json
           scoring_version?: string
           selected_values: Json
+          specialty_config_revision?: number | null
+          specialty_config_version_id?: string | null
           specialty_catalog_version?: string
           study_year?: number | null
           submission_schema_version?: number
@@ -127,6 +137,8 @@ export type Database = {
           ratings?: Json
           scoring_version?: string
           selected_values?: Json
+          specialty_config_revision?: number | null
+          specialty_config_version_id?: string | null
           specialty_catalog_version?: string
           study_year?: number | null
           submission_schema_version?: number
@@ -139,7 +151,42 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      current_user_portal_profile: { Args: never; Returns: Json }
       current_user_is_researcher: { Args: never; Returns: boolean }
+      get_active_specialty_catalog: { Args: never; Returns: Json }
+      get_specialty_catalog_draft: { Args: never; Returns: Json }
+      list_specialty_catalog_versions: {
+        Args: { p_limit?: number }
+        Returns: Json
+      }
+      publish_specialty_catalog_draft: {
+        Args: {
+          p_change_note: string
+          p_draft_version_id: string
+          p_expected_lock_version: number
+        }
+        Returns: Json
+      }
+      restore_specialty_catalog_version: {
+        Args: {
+          p_change_note: string
+          p_expected_active_version_id: string
+          p_source_version_id: string
+        }
+        Returns: Json
+      }
+      save_specialty_catalog_entry_draft: {
+        Args: {
+          p_change_note: string
+          p_clinical_summaries: Json
+          p_descriptions: Json
+          p_expected_lock_version: number | null
+          p_expected_version_id: string | null
+          p_profile: Json
+          p_specialty_name: string
+        }
+        Returns: Json
+      }
       submit_specialist_response_v1: {
         Args: {
           p_actual_specialty: string
@@ -171,6 +218,45 @@ export type Database = {
           p_scoring_version: string
           p_selected_values: Json
           p_specialty_catalog_version: string
+          p_study_year: number
+          p_submission_id: string
+          p_value_catalog_version: string
+        }
+        Returns: string
+      }
+      submit_specialist_response_v2: {
+        Args: {
+          p_actual_specialty: string
+          p_calibration_version: string
+          p_career_satisfaction: number
+          p_consent_version: string
+          p_intention_to_change_code: string
+          p_language: string
+          p_questionnaire_version: string
+          p_ratings: Json
+          p_selected_values: Json
+          p_specialty_catalog_version: string
+          p_specialty_config_version_id: string
+          p_submission_id: string
+          p_value_catalog_version: string
+          p_voluntary_choice_code: string
+          p_would_choose_again_code: string
+          p_years_of_experience: number
+        }
+        Returns: string
+      }
+      submit_student_response_v2: {
+        Args: {
+          p_client_scores: Json
+          p_consent_version: string
+          p_language: string
+          p_preferred_specialty: string
+          p_questionnaire_version: string
+          p_ratings: Json
+          p_scoring_version: string
+          p_selected_values: Json
+          p_specialty_catalog_version: string
+          p_specialty_config_version_id: string
           p_study_year: number
           p_submission_id: string
           p_value_catalog_version: string

@@ -9,6 +9,7 @@ import {
 } from '@/lib/scoring';
 import { DEFAULT_PRIORITY_WEIGHTS } from '@/data/dimensions';
 import { LanguageProvider, useLanguage } from '@/lib/LanguageContext';
+import { SpecialtyCatalogProvider, useSpecialtyCatalog } from '@/lib/SpecialtyCatalogContext';
 import Intro from '@/components/Intro';
 import ProgressBar from '@/components/ProgressBar';
 import SpecialtyStep from '@/components/SpecialtyStep';
@@ -39,6 +40,7 @@ const QUIZ_STEPS = [
 
 function AppContent() {
   const { t, lang } = useLanguage();
+  const { specialties, source: catalogSource, isLoading: catalogLoading, error: catalogError, refresh: refreshCatalog } = useSpecialtyCatalog();
   const [phase, setPhase] = useState<Phase>('intro');
   const [stepIndex, setStepIndex] = useState(0);
   const [preferredSpecialty, setPreferredSpecialty] = useState<string | null>(null);
@@ -49,6 +51,7 @@ function AppContent() {
   const [isSpecialist, setIsSpecialist] = useState(false);
   const [priorities, setPriorities] = useState<PriorityWeights>(DEFAULT_PRIORITY_WEIGHTS);
   const [explorerSpecialty, setExplorerSpecialty] = useState<string | null>(null);
+  const [catalogGateMessage, setCatalogGateMessage] = useState<string | null>(null);
 
   const studentTraits = useMemo(
     () => calculateTraits(ratings, selectedValues),
@@ -56,6 +59,16 @@ function AppContent() {
   );
 
   const startQuiz = () => {
+    if (catalogLoading || catalogSource !== 'remote') {
+      setCatalogGateMessage(lang === 'fr'
+        ? 'La configuration publiée de l’algorithme doit être chargée avant de commencer.'
+        : lang === 'ro'
+          ? 'Configurația publicată a algoritmului trebuie încărcată înainte de a începe.'
+          : 'The published algorithm configuration must load before the quiz can start.');
+      if (!catalogLoading) void refreshCatalog();
+      return;
+    }
+    setCatalogGateMessage(null);
     setPhase('quiz');
     setStepIndex(0);
   };
@@ -79,7 +92,7 @@ function AppContent() {
       ratings,
       selectedValues,
       preferredSpecialty: isSpecialist ? null : preferredSpecialty,
-    }, priorities);
+    }, priorities, specialties);
     setScores(result);
     setPhase(isSpecialist ? 'specialist' : 'student');
   };
@@ -139,7 +152,20 @@ function AppContent() {
   }, [handleBeforeUnload]);
 
   if (phase === 'intro') {
-    return <Intro onStart={startQuiz} totalQuestions={TOTAL_QUESTIONS} isSpecialist={isSpecialist} onSpecialistToggle={setIsSpecialist} onOpenExplorer={() => setPhase('explorer')} onOpenMethodology={() => setPhase('methodology')} onOpenDashboard={() => setPhase('dashboard')} />;
+    return (
+      <>
+        <Intro onStart={startQuiz} totalQuestions={TOTAL_QUESTIONS} isSpecialist={isSpecialist} onSpecialistToggle={setIsSpecialist} onOpenExplorer={() => setPhase('explorer')} onOpenMethodology={() => setPhase('methodology')} onOpenDashboard={() => setPhase('dashboard')} />
+        {(catalogGateMessage || (catalogError && catalogSource !== 'remote')) && (
+          <div role="alert" className="fixed bottom-5 left-1/2 z-50 w-[min(92vw,680px)] -translate-x-1/2 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 shadow-lift">
+            <p className="font-semibold">{catalogGateMessage ?? (lang === 'fr' ? 'Catalogue publié indisponible.' : 'Published catalog unavailable.')}</p>
+            <p className="mt-1 text-xs text-amber-800">{catalogError}</p>
+            <button type="button" onClick={() => void refreshCatalog()} disabled={catalogLoading} className="mt-3 rounded-full bg-amber-900 px-4 py-2 text-xs font-semibold text-white disabled:opacity-50">
+              {catalogLoading ? (lang === 'fr' ? 'Chargement…' : 'Loading…') : (lang === 'fr' ? 'Réessayer' : 'Retry')}
+            </button>
+          </div>
+        )}
+      </>
+    );
   }
 
   if (phase === 'qprofile') {
@@ -364,7 +390,9 @@ function AppContent() {
 export default function App() {
   return (
     <LanguageProvider>
-      <AppContent />
+      <SpecialtyCatalogProvider>
+        <AppContent />
+      </SpecialtyCatalogProvider>
     </LanguageProvider>
   );
 }

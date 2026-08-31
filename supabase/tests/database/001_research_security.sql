@@ -2,11 +2,158 @@ BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
 
-SELECT extensions.plan(43);
+SELECT extensions.plan(84);
 
 SELECT extensions.has_schema('private', 'private schema exists');
 SELECT extensions.has_table('public', 'student_responses', 'student table exists');
 SELECT extensions.has_table('public', 'specialist_responses', 'specialist table exists');
+SELECT extensions.has_table('private', 'specialty_catalog_versions', 'private specialty catalog versions table exists');
+SELECT extensions.has_table('private', 'specialty_catalog_entries', 'private specialty catalog entries table exists');
+SELECT extensions.has_table('private', 'trait_catalog', 'private trait catalog exists');
+SELECT extensions.has_table('private', 'specialty_catalog_audit', 'private specialty catalog audit exists');
+
+SELECT extensions.has_column(
+  'public', 'student_responses', 'specialty_config_version_id',
+  'student rows store specialty catalog version ids'
+);
+SELECT extensions.has_column(
+  'public', 'student_responses', 'specialty_config_revision',
+  'student rows store specialty catalog revisions'
+);
+SELECT extensions.has_column(
+  'public', 'specialist_responses', 'specialty_config_version_id',
+  'specialist rows store specialty catalog version ids'
+);
+SELECT extensions.has_column(
+  'public', 'specialist_responses', 'specialty_config_revision',
+  'specialist rows store specialty catalog revisions'
+);
+
+SELECT extensions.is(
+  (SELECT count(*) FROM private.specialty_catalog_versions WHERE status = 'active'),
+  1::bigint,
+  'exactly one specialty catalog snapshot is active'
+);
+SELECT extensions.is(
+  (
+    SELECT count(*)
+    FROM private.specialty_catalog_entries AS entry
+    JOIN private.specialty_catalog_versions AS version ON version.id = entry.version_id
+    WHERE version.status = 'active'
+  ),
+  58::bigint,
+  'the active specialty catalog contains all 58 specialties'
+);
+SELECT extensions.is(
+  (SELECT count(*) FROM private.trait_catalog),
+  96::bigint,
+  'the trait metadata seed contains all 96 traits'
+);
+SELECT extensions.is(
+  (SELECT measurement_source FROM private.trait_catalog WHERE code = 'manual_orientation'),
+  'value_only'::text,
+  'manual orientation is explicitly marked as value-only'
+);
+SELECT extensions.is(
+  (SELECT measurement_source FROM private.trait_catalog WHERE code = 'prevention_orientation'),
+  'unmeasured'::text,
+  'prevention orientation is explicitly marked as unmeasured'
+);
+SELECT extensions.ok(
+  (public.get_active_specialty_catalog() ?& ARRAY['version', 'specialties'])
+  AND jsonb_array_length(public.get_active_specialty_catalog() -> 'specialties') = 58
+  AND (public.get_active_specialty_catalog() -> 'version')
+      ?& ARRAY['id', 'revision', 'label', 'content_hash', 'published_at'],
+  'the active catalog RPC returns the stable public JSON contract'
+);
+SELECT extensions.ok(
+  has_function_privilege('anon', 'public.get_active_specialty_catalog()', 'EXECUTE'),
+  'anon can read the active specialty catalog RPC'
+);
+SELECT extensions.ok(
+  NOT has_function_privilege('anon', 'public.get_specialty_catalog_draft()', 'EXECUTE'),
+  'anon cannot execute the draft catalog RPC'
+);
+SELECT extensions.ok(
+  has_function_privilege('authenticated', 'public.current_user_portal_profile()', 'EXECUTE'),
+  'authenticated accounts can request their portal profile'
+);
+SELECT extensions.ok(
+  has_function_privilege('authenticated', 'public.get_specialty_catalog_draft()', 'EXECUTE'),
+  'authenticated accounts can issue role-checked draft reads'
+);
+SELECT extensions.ok(
+  has_function_privilege(
+    'authenticated',
+    'public.save_specialty_catalog_entry_draft(uuid,bigint,text,jsonb,jsonb,jsonb,text)',
+    'EXECUTE'
+  ),
+  'authenticated accounts can issue role-checked draft saves'
+);
+SELECT extensions.ok(
+  has_function_privilege(
+    'authenticated',
+    'public.publish_specialty_catalog_draft(uuid,bigint,text)',
+    'EXECUTE'
+  ),
+  'authenticated accounts can issue role-checked publications'
+);
+SELECT extensions.ok(
+  has_function_privilege('authenticated', 'public.list_specialty_catalog_versions(integer)', 'EXECUTE'),
+  'authenticated accounts can issue role-checked version listing'
+);
+SELECT extensions.ok(
+  has_function_privilege(
+    'authenticated',
+    'public.restore_specialty_catalog_version(uuid,uuid,text)',
+    'EXECUTE'
+  ),
+  'authenticated accounts can issue role-checked restores'
+);
+SELECT extensions.ok(
+  has_function_privilege(
+    'anon',
+    'public.submit_student_response_v2(uuid,integer,text,jsonb,jsonb,jsonb,text,text,text,text,text,text,uuid)',
+    'EXECUTE'
+  ),
+  'anon can execute the versioned student submission RPC'
+);
+SELECT extensions.ok(
+  has_function_privilege(
+    'anon',
+    'public.submit_specialist_response_v2(uuid,text,jsonb,jsonb,text,integer,integer,text,text,text,text,text,text,text,text,uuid)',
+    'EXECUTE'
+  ),
+  'anon can execute the versioned specialist submission RPC'
+);
+SELECT extensions.ok(
+  NOT has_table_privilege('anon', 'private.specialty_catalog_versions', 'SELECT')
+  AND NOT has_table_privilege('authenticated', 'private.specialty_catalog_entries', 'SELECT')
+  AND NOT has_table_privilege('authenticated', 'private.specialty_catalog_audit', 'INSERT'),
+  'catalog snapshots and audit records have no direct client table privileges'
+);
+SELECT extensions.ok(
+  (
+    SELECT procedure.prosecdef
+      AND 'search_path=""' = ANY(coalesce(procedure.proconfig, ARRAY[]::text[]))
+    FROM pg_catalog.pg_proc AS procedure
+    WHERE procedure.oid = 'public.get_active_specialty_catalog()'::regprocedure
+  ),
+  'active catalog RPC is security definer with an empty search path'
+);
+SELECT extensions.ok(
+  (
+    SELECT bool_and(class.relrowsecurity)
+    FROM pg_catalog.pg_class AS class
+    WHERE class.oid IN (
+      'private.specialty_catalog_versions'::regclass,
+      'private.specialty_catalog_entries'::regclass,
+      'private.trait_catalog'::regclass,
+      'private.specialty_catalog_audit'::regclass
+    )
+  ),
+  'all private catalog tables have row-level security enabled'
+);
 
 SELECT extensions.ok(
   NOT has_table_privilege('anon', 'public.student_responses', 'SELECT'),
@@ -454,6 +601,234 @@ SELECT extensions.is(
   ),
   1::bigint,
   'an allowlisted researcher can read specialist rows'
+);
+
+SELECT extensions.is(
+  public.current_user_portal_profile() ->> 'role',
+  'researcher'::text,
+  'new allowlisted users default to the read-only researcher role'
+);
+SELECT extensions.is(
+  (public.current_user_portal_profile() ->> 'can_edit')::boolean,
+  false,
+  'a researcher cannot edit the specialty catalog'
+);
+SELECT extensions.throws_ok(
+  $$ SELECT public.get_specialty_catalog_draft() $$,
+  '42501',
+  'This account is not authorized for this portal action',
+  'a researcher cannot read the administrative draft'
+);
+
+RESET ROLE;
+UPDATE private.researchers
+SET portal_role = 'doctor'
+WHERE user_id = '40000000-0000-4000-8000-000000000001'::uuid;
+SET LOCAL ROLE authenticated;
+
+SELECT extensions.is(
+  public.current_user_portal_profile() ->> 'role',
+  'doctor'::text,
+  'the allowlist role is returned by the portal profile RPC'
+);
+SELECT extensions.is(
+  (
+    WITH catalog AS (
+      SELECT public.get_specialty_catalog_draft() AS payload
+    ), selected_entry AS (
+      SELECT catalog.payload, entry.value AS entry
+      FROM catalog
+      CROSS JOIN LATERAL jsonb_array_elements(catalog.payload -> 'specialties') AS entry
+      WHERE entry.value ->> 'name' = 'Cardiology'
+    )
+    SELECT public.save_specialty_catalog_entry_draft(
+      (payload ->> 'version_id')::uuid,
+      (payload ->> 'lock_version')::bigint,
+      entry ->> 'name',
+      entry -> 'descriptions',
+      entry -> 'clinical_summaries',
+      entry -> 'profile',
+      'Database test Doctor draft save'
+    ) ->> 'status'
+    FROM selected_entry
+  ),
+  'draft'::text,
+  'a Doctor can create and save an optimistic-locking draft'
+);
+SELECT extensions.throws_ok(
+  $$
+    WITH catalog AS (
+      SELECT public.get_specialty_catalog_draft() AS payload
+    ), selected_entry AS (
+      SELECT catalog.payload, entry.value AS entry
+      FROM catalog
+      CROSS JOIN LATERAL jsonb_array_elements(catalog.payload -> 'specialties') AS entry
+      WHERE entry.value ->> 'name' = 'Occupational Medicine'
+    )
+    SELECT public.save_specialty_catalog_entry_draft(
+      (payload ->> 'version_id')::uuid,
+      (payload ->> 'lock_version')::bigint,
+      entry ->> 'name',
+      entry -> 'descriptions',
+      entry -> 'clinical_summaries',
+      jsonb_set(entry -> 'profile', '{prevention_orientation,0}', '80'::jsonb, false),
+      'Attempt to change an unmeasured trait'
+    )
+    FROM selected_entry
+  $$,
+  '22023',
+  'prevention_orientation is unmeasured and cannot be changed',
+  'the database prevents changes to prevention orientation'
+);
+SELECT extensions.throws_ok(
+  $$
+    WITH catalog AS (
+      SELECT public.get_specialty_catalog_draft() AS payload
+    )
+    SELECT public.publish_specialty_catalog_draft(
+      (payload ->> 'version_id')::uuid,
+      (payload ->> 'lock_version')::bigint,
+      'Doctor must not publish this draft'
+    )
+    FROM catalog
+  $$,
+  '42501',
+  'This account is not authorized for this portal action',
+  'a Doctor cannot publish a draft'
+);
+
+RESET ROLE;
+UPDATE private.researchers
+SET portal_role = 'professor'
+WHERE user_id = '40000000-0000-4000-8000-000000000001'::uuid;
+SET LOCAL ROLE authenticated;
+
+SELECT extensions.ok(
+  (
+    WITH catalog AS (
+      SELECT public.get_specialty_catalog_draft() AS payload
+    )
+    SELECT
+      jsonb_array_length(
+        public.publish_specialty_catalog_draft(
+          (payload ->> 'version_id')::uuid,
+          (payload ->> 'lock_version')::bigint,
+          'Database test Professor publication'
+        ) -> 'specialties'
+      ) = 58
+    FROM catalog
+  ),
+  'a Professor can publish a complete 58-specialty snapshot'
+);
+SELECT extensions.throws_ok(
+  $$
+    SELECT public.submit_student_response_v2(
+      '10000000-0000-4000-8000-000000000001'::uuid,
+      6,
+      'Cardiology',
+      current_setting('q_project_test.valid_ratings')::jsonb,
+      '["Prestige"]'::jsonb,
+      current_setting('q_project_test.valid_scores')::jsonb,
+      'en',
+      'q81-v1',
+      'career-values-v1',
+      'medical-specialties-v1',
+      'client-scoring-v1',
+      'research-consent-2026-08-26',
+      (public.get_active_specialty_catalog() -> 'version' ->> 'id')::uuid
+    )
+  $$,
+  '23505',
+  'Submission id already exists with different specialty catalog provenance',
+  'v2 cannot attach provenance retroactively to an existing v1 row'
+);
+SELECT extensions.is(
+  public.submit_student_response_v2(
+    '10000000-0000-4000-8000-000000000003'::uuid,
+    6,
+    'Cardiology',
+    current_setting('q_project_test.valid_ratings')::jsonb,
+    '["Prestige"]'::jsonb,
+    current_setting('q_project_test.valid_scores')::jsonb,
+    'en',
+    'q81-v1',
+    'career-values-v1',
+    'medical-specialties-v1',
+    'client-scoring-v1',
+    'research-consent-2026-08-26',
+    (public.get_active_specialty_catalog() -> 'version' ->> 'id')::uuid
+  ),
+  '10000000-0000-4000-8000-000000000003'::uuid,
+  'student v2 attaches an exact published specialty catalog version'
+);
+SELECT extensions.is(
+  public.submit_specialist_response_v2(
+    '20000000-0000-4000-8000-000000000003'::uuid,
+    'Cardiology',
+    current_setting('q_project_test.valid_ratings')::jsonb,
+    '["Prestige"]'::jsonb,
+    'en',
+    10,
+    5,
+    'yes',
+    'probably_not',
+    'fully_voluntary',
+    'q81-v1',
+    'career-values-v1',
+    'medical-specialties-v1',
+    'calibration-v1',
+    'research-consent-2026-08-26',
+    (public.get_active_specialty_catalog() -> 'version' ->> 'id')::uuid
+  ),
+  '20000000-0000-4000-8000-000000000003'::uuid,
+  'specialist v2 attaches an exact published specialty catalog version'
+);
+SELECT extensions.is(
+  (
+    SELECT count(*)
+    FROM (
+      SELECT specialty_config_version_id, specialty_config_revision
+      FROM public.student_responses
+      WHERE id = '10000000-0000-4000-8000-000000000003'::uuid
+      UNION ALL
+      SELECT specialty_config_version_id, specialty_config_revision
+      FROM public.specialist_responses
+      WHERE id = '20000000-0000-4000-8000-000000000003'::uuid
+    ) AS provenance
+    WHERE provenance.specialty_config_version_id =
+      (public.get_active_specialty_catalog() -> 'version' ->> 'id')::uuid
+      AND provenance.specialty_config_revision =
+      (public.get_active_specialty_catalog() -> 'version' ->> 'revision')::bigint
+  ),
+  2::bigint,
+  'both v2 response kinds retain matching UUID and revision provenance'
+);
+SELECT extensions.ok(
+  (
+    WITH history AS (
+      SELECT item.value AS version
+      FROM jsonb_array_elements(
+        public.list_specialty_catalog_versions(50) -> 'versions'
+      ) AS item
+      WHERE item.value ->> 'status' = 'archived'
+      ORDER BY (item.value ->> 'revision')::bigint
+      LIMIT 1
+    )
+    SELECT jsonb_array_length(
+      public.restore_specialty_catalog_version(
+        (version ->> 'id')::uuid,
+        (public.get_active_specialty_catalog() -> 'version' ->> 'id')::uuid,
+        'Database test Professor restoration'
+      ) -> 'specialties'
+    ) = 58
+    FROM history
+  ),
+  'a Professor can restore a published snapshot as a new active revision'
+);
+SELECT extensions.is(
+  public.get_specialty_catalog_draft() ->> 'status',
+  'active'::text,
+  'an immediate restore leaves no mutable draft behind'
 );
 
 RESET ROLE;

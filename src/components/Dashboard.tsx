@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { SPECIALTIES } from '@/data/specialties';
 import { translateSpecialtyName } from '@/data/i18n';
 import { useLanguage } from '@/lib/LanguageContext';
 import { DATA_VERSIONS, formatSupabaseError, getSupabaseConfigurationError, supabase } from '@/lib/supabase';
@@ -18,6 +17,8 @@ import {
 } from '@/lib/researchDashboard';
 import CalibrationAnalysis from '@/components/CalibrationAnalysis';
 import ResearchResponseDetail, { type DetailedResponse } from '@/components/ResearchResponseDetail';
+import SpecialtyConfigurationEditor from '@/components/SpecialtyConfigurationEditor';
+import { useSpecialtyCatalog } from '@/lib/SpecialtyCatalogContext';
 import {
   ArrowLeft,
   BarChart3,
@@ -33,6 +34,7 @@ import {
   Microscope,
   RefreshCw,
   Stethoscope,
+  Settings2,
   Users,
 } from 'lucide-react';
 
@@ -58,7 +60,7 @@ type SpecialistListRow = Pick<
   | 'created_at'
 >;
 type AccessState = 'checking' | 'signed_out' | 'checking_access' | 'authorized';
-type DashboardView = 'students' | 'specialists';
+type DashboardView = 'students' | 'specialists' | 'configuration';
 type CompletenessFilter = 'all' | 'complete' | 'partial';
 type DataVersionFilter = 'current' | 'all' | 'legacy';
 type ExportKind = 'raw' | 'long' | 'analytic' | 'json';
@@ -70,12 +72,33 @@ interface DashboardCounts {
   specialistsComplete: number;
 }
 
+interface PortalProfile {
+  display_name: string | null;
+  portal_role: 'researcher' | 'doctor' | 'professor';
+  can_edit: boolean;
+  can_publish: boolean;
+}
+
 const EMPTY_COUNTS: DashboardCounts = {
   students: 0,
   specialists: 0,
   studentsWithYear: 0,
   specialistsComplete: 0,
 };
+
+function parsePortalProfile(value: unknown): PortalProfile | null {
+  if (!value || Array.isArray(value) || typeof value !== 'object') return null;
+  const record = value as Record<string, unknown>;
+  if (record.authorized !== true && record.is_researcher !== true) return null;
+  const role = record.portal_role ?? record.role;
+  if (role !== 'researcher' && role !== 'doctor' && role !== 'professor') return null;
+  return {
+    display_name: typeof record.display_name === 'string' ? record.display_name : null,
+    portal_role: role,
+    can_edit: record.can_edit === true || record.can_edit_catalog === true,
+    can_publish: record.can_publish === true || record.can_publish_catalog === true,
+  };
+}
 
 const CHOICE_LABELS: Record<string, Record<string, string>> = {
   fr: {
@@ -126,11 +149,13 @@ function applyDateFilters<T extends {
 
 export default function Dashboard({ onBack }: { onBack: () => void }) {
   const { lang } = useLanguage();
+  const { specialties, version: catalogVersion, refresh: refreshCatalog } = useSpecialtyCatalog();
   const french = lang === 'fr';
   const locale = french ? 'fr-FR' : 'en-GB';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [accessState, setAccessState] = useState<AccessState>('checking');
+  const [portalProfile, setPortalProfile] = useState<PortalProfile | null>(null);
   const [students, setStudents] = useState<StudentListRow[]>([]);
   const [specialists, setSpecialists] = useState<SpecialistListRow[]>([]);
   const [view, setView] = useState<DashboardView>('specialists');
@@ -177,6 +202,10 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
   };
 
   const loadData = useCallback(async () => {
+    if (view === 'configuration') {
+      setLoading(false);
+      return;
+    }
     if (!supabase) {
       setError(getSupabaseConfigurationError() ?? 'Supabase is not configured.');
       return;
@@ -185,7 +214,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
     setLoading(true);
     setError(null);
     if (view === 'specialists') setSpecialists([]);
-    else setStudents([]);
+    else if (view === 'students') setStudents([]);
     const rangeStart = page * PAGE_SIZE;
     const rangeEnd = rangeStart + PAGE_SIZE - 1;
 
@@ -344,14 +373,16 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
         setActiveTotal(0);
         setCounts(EMPTY_COUNTS);
         setPage(0);
+        setPortalProfile(null);
         setAccessState('signed_out');
         return;
       }
 
       setAccessState('checking_access');
-      const { data: authorized, error: accessError } = await client.rpc('current_user_is_researcher');
+      const { data: profileData, error: accessError } = await client.rpc('current_user_portal_profile');
+      const profile = parsePortalProfile(profileData);
       if (!active) return;
-      if (accessError || !authorized) {
+      if (accessError || !profile) {
         setError(accessError
           ? formatSupabaseError(accessError)
           : 'This account is not authorized to access research data.');
@@ -359,6 +390,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
         setAccessState('signed_out');
         return;
       }
+      setPortalProfile(profile);
       setAccessState('authorized');
     };
 
@@ -381,8 +413,8 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
   }, []);
 
   useEffect(() => {
-    if (accessState === 'authorized') void loadData();
-  }, [accessState, loadData]);
+    if (accessState === 'authorized' && view !== 'configuration') void loadData();
+  }, [accessState, loadData, view]);
 
   useEffect(() => {
     const client = supabase;
@@ -580,7 +612,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
             ? specialistRawCsv(rows)
             : kind === 'long'
               ? specialistLongCsv(rows)
-              : specialistAnalyticCsv(rows);
+              : specialistAnalyticCsv(rows, specialties);
           downloadTextFile(`q-project-specialists-${kind}-${date}.csv`, csv, 'text/csv;charset=utf-8');
         }
       } else {
@@ -590,10 +622,10 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
           downloadTextFile(`q-project-students-${date}.json`, JSON.stringify(rows, null, 2), 'application/json;charset=utf-8');
         } else {
           const csv = kind === 'raw'
-            ? studentRawCsv(rows)
+            ? studentRawCsv(rows, specialties)
             : kind === 'long'
               ? studentLongCsv(rows)
-              : studentAnalyticCsv(rows);
+              : studentAnalyticCsv(rows, specialties);
           downloadTextFile(`q-project-students-${kind}-${date}.csv`, csv, 'text/csv;charset=utf-8');
         }
       }
@@ -674,6 +706,10 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
   };
 
   const refreshData = () => {
+    if (view === 'configuration') {
+      void refreshCatalog();
+      return;
+    }
     analysisRequest.current += 1;
     setAnalysisRows(null);
     setAnalysisLoading(false);
@@ -681,16 +717,16 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
   };
 
   const calibrationSummary = useMemo(() => analysisRows
-    ? buildCalibrationSummary(analysisRows, specialtyFilter === 'all' ? null : specialtyFilter)
-    : null, [analysisRows, specialtyFilter]);
+    ? buildCalibrationSummary(analysisRows, specialtyFilter === 'all' ? null : specialtyFilter, specialties)
+    : null, [analysisRows, specialtyFilter, specialties]);
 
   if (accessState !== 'authorized') return (
     <main className="min-h-screen bg-ink-50 flex items-center justify-center px-6">
       <form onSubmit={signIn} className="w-full max-w-md p-8 rounded-2xl bg-white border border-ink-100 shadow-soft">
         <button type="button" onClick={() => void leaveDashboard()} className="inline-flex items-center gap-2 text-sm text-ink-500 hover:text-ink-900 mb-8"><ArrowLeft className="w-4 h-4" />{french ? 'Retour' : 'Back'}</button>
         <div className="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center mb-5"><BarChart3 /></div>
-        <h1 className="font-display text-3xl font-semibold text-ink-900 mb-2">{french ? 'Dashboard de recherche' : 'Research dashboard'}</h1>
-        <p className="text-sm text-ink-500 mb-6">{french ? 'Connectez-vous avec le compte Supabase autorisé pour consulter les réponses anonymes.' : 'Sign in with an authorized Supabase account to view anonymous responses.'}</p>
+        <h1 className="font-display text-3xl font-semibold text-ink-900 mb-2">{french ? 'Portail spécialistes & administration' : 'Specialist & admin portal'}</h1>
+        <p className="text-sm text-ink-500 mb-6">{french ? 'Connectez-vous avec un compte Supabase autorisé pour consulter les cohortes et, selon votre rôle, calibrer le catalogue.' : 'Sign in with an authorized Supabase account to review cohorts and, according to your role, calibrate the catalog.'}</p>
         <label className="mb-3 block">
           <span className="mb-1.5 block text-xs font-semibold text-ink-600">Email</span>
           <input required disabled={accessState !== 'signed_out'} type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="email@example.com" autoComplete="username" className="w-full rounded-xl border border-ink-200 px-4 py-3 text-sm focus:border-brand-500 focus:outline-none disabled:opacity-60" />
@@ -711,8 +747,9 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
         <header className="mb-8 flex flex-wrap items-center justify-between gap-4">
           <div>
             <button onClick={() => void leaveDashboard()} className="mb-3 inline-flex items-center gap-2 text-sm text-ink-500 hover:text-ink-900"><ArrowLeft className="h-4 w-4" />{french ? 'Retour et déconnexion' : 'Back and sign out'}</button>
-            <h1 className="font-display text-3xl font-semibold text-ink-900">{french ? 'Dashboard de recherche' : 'Research dashboard'}</h1>
-            <p className="mt-1 text-sm text-ink-500">{french ? 'Exploration sécurisée des cohortes et calibration de l’algorithme.' : 'Secure cohort exploration and algorithm calibration.'}</p>
+            <h1 className="font-display text-3xl font-semibold text-ink-900">{french ? 'Portail spécialistes & administration' : 'Specialist & admin portal'}</h1>
+            <p className="mt-1 text-sm text-ink-500">{french ? 'Cohortes anonymes, descriptions cliniques et configuration versionnée de l’algorithme.' : 'Anonymous cohorts, clinical content, and versioned algorithm configuration.'}</p>
+            {portalProfile && <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-brand-700">{portalProfile.display_name ?? (french ? 'Compte autorisé' : 'Authorized account')} · {portalProfile.portal_role}</p>}
           </div>
           <div className="flex items-center gap-2">
             <button onClick={refreshData} disabled={loading} title={french ? 'Actualiser' : 'Refresh data'} className="inline-flex items-center gap-2 rounded-full border border-ink-200 bg-white px-4 py-2.5 text-sm font-semibold text-ink-700 disabled:opacity-40"><RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />{french ? 'Actualiser' : 'Refresh'}</button>
@@ -733,22 +770,27 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
           <div className="flex items-center gap-2 rounded-full border border-ink-200 bg-white p-1">
             <button onClick={() => { if (view !== 'specialists') { setView('specialists'); resetPageAndAnalysis(); } }} className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ${view === 'specialists' ? 'bg-ink-900 text-white' : 'text-ink-600'}`}><Stethoscope className="h-4 w-4" />{french ? 'Spécialistes' : 'Specialists'}</button>
             <button onClick={() => { if (view !== 'students') { setView('students'); resetPageAndAnalysis(); } }} className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ${view === 'students' ? 'bg-ink-900 text-white' : 'text-ink-600'}`}><GraduationCap className="h-4 w-4" />{french ? 'Étudiants' : 'Students'}</button>
+            {portalProfile?.can_edit && <button onClick={() => { if (view !== 'configuration') { setView('configuration'); resetPageAndAnalysis(); } }} className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ${view === 'configuration' ? 'bg-ink-900 text-white' : 'text-ink-600'}`}><Settings2 className="h-4 w-4" />{french ? 'Configuration' : 'Configuration'}</button>}
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          {view !== 'configuration' && <div className="flex flex-wrap items-center gap-2">
             <ExportButton icon={<Download className="h-4 w-4" />} label={french ? 'CSV large' : 'Wide CSV'} busy={exporting === 'raw'} disabled={exporting !== null} onClick={() => void exportData('raw')} />
             <ExportButton icon={<Download className="h-4 w-4" />} label={french ? 'CSV long' : 'Long CSV'} busy={exporting === 'long'} disabled={exporting !== null} onClick={() => void exportData('long')} />
             <ExportButton icon={<BarChart3 className="h-4 w-4" />} label={french ? 'CSV analytique' : 'Analytic CSV'} busy={exporting === 'analytic'} disabled={exporting !== null} onClick={() => void exportData('analytic')} />
             <ExportButton icon={<FileJson className="h-4 w-4" />} label="JSON" busy={exporting === 'json'} disabled={exporting !== null} onClick={() => void exportData('json')} />
-          </div>
+          </div>}
         </div>
 
-        <section className="mb-5 rounded-2xl border border-ink-100 bg-white p-4 shadow-soft">
+        {view === 'configuration' && portalProfile && (
+          <SpecialtyConfigurationEditor french={french} portalProfile={portalProfile} onPublished={() => void refreshCatalog()} />
+        )}
+
+        {view !== 'configuration' && <section className="mb-5 rounded-2xl border border-ink-100 bg-white p-4 shadow-soft">
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
             {view === 'specialists' ? (
               <>
                 <FilterSelect label={french ? 'Spécialité réelle' : 'Actual specialty'} value={specialtyFilter} onChange={(value) => { setSpecialtyFilter(value); resetPageAndAnalysis(); }}>
                   <option value="all">{french ? 'Toutes les spécialités' : 'All specialties'}</option>
-                  {SPECIALTIES.map(({ name }) => <option key={name} value={name}>{translateSpecialtyName(name, lang)}</option>)}
+                  {specialties.map(({ name }) => <option key={name} value={name}>{translateSpecialtyName(name, lang)}</option>)}
                 </FilterSelect>
                 <FilterSelect label={french ? 'Complétude' : 'Completeness'} value={completenessFilter} onChange={(value) => { setCompletenessFilter(value as CompletenessFilter); resetPageAndAnalysis(); }}>
                   <option value="all">{french ? 'Tous les dossiers' : 'All records'}</option>
@@ -791,7 +833,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
                 </FilterSelect>
                 <FilterSelect label={french ? 'Spécialité préférée' : 'Preferred specialty'} value={studentSpecialtyFilter} onChange={(value) => { setStudentSpecialtyFilter(value); resetPageAndAnalysis(); }}>
                   <option value="all">{french ? 'Toutes les préférences' : 'All preferences'}</option>
-                  {SPECIALTIES.map(({ name }) => <option key={name} value={name}>{translateSpecialtyName(name, lang)}</option>)}
+                  {specialties.map(({ name }) => <option key={name} value={name}>{translateSpecialtyName(name, lang)}</option>)}
                 </FilterSelect>
               </>
             )}
@@ -810,7 +852,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
               <button type="button" onClick={resetFilters} className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-ink-200 px-3 py-2.5 text-xs font-semibold text-ink-600 hover:bg-ink-50"><FilterX className="h-4 w-4" />{french ? 'Réinitialiser' : 'Reset filters'}</button>
             </div>
           </div>
-        </section>
+        </section>}
 
         {view === 'specialists' && (
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-brand-200 bg-brand-50/60 p-4">
@@ -825,26 +867,32 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
           </div>
         )}
 
-        <div className="overflow-x-auto rounded-2xl border border-ink-100 bg-white shadow-soft">
+        {view !== 'configuration' && <div className="overflow-x-auto rounded-2xl border border-ink-100 bg-white shadow-soft">
           {view === 'specialists'
             ? <SpecialistTable rows={specialists} lang={lang} french={french} locale={locale} loadingId={detailLoadingId} onOpen={(id) => void openDetail('specialists', id)} />
             : <StudentTable rows={students} lang={lang} french={french} locale={locale} loadingId={detailLoadingId} onOpen={(id) => void openDetail('students', id)} />}
           {(view === 'specialists' ? specialists.length : students.length) === 0 && (
             <p className="p-8 text-center text-sm text-ink-500">{loading ? (french ? 'Chargement…' : 'Loading…') : (french ? 'Aucune réponse pour ces filtres.' : 'No responses match these filters.')}</p>
           )}
-        </div>
+        </div>}
 
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-ink-500">
+        {view !== 'configuration' && <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-ink-500">
           <span>{activeTotal === 0 ? (french ? '0 réponse' : '0 responses') : `${page * PAGE_SIZE + 1}-${Math.min((page + 1) * PAGE_SIZE, activeTotal)} / ${activeTotal}`}</span>
           <div className="flex items-center gap-2">
             <button type="button" onClick={() => setPage((current) => Math.max(0, current - 1))} disabled={loading || page === 0} className="rounded-full border border-ink-200 bg-white px-4 py-2 font-semibold text-ink-700 disabled:opacity-40">{french ? 'Précédent' : 'Previous'}</button>
             <span className="tabular-nums">{french ? 'Page' : 'Page'} {page + 1} / {totalPages}</span>
             <button type="button" onClick={() => setPage((current) => Math.min(totalPages - 1, current + 1))} disabled={loading || page + 1 >= totalPages} className="rounded-full border border-ink-200 bg-white px-4 py-2 font-semibold text-ink-700 disabled:opacity-40">{french ? 'Suivant' : 'Next'}</button>
           </div>
-        </div>
+        </div>}
 
         {view === 'specialists' && calibrationSummary && (
-          <CalibrationAnalysis summary={calibrationSummary} specialtyFilter={specialtyFilter} lang={lang} />
+          <CalibrationAnalysis
+            summary={calibrationSummary}
+            specialtyFilter={specialtyFilter}
+            lang={lang}
+            catalogRevision={catalogVersion.revision}
+            catalogHash={catalogVersion.content_hash}
+          />
         )}
       </div>
 

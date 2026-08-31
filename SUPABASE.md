@@ -1,38 +1,82 @@
 # Configuration Supabase — Q Project
 
-Cette application utilise Supabase pour deux usages uniquement : collecter des réponses de recherche via des RPC validées et permettre à une liste fermée de chercheurs de consulter les données. La clé utilisée dans Vite est publique ; la protection repose sur les privilèges PostgreSQL et les politiques RLS.
+Q Project utilise Supabase pour collecter des réponses de recherche anonymes et pour fournir un portail fermé aux chercheurs, Doctors et Professors autorisés. La clé `VITE_SUPABASE_PUBLISHABLE_KEY` est publique par conception ; la sécurité repose sur Supabase Auth, les privilèges PostgreSQL, les RPC validées et les politiques RLS. Ne jamais placer une clé `service_role`, `sb_secret_...`, un mot de passe PostgreSQL ou un access token dans une variable `VITE_*`.
 
-## Ce qui est configuré
+## Architecture déployée
 
-- migrations reproductibles dans `supabase/migrations` ;
-- validation stricte des 81 réponses, des 14 valeurs et des 58 spécialités ;
-- versions explicites du questionnaire, des catalogues, du scoring et du consentement ;
-- codes de calibration indépendants de la langue ;
-- RPC d’insertion idempotentes, sans droit d’`INSERT` direct pour le navigateur ;
-- aucune lecture anonyme ;
-- lecture authentifiée réservée à `private.researchers` ;
-- tests pgTAP dans `supabase/tests/database` ;
-- contrôle CI qui reconstruit la base, exécute pgTAP et lance le linter SQL ;
-- configuration versionnée dans `supabase/config.toml` avec URL de production, redirections locales autorisées et inscriptions Auth désactivées.
+- `public.student_responses` et `public.specialist_responses` conservent les observations anonymes. Le navigateur n’a aucun droit d’écriture directe ; les soumissions passent par `submit_*_response_v1` ou `submit_*_response_v2`.
+- `private.researchers` est l’allowlist liée à `auth.users`. Son champ `portal_role` accepte `researcher`, `doctor` ou `professor`.
+- `private.trait_catalog` documente la provenance de mesure de chaque trait.
+- `private.specialty_catalog_versions` contient les snapshots `draft`, `active` et `archived`.
+- `private.specialty_catalog_entries` contient, pour chacune des 58 spécialités et chaque snapshot, les descriptions EN/FR/RO, les résumés cliniques et le profil de matching.
+- `private.specialty_catalog_audit` est le journal append-only des modifications, publications et restaurations.
 
-Les scores étudiants sont nommés `client_scores` car ils sont calculés dans le navigateur et ne constituent pas une mesure vérifiée. Pour une analyse scientifique, les recalculer depuis `ratings`, `selected_values` et les versions enregistrées.
+Les tables de configuration restent dans le schéma `private`, sans accès direct depuis le navigateur. Le frontend ne reçoit que les données strictement nécessaires via des fonctions `SECURITY DEFINER` dont le `search_path` est vide.
 
 ## Variables d’environnement
-
-Copier `.env.example` vers `.env`, puis renseigner :
 
 ```dotenv
 VITE_SUPABASE_URL=https://<project-ref>.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 ```
 
-La variable legacy `VITE_SUPABASE_ANON_KEY` reste acceptée pendant la transition. Ne jamais placer une clé `sb_secret_...`, `service_role`, un mot de passe PostgreSQL ou un access token dans une variable `VITE_*` : elle serait incluse dans le JavaScript public.
+La variable legacy `VITE_SUPABASE_ANON_KEY` reste acceptée pendant la transition.
 
-Le workflow GitHub Pages contient directement l’URL et la clé `sb_publishable_...` du projet. Ces deux valeurs sont publiques par conception et sont de toute façon incluses dans le bundle du navigateur. Aucun secret Supabase administratif n’est stocké dans GitHub.
+## Rôles du portail
 
-## Développement local
+| Capacité | researcher | doctor | professor |
+|---|---:|---:|---:|
+| Lire les réponses protégées par RLS | oui | oui | oui |
+| Lire et modifier le brouillon | non | oui | oui |
+| Publier un brouillon | non | non | oui |
+| Restaurer une version archivée | non | non | oui |
 
-Prérequis : Docker Desktop et la CLI Supabase. La configuration a été générée avec la CLI `2.115.0`.
+Le Doctor prépare et justifie les changements. Le Professor les relit puis les publie. Une publication archive l’ancienne configuration et rend le snapshot complet du brouillon actif dans une seule transaction. Une restauration crée une nouvelle version active ; elle ne réécrit jamais l’historique.
+
+Pour provisionner un compte, créer ou inviter d’abord l’utilisateur dans Supabase Auth, puis exécuter avec un rôle serveur :
+
+```sql
+select private.add_portal_user_by_email(
+  'utilisateur@exemple.org',
+  'Nom affiché',
+  'doctor' -- researcher | doctor | professor
+);
+```
+
+Cette fonction n’est accordée ni à `anon`, ni à `authenticated`. Désactiver un accès sans supprimer le compte :
+
+```sql
+update private.researchers
+set enabled = false
+where user_id = (
+  select id from auth.users
+  where lower(email) = lower('utilisateur@exemple.org')
+);
+```
+
+## Cycle de configuration
+
+1. `get_active_specialty_catalog()` fournit au quiz le snapshot publié.
+2. `get_specialty_catalog_draft()` fournit au Doctor/Professor le brouillon, ou le snapshot actif avant la première modification.
+3. `save_specialty_catalog_entry_draft(...)` clone l’actif si nécessaire, valide les textes et le profil, exige une justification et vérifie l’UUID ainsi que le verrou optimiste.
+4. `publish_specialty_catalog_draft(...)` vérifie les 58 spécialités, calcule le checksum, archive l’ancienne version puis active le brouillon. Cette RPC est réservée au Professor.
+5. `list_specialty_catalog_versions(...)` expose l’historique administratif autorisé.
+6. `restore_specialty_catalog_version(...)` republie un snapshot historique sous un nouvel UUID et une nouvelle révision.
+
+Le frontend charge le catalogue avant de démarrer le questionnaire, le valide puis utilise ce snapshot pour le scoring. Les soumissions v2 enregistrent `specialty_config_version_id` et `specialty_config_revision`. Les lignes legacy, dont la configuration exacte est inconnue, conservent ces champs à `NULL`.
+
+Les `client_scores` étudiants restent un résultat calculé dans le navigateur et non une vérité vérifiée. Toute analyse scientifique doit repartir de `ratings`, `selected_values`, des versions enregistrées et du snapshot de configuration concerné.
+
+## Limites scientifiques protégées
+
+- `manual_orientation` est `value_only` : il n’existe que pour les personnes ayant sélectionné la valeur manuelle. Sa couverture est donc partielle.
+- `prevention_orientation` est `unmeasured` : aucune question ni valeur actuelle ne le produit. Sa valeur de profil est verrouillée en base et dans l’interface jusqu’à correction et versionnement du modèle.
+- Les rappels Top-k décrivent le moteur courant. Ils ne valident jamais seuls une modification de cible ou de poids.
+- Un très petit échantillon reste descriptif et ne doit déclencher aucune modification automatique.
+
+## Développement et tests
+
+Prérequis locaux : Docker Desktop et Supabase CLI.
 
 ```powershell
 npx.cmd --yes supabase@2.115.0 start
@@ -40,128 +84,40 @@ npx.cmd --yes supabase@2.115.0 db reset
 npx.cmd --yes supabase@2.115.0 test db
 npx.cmd --yes supabase@2.115.0 db lint --local
 npm.cmd run test:dashboard
+npm.cmd run typecheck
+npm.cmd run lint
+npm.cmd run build
 ```
 
-`test:dashboard` vérifie localement l’éligibilité scientifique, l’absence de fuite de la spécialité déclarée dans le classement, les rangs avec ex æquo, les dénominateurs, la couverture des traits, la provenance et la sécurité/structure des exports CSV.
+Le test pgTAP couvre les privilèges, les RPC, les rôles Doctor/Professor, le verrou optimiste, l’immutabilité des snapshots publiés, les soumissions v1/v2 et la provenance. `test:dashboard` vérifie notamment l’éligibilité scientifique, les ex æquo, les dénominateurs, la couverture structurelle, les exports CSV et le checksum du modèle.
 
-Récupérer ensuite les valeurs locales affichées par `supabase status` dans `.env`. Après chaque changement de schéma, regénérer les types et relire le diff avant de remplacer `src/lib/database.types.ts` :
+Après un changement de schéma, regénérer les types et relire le diff :
 
 ```powershell
-npx.cmd --yes supabase@2.115.0 gen types --lang typescript --local
+npx.cmd --yes supabase@2.115.0 gen types --lang typescript --linked
 ```
 
-Docker n’est pas installé sur la machine ayant préparé cette configuration. La même suite pgTAP a donc été exécutée contre le projet lié, dans une transaction annulée après les assertions. Le workflow `.github/workflows/database-tests.yml` reconstruit néanmoins une base locale et rejoue ces tests automatiquement pour chaque changement qui touche `supabase/`.
+## Déploiement distant
 
-## Déployer les migrations vers le projet distant
-
-Faire d’abord une sauvegarde si le projet contient déjà des données. Ne jamais utiliser `db reset --linked` sur une base de production.
+Faire une sauvegarde avant toute migration de production. Ne jamais exécuter `db reset --linked`.
 
 ```powershell
-npx.cmd --yes supabase@2.115.0 login
 npx.cmd --yes supabase@2.115.0 link --project-ref <project-ref>
-npx.cmd --yes supabase@2.115.0 migration list
-npx.cmd --yes supabase@2.115.0 db push --dry-run
-npx.cmd --yes supabase@2.115.0 db push
-npx.cmd --yes supabase@2.115.0 config push --project-ref ttnkmbopwcuioxidkkwe
+npx.cmd --yes supabase@2.115.0 migration list --linked
+npx.cmd --yes supabase@2.115.0 db push --dry-run --linked
+npx.cmd --yes supabase@2.115.0 db push --linked
+npx.cmd --yes supabase@2.115.0 db lint --linked
 ```
 
-`db push` applique les migrations PostgreSQL. `config push` synchronise notamment API et Auth : examiner son diff interactif avant de confirmer chaque bloc.
+La migration du portail est `supabase/migrations/20260831120000_specialist_admin_portal.sql`. Elle préserve les RPC v1 pour compatibilité, ajoute les RPC v2 avec provenance et ne donne aucun droit direct supplémentaire sur les réponses.
 
-Le 27 août 2026, les quatre migrations ont été appliquées au projet `ttnkmbopwcuioxidkkwe`. `migration list` confirme que les historiques local et distant correspondent, et `config push` confirme que les configurations API, base et Auth sont synchronisées.
+## Points d’exploitation
 
-Vérifications effectuées contre le projet distant :
+- Les inscriptions Auth doivent rester fermées ; les comptes sont créés ou invités manuellement.
+- Activer MFA pour les comptes du portail lorsque l’offre Supabase le permet.
+- Le dashboard ferme sa session locale après 30 minutes d’inactivité.
+- Une collecte publique importante devrait placer les RPC d’ingestion derrière une Edge Function avec CAPTCHA et limitation de débit.
+- Définir une politique de conservation et une procédure de purge avec le responsable du projet.
+- Les journaux techniques de l’hébergeur peuvent contenir des métadonnées réseau : ne pas promettre un anonymat absolu sans revue juridique.
 
-- linter SQL : aucune erreur dans `extensions`, `private` ou `public` ;
-- pgTAP : 43 assertions sur 43 réussies, puis rollback ;
-- API anonyme : lecture directe des deux tables et appel de `current_user_is_researcher()` refusés ;
-- RPC publiques : payload invalide refusé, soumissions étudiante et spécialiste valides acceptées, rejeu identique idempotent et conflit d’identifiant refusé ;
-- données synthétiques de vérification supprimées puis absence confirmée ;
-- Auth : fournisseur e-mail activé pour les comptes administrés, inscriptions publiques fermées, confirmation d’e-mail obligatoire, mot de passe d’au moins 12 caractères avec lettres minuscules, majuscules et chiffres ;
-- advisor de performance : aucun problème détecté.
-
-L’advisor de sécurité conserve deux catégories d’avertissements documentées :
-
-- les RPC de soumission sont volontairement `SECURITY DEFINER` et exécutables publiquement, car le navigateur n’a aucun droit d’`INSERT` direct ; leurs arguments sont strictement validés, leur `search_path` est vide et les écritures réelles passent par des fonctions privées ;
-- `current_user_is_researcher()` est volontairement `SECURITY DEFINER` pour consulter l’allowlist privée, mais ne renvoie qu’un booléen et n’est accordée qu’au rôle `authenticated`.
-
-La protection Supabase contre les mots de passe compromis est réservée au plan Pro ou supérieur et reste donc indisponible sur ce projet Free. Elle devra être activée dans **Authentication → Providers → Email** si le projet passe sur une offre compatible.
-
-## Verrouiller Auth et autoriser un chercheur
-
-Dans Supabase Dashboard :
-
-1. Ouvrir **Authentication → Providers → Email** et désactiver les nouvelles inscriptions publiques.
-2. Dans **Authentication → URL Configuration**, définir le Site URL sur `https://abdelmac.github.io/Q-pro/` et conserver les URL localhost uniquement pour le développement.
-3. Exiger la confirmation d’e-mail, définir une politique de mot de passe forte et activer la MFA pour les chercheurs. Les limites serveur de durée/inactivité des sessions et la protection contre les mots de passe compromis nécessitent un plan Supabase payant ; le dashboard applique déjà une déconnexion locale après 30 minutes d’inactivité.
-4. Créer ou inviter manuellement le compte du chercheur.
-5. Dans SQL Editor, avec un rôle administrateur, exécuter :
-
-```sql
-select private.add_researcher_by_email(
-  'chercheur@exemple.org',
-  'Nom affiché facultatif'
-);
-```
-
-Cette fonction n’est exécutable ni par `anon`, ni par `authenticated`. Retirer un accès sans supprimer le compte :
-
-```sql
-update private.researchers
-set enabled = false
-where user_id = (
-  select id from auth.users where lower(email) = lower('chercheur@exemple.org')
-);
-```
-
-Le simple fait d’être connecté ne donne aucun accès. Le dashboard appelle `current_user_is_researcher()` puis RLS applique la même allowlist sur chaque ligne.
-
-Au 27 août 2026, le projet distant contient un seul compte Auth confirmé et ce compte est l’unique chercheur actif dans l’allowlist. Son mot de passe n’est stocké ni dans le dépôt ni dans la configuration Vite.
-
-## Exploiter les données dans le dashboard
-
-Le dashboard privilégie les réponses spécialistes pour la calibration tout en donnant le même niveau d’accès brut aux réponses étudiantes :
-
-- liste paginée avec filtres de spécialité, expérience, satisfaction, rechoix, intention de changer, volontariat, complétude, langue et période ;
-- détail d’une soumission avec ses 81 notes regroupées en sept sections, ses valeurs, ses métadonnées et toutes ses versions ;
-- recalcul canonique du profil de traits et du classement avec la version courante du moteur et les priorités neutres par défaut ;
-- contrôle d’éligibilité strict avant tout calcul : schéma v1, versions et consentement courants, 81 IDs exacts, notes entières de 1 à 10, valeurs uniques du catalogue et spécialité canonique ;
-- les lignes legacy ou incompatibles restent consultables et exportables, mais sont exclues des métriques avec leurs motifs d’exclusion ;
-- pour les spécialistes, rang minimal/maximal avec gestion explicite des ex æquo, rappels descriptifs top 1/3/5 inclusifs et conservateurs, dénominateurs visibles, agrégats par spécialité et comparaison profil observé/profil cible ;
-- distinction entre traits issus des notes seules, traits ajustés par les valeurs, traits mesurés seulement sur un sous-groupe et cibles actuellement non mesurées ;
-- export complet de la cohorte filtrée par pagination keyset stable face aux nouvelles insertions, par lots de 250 lignes, en JSON fidèle, CSV large, CSV long pour R/Python et CSV analytique avec provenance ;
-- neutralisation des cellules susceptibles d’être interprétées comme des formules par un tableur ;
-- pour les étudiants, affichage séparé du classement navigateur enregistré — non vérifié — et du classement canonique recalculé.
-
-Les curseurs de priorité personnalisés utilisés avant l’affichage des résultats n’étaient pas enregistrés dans le schéma actuel. Le classement canonique du dashboard est donc reproductible à partir des données stockées, mais il ne faut pas le présenter comme la reproduction exacte du classement vu par le participant. Le CSV analytique expose explicitement cette limite (`participant_priority_weights_recorded=false`).
-
-Chaque analyse/export enregistre une version du dashboard, une révision explicite du moteur et un checksum déterministe des versions, mappings de traits, valeurs, profils cibles et paramètres de rang. Une modification des équations de `scoring.ts` exige néanmoins d’incrémenter manuellement `SCORING_ENGINE_REVISION`.
-
-Limite structurelle connue du modèle v1 : `manual_orientation` n’existe que pour les personnes ayant choisi la valeur manuelle, tandis que `prevention_orientation` est ciblé par un profil sans être produit par un item. Le dashboard expose leur couverture et affiche un avertissement bloquant toute interprétation forte des Top-k. Avant une calibration décisionnelle, il faut mesurer ces traits, les retirer des profils concernés ou définir une baseline constante, puis incrémenter les versions du moteur/protocole.
-
-Les rappels top-k mesurent la présence de la spécialité autodéclarée parmi les recommandations canoniques ; ils ne constituent ni une précision diagnostique ni une validation clinique. Les indicateurs restent descriptifs et ne modifient jamais automatiquement les profils cibles. Les critères d’inclusion, une cohorte de validation indépendante et le traitement des soumissions multiples doivent être définis dans le protocole de recherche ; les petits effectifs sont explicitement signalés.
-
-## Matrice d’accès
-
-| Opération | `anon` | compte Auth ordinaire | chercheur autorisé | administrateur serveur |
-|---|---:|---:|---:|---:|
-| RPC de soumission validée | oui | oui | oui | oui |
-| `INSERT` direct | non | non | non | selon le rôle serveur |
-| lecture des réponses | non | aucune ligne | oui | oui |
-| mise à jour / suppression | non | non | non | selon le rôle serveur |
-| gestion des chercheurs | non | non | non | oui |
-
-## Limites à traiter avant une campagne publique
-
-- Une base seule ne peut pas limiter correctement les appels anonymes par IP. Les RPC bornent et valident les payloads, mais un attaquant peut encore envoyer beaucoup de soumissions valides. Pour une collecte publique importante, placer l’ingestion derrière une Supabase Edge Function avec Turnstile/hCaptcha et rate limiting.
-- Définir avec le responsable du projet une durée de conservation et une procédure de purge. Aucun délai arbitraire n’est appliqué par la migration.
-- Le formulaire ne demande aucun identifiant direct, mais les journaux techniques de l’hébergeur peuvent contenir des métadonnées réseau. Ne pas promettre un anonymat absolu sans revue juridique et opérationnelle.
-- Mettre à jour `DATA_VERSIONS` et créer de nouvelles fonctions/migrations versionnées si les questions, spécialités, valeurs, consentements ou l’algorithme changent. Ne pas modifier rétroactivement la signification d’une version existante.
-
-Documentation officielle utile :
-
-- [Workflow CLI Supabase](https://supabase.com/docs/guides/local-development/cli-workflows)
-- [Row Level Security](https://supabase.com/docs/guides/database/postgres/row-level-security)
-- [Clés API Supabase](https://supabase.com/docs/guides/getting-started/api-keys)
-- [Génération des types TypeScript](https://supabase.com/docs/guides/api/rest/generating-types)
-- [Tests Supabase en CI](https://supabase.com/docs/guides/deployment/ci/testing)
-- [Sécurité des mots de passe](https://supabase.com/docs/guides/auth/password-security)
+La documentation Word détaillée se trouve dans `docs/Q-Project-Structure-Base-de-donnees.docx`, avec sa source lisible dans `docs/STRUCTURE_BASE_DE_DONNEES.md`.

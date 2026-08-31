@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { SPECIALTIES, CATEGORY_ORDER, type Specialty } from '@/data/specialties';
+import { CATEGORY_ORDER, type Specialty } from '@/data/specialties';
 import { translateSpecialtyName, translateCategory } from '@/data/i18n';
 import { useLanguage } from '@/lib/LanguageContext';
+import { useSpecialtyCatalog } from '@/lib/SpecialtyCatalogContext';
 import { Check, Search } from 'lucide-react';
 
 interface SpecialtyStepProps {
@@ -12,11 +13,12 @@ interface SpecialtyStepProps {
 
 export default function SpecialtyStep({ selected, onChange, emptyMessage }: SpecialtyStepProps) {
   const { lang, t } = useLanguage();
+  const { specialties } = useSpecialtyCatalog();
   const [query, setQuery] = useState('');
 
   const grouped: Record<string, Specialty[]> = {};
   for (const cat of CATEGORY_ORDER) grouped[cat] = [];
-  for (const s of SPECIALTIES) {
+  for (const s of specialties) {
     const translated = translateSpecialtyName(s.name, lang).toLowerCase();
     if (translated.includes(query.toLowerCase())) {
       grouped[s.category]?.push(s);

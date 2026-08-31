@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { submitStudentResponse, type SupportedLanguage } from '@/lib/supabase';
 import { useLanguage } from '@/lib/LanguageContext';
 import { AlertCircle, ArrowRight, Loader2, GraduationCap } from 'lucide-react';
+import { useSpecialtyCatalog } from '@/lib/SpecialtyCatalogContext';
 
 interface StudentPromptProps {
   preferredSpecialty: string | null;
@@ -14,6 +15,7 @@ interface StudentPromptProps {
 
 export default function StudentPrompt({ preferredSpecialty, ratings, selectedValues, scores, language, onDone }: StudentPromptProps) {
   const { t } = useLanguage();
+  const { version, source } = useSpecialtyCatalog();
   const [studyYear, setStudyYear] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -30,6 +32,7 @@ export default function StudentPrompt({ preferredSpecialty, ratings, selectedVal
       selected_values: selectedValues,
       client_scores: scores.map(({ specialty, score }) => ({ specialty: specialty.name, score })),
       language,
+      specialty_config_version_id: source === 'remote' ? version.id : null,
     });
     setSubmitting(false);
     if (result.success) onDone();

@@ -17,6 +17,8 @@ interface CalibrationAnalysisProps {
   summary: CalibrationSummary;
   specialtyFilter: string;
   lang: Language;
+  catalogRevision?: number;
+  catalogHash?: string;
 }
 
 const QUESTION_SECTION = new Map(
@@ -68,7 +70,13 @@ function sourceLabel(source: TraitSource, french: boolean): string {
   return labels[source][french ? 0 : 1];
 }
 
-export default function CalibrationAnalysis({ summary, specialtyFilter, lang }: CalibrationAnalysisProps) {
+export default function CalibrationAnalysis({
+  summary,
+  specialtyFilter,
+  lang,
+  catalogRevision,
+  catalogHash,
+}: CalibrationAnalysisProps) {
   const french = lang === 'fr';
   const selectedSpecialty = specialtyFilter === 'all'
     ? null
@@ -114,6 +122,11 @@ export default function CalibrationAnalysis({ summary, specialtyFilter, lang }: 
                 ? 'Les priorités personnalisées historiques n’étant pas enregistrées, ce classement canonique ne reproduit pas nécessairement le classement vu par le participant.'
                 : 'Historical personalized priorities were not stored, so this canonical ranking may differ from what the participant saw.'}
             </p>
+            {catalogRevision !== undefined && (
+              <p className="mt-2 break-all font-mono text-[11px] text-ink-500">
+                specialty config r{catalogRevision}{catalogHash ? ` · ${catalogHash}` : ''}
+              </p>
+            )}
             {selectedSpecialty && (
               <p className="mt-2 text-sm font-semibold text-brand-800">
                 {french ? 'Profil cible comparé :' : 'Target profile compared:'} {selectedSpecialty}

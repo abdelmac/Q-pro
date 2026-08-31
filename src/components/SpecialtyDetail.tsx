@@ -1,7 +1,7 @@
 import { useLanguage } from '@/lib/LanguageContext';
-import { SPECIALTIES } from '@/data/specialties';
 import { SPECIALTY_METADATA } from '@/data/specialtyMetadata';
-import { translateSpecialtyName, translateCategory, translateBlurb } from '@/data/i18n';
+import { translateSpecialtyName, translateCategory } from '@/data/i18n';
+import { useSpecialtyCatalog } from '@/lib/SpecialtyCatalogContext';
 import {
   translateCareType,
   translatePatientContact,
@@ -19,10 +19,12 @@ interface SpecialtyDetailProps {
 
 export default function SpecialtyDetail({ specialtyName, score, onBack }: SpecialtyDetailProps) {
   const { t, lang } = useLanguage();
-  const specialty = SPECIALTIES.find((s) => s.name === specialtyName);
+  const { specialties, getDescription, getClinicalSummary } = useSpecialtyCatalog();
+  const specialty = specialties.find((s) => s.name === specialtyName);
   if (!specialty) return null;
   const meta = SPECIALTY_METADATA[specialtyName];
-  const blurb = translateBlurb(specialtyName, lang) || specialty.blurb;
+  const blurb = getDescription(specialtyName, lang) || specialty.blurb;
+  const clinicalSummary = getClinicalSummary(specialtyName, lang);
 
   return (
     <div className="min-h-screen">
@@ -47,6 +49,15 @@ export default function SpecialtyDetail({ specialtyName, score, onBack }: Specia
         </div>
 
         <p className="text-base text-ink-600 leading-relaxed mb-8">{blurb}</p>
+
+        {clinicalSummary && clinicalSummary !== blurb && (
+          <section className="mb-8 rounded-2xl border border-brand-100 bg-brand-50/60 p-5">
+            <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-brand-700">
+              {lang === 'fr' ? 'Résumé clinique' : lang === 'ro' ? 'Rezumat clinic' : 'Clinical summary'}
+            </h2>
+            <p className="text-sm leading-relaxed text-ink-700">{clinicalSummary}</p>
+          </section>
+        )}
 
         {meta && (
           <>

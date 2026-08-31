@@ -1,5 +1,5 @@
 import { ALL_QUESTION_IDS, RATING_SECTIONS } from '@/data/questions';
-import { SPECIALTIES } from '@/data/specialties';
+import { SPECIALTIES, type Specialty } from '@/data/specialties';
 import { QUESTION_TRAITS, VALUE_MAPPING, VALUE_OPTIONS } from '@/data/traits';
 import { calculateTraits, rankSpecialties, SCORING_ENGINE_REVISION } from '@/lib/scoring';
 import { DASHBOARD_ANALYSIS_VERSION, DATA_VERSIONS } from '@/lib/researchVersions';
@@ -7,6 +7,7 @@ import type { Database, Json } from '@/lib/database.types';
 
 export type SpecialistResponseRow = Database['public']['Tables']['specialist_responses']['Row'];
 export type StudentResponseRow = Database['public']['Tables']['student_responses']['Row'];
+type SpecialtyCatalog = readonly Specialty[];
 
 export type EligibilityReason =
   | 'schema_version'
@@ -173,19 +174,22 @@ function checksum32(input: string, seed: number): string {
   return (hash >>> 0).toString(16).padStart(8, '0');
 }
 
-const MODEL_CONFIGURATION = stableSerialize({
-  versions: DATA_VERSIONS,
-  analysisVersion: DASHBOARD_ANALYSIS_VERSION,
-  engineRevision: SCORING_ENGINE_REVISION,
-  rankEpsilon: RANK_EPSILON,
-  questionTraits: QUESTION_TRAITS,
-  valueMapping: VALUE_MAPPING,
-  specialties: SPECIALTIES.map(({ name, profile }) => ({ name, profile })),
-});
+export function dashboardModelChecksum(catalog: SpecialtyCatalog = SPECIALTIES): string {
+  const modelConfiguration = stableSerialize({
+    versions: DATA_VERSIONS,
+    analysisVersion: DASHBOARD_ANALYSIS_VERSION,
+    engineRevision: SCORING_ENGINE_REVISION,
+    rankEpsilon: RANK_EPSILON,
+    questionTraits: QUESTION_TRAITS,
+    valueMapping: VALUE_MAPPING,
+    specialties: catalog.map(({ name, profile }) => ({ name, profile })),
+  });
+  return `fnv1a64-${
+    checksum32(modelConfiguration, 2166136261)
+  }${checksum32(modelConfiguration, 3339675911)}`;
+}
 
-export const DASHBOARD_MODEL_CHECKSUM = `fnv1a64-${
-  checksum32(MODEL_CONFIGURATION, 2166136261)
-}${checksum32(MODEL_CONFIGURATION, 3339675911)}`;
+export const DASHBOARD_MODEL_CHECKSUM = dashboardModelChecksum();
 
 export const CALIBRATION_TRAITS = Array.from(new Set([
   ...QUESTION_TRAIT_NAMES,
@@ -338,20 +342,27 @@ export function assignTieAwareRanks(ranking: Array<{ name: string; score: number
   return annotated;
 }
 
-function emptyAnalysis(exclusionReasons: EligibilityReason[]): ResponseAnalysis {
+function emptyAnalysis(
+  exclusionReasons: EligibilityReason[],
+  catalog: SpecialtyCatalog = SPECIALTIES,
+): ResponseAnalysis {
   return {
     eligible: false,
     exclusionReasons,
     analysisVersion: DASHBOARD_ANALYSIS_VERSION,
     engineRevision: SCORING_ENGINE_REVISION,
-    modelChecksum: DASHBOARD_MODEL_CHECKSUM,
+    modelChecksum: dashboardModelChecksum(catalog),
     baseTraits: {},
     adjustedTraits: {},
     ranking: [],
   };
 }
 
-function calculateCanonicalAnalysis(ratingsJson: Json, selectedValuesJson: Json): ResponseAnalysis {
+function calculateCanonicalAnalysis(
+  ratingsJson: Json,
+  selectedValuesJson: Json,
+  catalog: SpecialtyCatalog = SPECIALTIES,
+): ResponseAnalysis {
   const ratings = parseRatings(ratingsJson);
   const selectedValues = parseSelectedValues(selectedValuesJson);
   const baseTraits = calculateTraits(ratings, []);
@@ -360,7 +371,7 @@ function calculateCanonicalAnalysis(ratingsJson: Json, selectedValuesJson: Json)
     ratings,
     selectedValues,
     preferredSpecialty: null,
-  }).map((result) => ({
+  }, undefined, catalog).map((result) => ({
     name: result.specialty.name,
     score: result.score,
   })));
@@ -370,7 +381,7 @@ function calculateCanonicalAnalysis(ratingsJson: Json, selectedValuesJson: Json)
     exclusionReasons: [],
     analysisVersion: DASHBOARD_ANALYSIS_VERSION,
     engineRevision: SCORING_ENGINE_REVISION,
-    modelChecksum: DASHBOARD_MODEL_CHECKSUM,
+    modelChecksum: dashboardModelChecksum(catalog),
     baseTraits,
     adjustedTraits,
     ranking,
@@ -383,18 +394,22 @@ function calculateCanonicalAnalysis(ratingsJson: Json, selectedValuesJson: Json)
 export function analyzeResponse(
   ratingsJson: Json,
   selectedValuesJson: Json,
+  catalog: SpecialtyCatalog = SPECIALTIES,
 ): ResponseAnalysis {
   const exclusionReasons = assessPayload(ratingsJson, selectedValuesJson);
   return exclusionReasons.length > 0
-    ? emptyAnalysis(exclusionReasons)
-    : calculateCanonicalAnalysis(ratingsJson, selectedValuesJson);
+    ? emptyAnalysis(exclusionReasons, catalog)
+    : calculateCanonicalAnalysis(ratingsJson, selectedValuesJson, catalog);
 }
 
-export function analyzeSpecialistResponse(row: SpecialistResponseRow): SpecialistResponseAnalysis {
+export function analyzeSpecialistResponse(
+  row: SpecialistResponseRow,
+  catalog: SpecialtyCatalog = SPECIALTIES,
+): SpecialistResponseAnalysis {
   const eligibility = assessSpecialistEligibility(row);
   const analysis = eligibility.eligible
-    ? calculateCanonicalAnalysis(row.ratings, row.selected_values)
-    : emptyAnalysis(eligibility.exclusionReasons);
+    ? calculateCanonicalAnalysis(row.ratings, row.selected_values, catalog)
+    : emptyAnalysis(eligibility.exclusionReasons, catalog);
   const actual = analysis.ranking.find(({ name }) => name === row.actual_specialty);
   return {
     ...analysis,
@@ -406,11 +421,14 @@ export function analyzeSpecialistResponse(row: SpecialistResponseRow): Specialis
   };
 }
 
-export function analyzeStudentResponse(row: StudentResponseRow): StudentResponseAnalysis {
+export function analyzeStudentResponse(
+  row: StudentResponseRow,
+  catalog: SpecialtyCatalog = SPECIALTIES,
+): StudentResponseAnalysis {
   const eligibility = assessStudentEligibility(row);
   const analysis = eligibility.eligible
-    ? calculateCanonicalAnalysis(row.ratings, row.selected_values)
-    : emptyAnalysis(eligibility.exclusionReasons);
+    ? calculateCanonicalAnalysis(row.ratings, row.selected_values, catalog)
+    : emptyAnalysis(eligibility.exclusionReasons, catalog);
   const preferred = row.preferred_specialty
     ? analysis.ranking.find(({ name }) => name === row.preferred_specialty)
     : undefined;
@@ -453,8 +471,9 @@ function traitSource(trait: string): TraitSource {
 export function buildCalibrationSummary(
   rows: SpecialistResponseRow[],
   targetSpecialty: string | null,
+  catalog: SpecialtyCatalog = SPECIALTIES,
 ): CalibrationSummary {
-  const analyses = rows.map((row) => ({ row, analysis: analyzeSpecialistResponse(row) }));
+  const analyses = rows.map((row) => ({ row, analysis: analyzeSpecialistResponse(row, catalog) }));
   const eligible = analyses.filter(({ analysis }) => analysis.eligible);
   const eligibleRows = eligible.map(({ row }) => row);
   const rankable = eligible.filter(({ analysis }) => analysis.actualRankMin !== null);
@@ -467,8 +486,9 @@ export function buildCalibrationSummary(
   ));
   const chooseAgainAnswers = eligibleRows.filter(({ would_choose_again_code }) => would_choose_again_code !== null);
   const targetProfile = targetSpecialty
-    ? SPECIALTIES.find(({ name }) => name === targetSpecialty)?.profile
+    ? catalog.find(({ name }) => name === targetSpecialty)?.profile
     : undefined;
+  const modelTraitNames = new Set<string>(catalog.flatMap(({ profile }) => Object.keys(profile)));
 
   const reasonCounts = new Map<EligibilityReason, number>();
   for (const { analysis } of analyses) {
@@ -512,7 +532,7 @@ export function buildCalibrationSummary(
       importance,
       gap: target === null || adjustedMean === null || !fullyObserved ? null : adjustedMean - target,
       source: traitSource(trait),
-      usedInCurrentModel: MODEL_TRAIT_NAMES.has(trait),
+      usedInCurrentModel: modelTraitNames.has(trait),
     };
   }).sort((left, right) => {
     if (left.target !== null && right.target === null) return -1;
@@ -630,13 +650,15 @@ const SPECIALIST_METADATA_COLUMNS = [
   'would_choose_again_code', 'intention_to_change_code', 'voluntary_choice_code',
   'would_choose_again', 'intention_to_change', 'voluntary_choice', 'language',
   'submission_schema_version', 'questionnaire_version', 'value_catalog_version',
-  'specialty_catalog_version', 'calibration_version', 'consent_version',
+  'specialty_catalog_version', 'specialty_config_version_id', 'specialty_config_revision',
+  'calibration_version', 'consent_version',
 ] as const;
 
 const STUDENT_METADATA_COLUMNS = [
   'id', 'created_at', 'study_year', 'preferred_specialty', 'language',
   'submission_schema_version', 'questionnaire_version', 'value_catalog_version',
-  'specialty_catalog_version', 'scoring_version', 'consent_version',
+  'specialty_catalog_version', 'specialty_config_version_id', 'specialty_config_revision',
+  'scoring_version', 'consent_version',
 ] as const;
 
 const QUESTION_EXPORT_METADATA = new Map(
@@ -695,7 +717,10 @@ export function specialistRawCsv(rows: SpecialistResponseRow[]): string {
   }));
 }
 
-export function specialistAnalyticCsv(rows: SpecialistResponseRow[]): string {
+export function specialistAnalyticCsv(
+  rows: SpecialistResponseRow[],
+  catalog: SpecialtyCatalog = SPECIALTIES,
+): string {
   const generatedAt = new Date().toISOString();
   const headers = [
     ...SPECIALIST_METADATA_COLUMNS,
@@ -712,7 +737,7 @@ export function specialistAnalyticCsv(rows: SpecialistResponseRow[]): string {
     ...CALIBRATION_TRAITS.flatMap((trait) => [`trait_base:${trait}`, `trait_adjusted:${trait}`]),
   ];
   return makeCsv(headers, rows.map((row) => {
-    const analysis = analyzeSpecialistResponse(row);
+    const analysis = analyzeSpecialistResponse(row, catalog);
     return [
       ...SPECIALIST_METADATA_COLUMNS.map((column) => row[column]),
       ...analyticProvenance(analysis, generatedAt),
@@ -763,13 +788,16 @@ export function specialistLongCsv(rows: SpecialistResponseRow[]): string {
   }));
 }
 
-export function studentRawCsv(rows: StudentResponseRow[]): string {
+export function studentRawCsv(
+  rows: StudentResponseRow[],
+  catalog: SpecialtyCatalog = SPECIALTIES,
+): string {
   const headers = [
     ...STUDENT_METADATA_COLUMNS,
     'ratings_json', 'selected_values_json', 'client_scores_json',
     'participant_priority_weights_recorded', 'selected_values',
     ...ALL_QUESTION_IDS,
-    ...SPECIALTIES.map(({ name }) => `stored_score:${name}`),
+    ...catalog.map(({ name }) => `stored_score:${name}`),
   ];
   return makeCsv(headers, rows.map((row) => {
     const ratings = parseRatings(row.ratings);
@@ -782,12 +810,15 @@ export function studentRawCsv(rows: StudentResponseRow[]): string {
       false,
       parseSelectedValues(row.selected_values).join('|'),
       ...ALL_QUESTION_IDS.map((id) => ratings[id] ?? null),
-      ...SPECIALTIES.map(({ name }) => clientScores.get(name) ?? null),
+      ...catalog.map(({ name }) => clientScores.get(name) ?? null),
     ];
   }));
 }
 
-export function studentAnalyticCsv(rows: StudentResponseRow[]): string {
+export function studentAnalyticCsv(
+  rows: StudentResponseRow[],
+  catalog: SpecialtyCatalog = SPECIALTIES,
+): string {
   const generatedAt = new Date().toISOString();
   const headers = [
     ...STUDENT_METADATA_COLUMNS,
@@ -802,7 +833,7 @@ export function studentAnalyticCsv(rows: StudentResponseRow[]): string {
     ...CALIBRATION_TRAITS.flatMap((trait) => [`trait_base:${trait}`, `trait_adjusted:${trait}`]),
   ];
   return makeCsv(headers, rows.map((row) => {
-    const analysis = analyzeStudentResponse(row);
+    const analysis = analyzeStudentResponse(row, catalog);
     return [
       ...STUDENT_METADATA_COLUMNS.map((column) => row[column]),
       ...analyticProvenance(analysis, generatedAt),

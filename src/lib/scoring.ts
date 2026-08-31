@@ -54,6 +54,8 @@ export interface SpecialtyScore {
   tradeOffs: TradeOff[];
 }
 
+export type SpecialtyCatalog = readonly Specialty[];
+
 // --------------------------------------------------------
 // Normalize a 1–10 answer to 0–100.
 // --------------------------------------------------------
@@ -198,10 +200,14 @@ function calculateSpecialtyScore(
 // --------------------------------------------------------
 // Rank every specialty, optionally with priority weights.
 // --------------------------------------------------------
-export function rankSpecialties(answers: QuizAnswers, priorities?: PriorityWeights): SpecialtyScore[] {
+export function rankSpecialties(
+  answers: QuizAnswers,
+  priorities?: PriorityWeights,
+  catalog: SpecialtyCatalog = SPECIALTIES,
+): SpecialtyScore[] {
   const studentTraits = calculateTraits(answers.ratings, answers.selectedValues);
 
-  const results: SpecialtyScore[] = SPECIALTIES.map((specialty) => {
+  const results: SpecialtyScore[] = catalog.map((specialty) => {
     const { score, details, subScores, tradeOffs } = calculateSpecialtyScore(
       studentTraits,
       specialty.profile,
@@ -219,9 +225,10 @@ export function rankSpecialties(answers: QuizAnswers, priorities?: PriorityWeigh
 // --------------------------------------------------------
 export function reRankWithPriorities(
   answers: QuizAnswers,
-  priorities: PriorityWeights
+  priorities: PriorityWeights,
+  catalog: SpecialtyCatalog = SPECIALTIES,
 ): SpecialtyScore[] {
-  return rankSpecialties(answers, priorities);
+  return rankSpecialties(answers, priorities, catalog);
 }
 
 // --------------------------------------------------------
