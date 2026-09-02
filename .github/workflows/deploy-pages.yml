@@ -33,8 +33,8 @@ jobs:
       - name: Build app
         env:
           # Both values are intentionally public and are embedded in the browser bundle.
-          VITE_SUPABASE_URL: https://ttnkmbopwcuioxidkkwe.supabase.co
-          VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_TPhU8Gg3CVdmfn1l1hSXcQ_mnuJ_K67
+          VITE_SUPABASE_URL: https://txrvbkdcfyhatauovngh.supabase.co
+          VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_CY8ztOkxrRvG07AhotvW1w_xr9FvXja
         run: |
           if [ -z "$VITE_SUPABASE_URL" ]; then
             echo "::error::Missing VITE_SUPABASE_URL GitHub secret"
