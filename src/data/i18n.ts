@@ -63,7 +63,6 @@ export interface UIStrings {
   otherMatchesDesc: string;
   resultsRankLabel: (rank: number) => string;
   resultsSpecialistNarrativeTitle: string;
-  resultsNarrativeProvenance: string;
   resultsEditedNarrativeProvenance: string;
   resultsNoSpecialistNarrative: string;
   resultsSpecialtyOverview: string;
@@ -330,7 +329,6 @@ const en: UIStrings = {
   otherMatchesDesc: 'Ranks 2–10 are shown in full below, with no additional click required.',
   resultsRankLabel: (rank: number) => `Rank ${rank}`,
   resultsSpecialistNarrativeTitle: 'Specialist-supplied specialty narrative',
-  resultsNarrativeProvenance: 'The Romanian version reproduces the specialist-supplied text with only minor spelling, grammar, typographic, and diacritic corrections that do not change its meaning; the French and English versions are faithful translations.',
   resultsEditedNarrativeProvenance: 'This published narrative differs from the bundled specialist source. It may have been edited in the dashboard or restored from another catalog revision.',
   resultsNoSpecialistNarrative: 'No specialist-supplied narrative was available for this specialty.',
   resultsSpecialtyOverview: 'About the specialty',
@@ -587,7 +585,6 @@ const ro: UIStrings = {
   otherMatchesDesc: 'Locurile 2–10 sunt afișate integral mai jos, fără să fie necesar un clic suplimentar.',
   resultsRankLabel: (rank: number) => `Locul ${rank}`,
   resultsSpecialistNarrativeTitle: 'Prezentarea specialității furnizată de specialist',
-  resultsNarrativeProvenance: 'Versiunea în limba română reproduce textul furnizat de specialist, doar cu mici corecturi ortografice, gramaticale, tipografice și de diacritice care nu îi schimbă sensul; versiunile în franceză și engleză sunt traduceri fidele.',
   resultsEditedNarrativeProvenance: 'Această prezentare publicată diferă de sursa specialistului inclusă în aplicație. Este posibil să fi fost modificată din dashboard sau restaurată dintr-o altă versiune a catalogului.',
   resultsNoSpecialistNarrative: 'Pentru această specialitate nu a fost disponibilă o prezentare furnizată de specialist.',
   resultsSpecialtyOverview: 'Despre specialitate',
@@ -844,7 +841,6 @@ const fr: UIStrings = {
   otherMatchesDesc: 'Les rangs 2 à 10 sont affichés intégralement ci-dessous, sans clic supplémentaire.',
   resultsRankLabel: (rank: number) => `Rang ${rank}`,
   resultsSpecialistNarrativeTitle: 'Présentation de la spécialité fournie par le spécialiste',
-  resultsNarrativeProvenance: 'La version roumaine reproduit le texte fourni par le spécialiste, avec seulement de légères corrections orthographiques, grammaticales, typographiques et de diacritiques qui n’en changent pas le sens ; les versions française et anglaise en sont des traductions fidèles.',
   resultsEditedNarrativeProvenance: 'Cette présentation publiée diffère de la source du spécialiste intégrée à l’application. Elle a peut-être été modifiée dans le dashboard ou restaurée depuis une autre révision du catalogue.',
   resultsNoSpecialistNarrative: 'Aucune présentation fournie par un spécialiste n’était disponible pour cette spécialité.',
   resultsSpecialtyOverview: 'Présentation de la spécialité',

@@ -138,13 +138,13 @@ function SpecialtyFacts({
           <GroupHeading className="font-display text-lg font-semibold text-brand-900">
             {t.resultsSpecialistNarrativeTitle}
           </GroupHeading>
-          <p className="mt-1.5 text-xs leading-relaxed text-brand-800">
-            {hasSuppliedNarrative
-              ? narrativeMatchesSource
-                ? t.resultsNarrativeProvenance
-                : t.resultsEditedNarrativeProvenance
-              : t.resultsNoSpecialistNarrative}
-          </p>
+          {(!hasSuppliedNarrative || !narrativeMatchesSource) && (
+            <p className="mt-1.5 text-xs leading-relaxed text-brand-800">
+              {hasSuppliedNarrative
+                ? t.resultsEditedNarrativeProvenance
+                : t.resultsNoSpecialistNarrative}
+            </p>
+          )}
         </header>
 
         {hasSuppliedNarrative && (
