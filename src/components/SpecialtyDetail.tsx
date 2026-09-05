@@ -1,5 +1,6 @@
 import { useLanguage } from '@/lib/LanguageContext';
 import { SPECIALTY_METADATA } from '@/data/specialtyMetadata';
+import { getSpecialtyNarrative } from '@/data/specialtyNarratives';
 import { translateSpecialtyName, translateCategory } from '@/data/i18n';
 import { useSpecialtyCatalog } from '@/lib/SpecialtyCatalogContext';
 import {
@@ -25,6 +26,10 @@ export default function SpecialtyDetail({ specialtyName, score, onBack }: Specia
   const meta = SPECIALTY_METADATA[specialtyName];
   const blurb = getDescription(specialtyName, lang) || specialty.blurb;
   const clinicalSummary = getClinicalSummary(specialtyName, lang);
+  const references = Array.from(new Set([
+    ...(meta?.references ?? []),
+    ...(getSpecialtyNarrative(specialtyName)?.sourceReferences ?? []),
+  ]));
 
   return (
     <div className="min-h-screen">
@@ -53,7 +58,7 @@ export default function SpecialtyDetail({ specialtyName, score, onBack }: Specia
         {clinicalSummary && clinicalSummary !== blurb && (
           <section className="mb-8 rounded-2xl border border-brand-100 bg-brand-50/60 p-5">
             <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-brand-700">
-              {lang === 'fr' ? 'Résumé clinique' : lang === 'ro' ? 'Rezumat clinic' : 'Clinical summary'}
+              {t.resultsProfessionalProfile}
             </h2>
             <p className="text-sm leading-relaxed text-ink-700">{clinicalSummary}</p>
           </section>
@@ -82,10 +87,11 @@ export default function SpecialtyDetail({ specialtyName, score, onBack }: Specia
             <div>
               <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-400 mb-3">{t.explorerReferences}</h3>
               <ul className="space-y-1.5">
-                {meta.references.map((ref) => (
-                  <li key={ref} className="text-sm text-ink-600">{ref}</li>
+                {references.map((ref) => (
+                  <li key={ref} className="break-words text-sm text-ink-600">{ref}</li>
                 ))}
               </ul>
+              <p className="mt-2 text-[11px] leading-relaxed text-ink-400">{t.resultsReferencesDisclaimer}</p>
             </div>
           </>
         )}

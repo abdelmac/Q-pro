@@ -54,6 +54,7 @@ assert(Array.isArray(catalog.specialties) && catalog.specialties.length === 58, 
 
 const names = new Set();
 let profileTraitAssignments = 0;
+let multilingualNarratives = 0;
 for (const specialty of catalog.specialties) {
   assert(isRecord(specialty), 'A specialty payload is invalid.');
   assert(typeof specialty.name === 'string' && specialty.name.length > 0, 'A specialty name is missing.');
@@ -62,9 +63,18 @@ for (const specialty of catalog.specialties) {
   assert(isRecord(specialty.descriptions), `Descriptions are missing for ${specialty.name}.`);
   assert(isRecord(specialty.clinical_summaries), `Clinical summaries are missing for ${specialty.name}.`);
   for (const language of ['en', 'fr', 'ro']) {
-    assert(typeof specialty.descriptions[language] === 'string' && specialty.descriptions[language].length > 0, `Missing ${language} description for ${specialty.name}.`);
-    assert(typeof specialty.clinical_summaries[language] === 'string' && specialty.clinical_summaries[language].length > 0, `Missing ${language} clinical summary for ${specialty.name}.`);
+    const description = specialty.descriptions[language];
+    const clinicalSummary = specialty.clinical_summaries[language];
+    assert(typeof description === 'string' && description.length >= 20 && description.length <= 2000, `Invalid ${language} description for ${specialty.name}.`);
+    assert(typeof clinicalSummary === 'string' && clinicalSummary.length >= 20 && clinicalSummary.length <= 5000, `Invalid ${language} professional profile for ${specialty.name}.`);
+    assert(!/�|Ã|Â|ǎ|[şţŞŢ]/u.test(description), `Broken Unicode in ${language} description for ${specialty.name}.`);
+    assert(!/�|Ã|Â|ǎ|[şţŞŢ]/u.test(clinicalSummary), `Broken Unicode in ${language} professional profile for ${specialty.name}.`);
+    assert(description !== clinicalSummary, `Overview and professional profile are identical for ${specialty.name}.${language}.`);
+    assert(!/^(Initial clinical summary|Résumé clinique initial|Rezumat clinic inițial)/u.test(clinicalSummary), `Legacy placeholder remains for ${specialty.name}.`);
   }
+  assert(new Set(Object.values(specialty.descriptions)).size === 3, `Descriptions are not translated for ${specialty.name}.`);
+  assert(new Set(Object.values(specialty.clinical_summaries)).size === 3, `Professional profiles are not translated for ${specialty.name}.`);
+  multilingualNarratives += 1;
   assert(isRecord(specialty.profile) && Object.keys(specialty.profile).length > 0, `Profile is empty for ${specialty.name}.`);
   for (const [trait, pair] of Object.entries(specialty.profile)) {
     assert(Array.isArray(pair) && pair.length === 2, `Invalid pair for ${specialty.name}.${trait}.`);
@@ -108,10 +118,7 @@ for (const [specialtyName, traits] of Object.entries(requiredProfileTraits)) {
   }
 }
 
-const cardiology = catalog.specialties.find(({ name }) => name === 'Cardiology');
-assert(cardiology?.descriptions?.fr?.includes('Cœur'), 'The French catalog text is not UTF-8 clean.');
-const pediatricCardiology = catalog.specialties.find(({ name }) => name === 'Pediatric Cardiology');
-assert(pediatricCardiology?.descriptions?.ro?.includes('Îngrijirea'), 'The Romanian catalog text is not UTF-8 clean.');
+assert(multilingualNarratives === 58, 'The complete multilingual narrative set was not published.');
 
 const directTableResponse = await fetch(`${supabaseUrl}/rest/v1/student_responses?select=id&limit=1`, { headers });
 assert([401, 403].includes(directTableResponse.status), `Anonymous direct table access was not rejected (HTTP ${directTableResponse.status}).`);
@@ -176,6 +183,7 @@ console.log(JSON.stringify({
   uniqueSpecialties: names.size,
   profileTraitAssignments,
   measuredMetadataTraitsPublished: true,
+  multilingualNarratives,
   schema2SubmissionRpcs: true,
   multilingualEncoding: true,
   anonymousDirectTableAccessRejected: true,

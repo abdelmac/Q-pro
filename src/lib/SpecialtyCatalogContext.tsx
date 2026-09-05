@@ -17,6 +17,7 @@ import {
   type TraitProfile,
 } from '@/data/specialties';
 import { BLURB_TRANSLATIONS, type Language } from '@/data/i18n';
+import { getSpecialtyNarrative } from '@/data/specialtyNarratives';
 import { QUESTION_TRAITS, VALUE_MAPPING, type Trait } from '@/data/traits';
 import { DATA_VERSIONS } from '@/lib/researchVersions';
 import { getSupabaseConfigurationError, supabase } from '@/lib/supabase';
@@ -245,15 +246,16 @@ function createFallbackSnapshot(): SpecialtyCatalogSnapshot {
   const clinicalSummaries: Record<string, LocalizedSpecialtyText> = {};
 
   for (const specialty of SPECIALTIES) {
+    const narrative = getSpecialtyNarrative(specialty.name);
     const localized = freezeLocalizedText({
-      en: staticDescription(specialty, 'en'),
-      ro: staticDescription(specialty, 'ro'),
-      fr: staticDescription(specialty, 'fr'),
+      en: narrative?.overview.en ?? staticDescription(specialty, 'en'),
+      ro: narrative?.overview.ro ?? staticDescription(specialty, 'ro'),
+      fr: narrative?.overview.fr ?? staticDescription(specialty, 'fr'),
     });
     descriptions[specialty.name] = localized;
-    // The static catalog has no separate long clinical summary. Until an
-    // administrator publishes one, the short description is the safe fallback.
-    clinicalSummaries[specialty.name] = localized;
+    clinicalSummaries[specialty.name] = narrative
+      ? freezeLocalizedText({ ...narrative.fitProfile })
+      : localized;
   }
 
   return freezeSnapshot(

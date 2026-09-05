@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { ALL_QUESTION_IDS } from '../src/data/questions';
 import { SPECIALTIES } from '../src/data/specialties';
 import { SPECIALTY_METADATA } from '../src/data/specialtyMetadata';
+import { SPECIALTY_NARRATIVES } from '../src/data/specialtyNarratives';
 import { QUESTION_TRAITS, VALUE_MAPPING, VALUE_OPTIONS } from '../src/data/traits';
 import {
   DASHBOARD_MODEL_CHECKSUM,
@@ -21,6 +22,7 @@ import {
   type StudentResponseRow,
 } from '../src/lib/researchDashboard';
 import { DASHBOARD_ANALYSIS_VERSION, DATA_VERSIONS } from '../src/lib/researchVersions';
+import { RESULTS_TOP_COUNT } from '../src/lib/resultsPresentation';
 import {
   calculateTraits,
   rankSpecialties,
@@ -62,6 +64,7 @@ function parseCsv(csv: string): string[][] {
 }
 
 const ratings = Object.fromEntries(ALL_QUESTION_IDS.map((id, index) => [id, (index % 10) + 1]));
+assert.equal(RESULTS_TOP_COUNT, 10, 'The results page must expose a complete Top 10');
 const maximumTraits = calculateTraits(
   Object.fromEntries(ALL_QUESTION_IDS.map((id) => [id, 10])),
   [],
@@ -151,6 +154,36 @@ for (const specialty of SPECIALTIES) {
       `${specialty.name} has undocumented unmeasured metadata trait ${trait}`,
     );
   }
+}
+
+const narrativeNames = Object.keys(SPECIALTY_NARRATIVES);
+assert.equal(narrativeNames.length, SPECIALTIES.length, 'Every specialty must have exactly one narrative');
+assert.deepEqual(
+  [...narrativeNames].sort(),
+  SPECIALTIES.map(({ name }) => name).sort(),
+  'Narrative keys must exactly match the scoring catalog',
+);
+for (const specialty of SPECIALTIES) {
+  const narrative = SPECIALTY_NARRATIVES[specialty.name];
+  assert.ok(narrative, `Missing multilingual narrative for ${specialty.name}`);
+  for (const language of ['en', 'ro', 'fr'] as const) {
+    assert.notEqual(
+      narrative.overview[language],
+      narrative.fitProfile[language],
+      `${specialty.name}.${language} must keep overview and professional profile distinct`,
+    );
+    for (const [field, text, minimum, maximum] of [
+      ['overview', narrative.overview[language], 20, 2000],
+      ['fitProfile', narrative.fitProfile[language], 20, 5000],
+    ] as const) {
+      assert.equal(text, text.trim(), `${specialty.name}.${field}.${language} has outer whitespace`);
+      assert.equal(text, text.normalize('NFC'), `${specialty.name}.${field}.${language} is not NFC`);
+      assert.ok(text.length >= minimum && text.length <= maximum, `${specialty.name}.${field}.${language} length is invalid`);
+      assert.doesNotMatch(text, /�|Ã|Â|ǎ|[şţŞŢ]/u, `${specialty.name}.${field}.${language} contains broken Unicode`);
+    }
+  }
+  assert.equal(new Set(Object.values(narrative.overview)).size, 3, `${specialty.name} overview must be translated`);
+  assert.equal(new Set(Object.values(narrative.fitProfile)).size, 3, `${specialty.name} fit profile must be translated`);
 }
 
 const specialist: SpecialistResponseRow = {
@@ -414,6 +447,7 @@ console.log(JSON.stringify({
   measuredTraitNotInflatedByValues: true,
   unavailableDimensionsAreNull: true,
   specialtyMetadataMatchesProfiles: true,
+  multilingualSpecialtyNarratives: true,
   noTargetLeakage: true,
   tieAwareRanks: true,
   explicitDenominators: true,

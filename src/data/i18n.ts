@@ -61,6 +61,11 @@ export interface UIStrings {
   preferredCallout: (name: string, rank: number, percent: number) => string;
   otherMatches: string;
   otherMatchesDesc: string;
+  resultsRankLabel: (rank: number) => string;
+  resultsSpecialtyOverview: string;
+  resultsProfessionalProfile: string;
+  resultsInformationDisclaimer: string;
+  resultsReferencesDisclaimer: string;
   fullRanking: string;
   fullRankingDesc: (n: number) => string;
   retakeAssessment: string;
@@ -169,6 +174,8 @@ export interface UIStrings {
   oppositeFitDesc: string;
   oppositeFitExplore: string;
   oppositeFitClose: string;
+  oppositeFitLegend: string;
+  oppositeFitValues: (student: number, target: number, gap: number) => string;
 
   // Comparison
   comparisonTitle: string;
@@ -308,8 +315,13 @@ const en: UIStrings = {
   whyItFits: 'What drives this index',
   preferredCallout: (name: string, rank: number, percent: number) =>
     `The specialty you picked — ${name} — ranked #${rank}, with a fit index of ${percent}/100.`,
-  otherMatches: 'Other high-ranking specialties',
-  otherMatchesDesc: 'Other current specialty profiles with relatively high similarity indices.',
+  otherMatches: 'Your complete Top 10',
+  otherMatchesDesc: 'Ranks 2–10 are shown in full below, with no additional click required.',
+  resultsRankLabel: (rank: number) => `Rank ${rank}`,
+  resultsSpecialtyOverview: 'About the specialty',
+  resultsProfessionalProfile: 'Professional environment and useful qualities',
+  resultsInformationDisclaimer: 'These specialty portraits are orientation material, not psychological diagnoses or guarantees. Medical practice varies by country, institution, role, and individual career path.',
+  resultsReferencesDisclaimer: 'References are shown for traceability and should be checked before academic or clinical use.',
   fullRanking: 'Full ranking',
   fullRankingDesc: (n: number) => `All ${n} specialties, grouped by field.`,
   retakeAssessment: 'Retake the assessment',
@@ -411,6 +423,9 @@ const en: UIStrings = {
   oppositeFitDesc: 'Explore the key differences between your profile and this specialty.',
   oppositeFitExplore: 'Explore fit',
   oppositeFitClose: 'Close',
+  oppositeFitLegend: 'Student profile vs specialty profile',
+  oppositeFitValues: (student: number, target: number, gap: number) =>
+    `Student profile: ${student}/100; specialty profile: ${target}/100; gap: ${gap}.`,
 
   comparisonTitle: 'Compare specialties',
   comparisonSubtitle: 'Select 2–3 specialties to compare side-by-side.',
@@ -546,8 +561,13 @@ const ro: UIStrings = {
   whyItFits: 'Ce determină acest indice',
   preferredCallout: (name: string, rank: number, percent: number) =>
     `Specialitatea aleasă — ${name} — s-a clasat pe locul #${rank}, cu un indice de potrivire de ${percent}/100.`,
-  otherMatches: 'Alte specialități clasate sus',
-  otherMatchesDesc: 'Alte profiluri actuale de specialitate cu indici de similaritate relativ mari.',
+  otherMatches: 'Top 10 complet',
+  otherMatchesDesc: 'Locurile 2–10 sunt afișate integral mai jos, fără să fie necesar un clic suplimentar.',
+  resultsRankLabel: (rank: number) => `Locul ${rank}`,
+  resultsSpecialtyOverview: 'Despre specialitate',
+  resultsProfessionalProfile: 'Mediul profesional și calitățile utile',
+  resultsInformationDisclaimer: 'Aceste portrete ale specialităților sunt materiale de orientare, nu diagnostice psihologice și nici garanții. Practica medicală variază în funcție de țară, instituție, rol și parcursul profesional individual.',
+  resultsReferencesDisclaimer: 'Referințele sunt afișate pentru trasabilitate și trebuie verificate înainte de utilizarea academică sau clinică.',
   fullRanking: 'Clasament complet',
   fullRankingDesc: (n: number) => `Toate cele ${n} specialități, grupate pe domenii.`,
   retakeAssessment: 'Reia evaluarea',
@@ -649,6 +669,9 @@ const ro: UIStrings = {
   oppositeFitDesc: 'Explorează diferențele cheie dintre profilul tău și această specialitate.',
   oppositeFitExplore: 'Explorează potrivirea',
   oppositeFitClose: 'Închide',
+  oppositeFitLegend: 'Profilul studentului comparat cu profilul specialității',
+  oppositeFitValues: (student: number, target: number, gap: number) =>
+    `Profilul studentului: ${student}/100; profilul specialității: ${target}/100; diferență: ${gap}.`,
 
   comparisonTitle: 'Compară specialitățile',
   comparisonSubtitle: 'Selectează 2–3 specialități pentru comparare side-by-side.',
@@ -784,8 +807,13 @@ const fr: UIStrings = {
   whyItFits: 'Ce qui détermine cet indice',
   preferredCallout: (name: string, rank: number, percent: number) =>
     `La spécialité choisie — ${name} — s’est classée au rang #${rank}, avec un indice d’adéquation de ${percent}/100.`,
-  otherMatches: 'Autres spécialités bien classées',
-  otherMatchesDesc: 'Autres profils actuels de spécialité présentant des indices de similarité relativement élevés.',
+  otherMatches: 'Votre Top 10 complet',
+  otherMatchesDesc: 'Les rangs 2 à 10 sont affichés intégralement ci-dessous, sans clic supplémentaire.',
+  resultsRankLabel: (rank: number) => `Rang ${rank}`,
+  resultsSpecialtyOverview: 'Présentation de la spécialité',
+  resultsProfessionalProfile: 'Environnement professionnel et qualités utiles',
+  resultsInformationDisclaimer: 'Ces portraits de spécialités sont des contenus d’orientation, et non des diagnostics psychologiques ou des garanties. La pratique médicale varie selon le pays, l’établissement, le poste et le parcours professionnel individuel.',
+  resultsReferencesDisclaimer: 'Les références sont affichées à des fins de traçabilité et doivent être vérifiées avant tout usage universitaire ou clinique.',
   fullRanking: 'Classement complet',
   fullRankingDesc: (n: number) => `Les ${n} spécialités, groupées par domaine.`,
   retakeAssessment: 'Recommencer l\'évaluation',
@@ -887,6 +915,9 @@ const fr: UIStrings = {
   oppositeFitDesc: 'Explorez les différences clés entre votre profil et cette spécialité.',
   oppositeFitExplore: 'Explorer l\'adéquation',
   oppositeFitClose: 'Fermer',
+  oppositeFitLegend: 'Profil étudiant comparé au profil de la spécialité',
+  oppositeFitValues: (student: number, target: number, gap: number) =>
+    `Profil étudiant : ${student}/100 ; profil de la spécialité : ${target}/100 ; écart : ${gap}.`,
 
   comparisonTitle: 'Comparer les spécialités',
   comparisonSubtitle: 'Sélectionnez 2–3 spécialités pour les comparer côte à côte.',

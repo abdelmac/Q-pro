@@ -1,0 +1,288 @@
+{
+  "Internal Medicine": {
+    "overview": {
+      "ro": "Medicina internă este ramura medicală care abordează un spectru larg de afecțiuni, în special cronice, ale organelor interne, de la boli cardiovasculare, gastrointestinale și endocrine până la boli renale și respiratorii. Specialitatea urmărește să ofere o perspectivă holistică asupra pacientului și creează legături între numeroase alte domenii medicale.",
+      "fr": "La médecine interne prend en charge un vaste éventail d’affections, notamment chroniques, touchant les organes internes, des maladies cardiovasculaires, gastro-intestinales et endocriniennes aux maladies rénales et respiratoires. Cette spécialité vise une compréhension globale du patient et établit des liens entre de nombreux autres domaines médicaux.",
+      "en": "Internal medicine addresses a broad range of conditions, especially chronic diseases affecting the internal organs, from cardiovascular, gastrointestinal, and endocrine disorders to renal and respiratory disease. The specialty aims to provide a holistic view of the patient and connects many other fields of medicine."
+    },
+    "fitProfile": {
+      "ro": "Această specialitate poate fi compatibilă cu o persoană organizată, disciplinată și atentă la calitate, care ia decizii cumpătate. Sunt utile gândirea analitică și abstractă, raționamentul clinic complex și capacitatea de a integra informații din numeroase aparate și sisteme. Volumul mare de muncă, stresul și incertitudinea cer reziliență, strategii profesionale sănătoase de adaptare și menținerea obiectivității. O empatie bine reglată, însoțită de limite emoționale profesionale, susține relațiile de lungă durată cu pacienții. Studiul citat descrie la rezidenții de medicină internă atenție, curiozitate intelectuală, imaginație, aspirații înalte și reflecție înaintea acțiunii, precum și interes pentru experiențe stimulante intelectual.",
+      "fr": "Cette spécialité peut convenir à une personne organisée, disciplinée et exigeante sur la qualité, qui prend des décisions réfléchies. Une pensée analytique et abstraite, un raisonnement clinique complexe et la capacité d’intégrer des informations provenant de nombreux organes et systèmes sont particulièrement utiles. La charge de travail, le stress et l’incertitude demandent de la résilience, de bonnes stratégies professionnelles d’adaptation et le maintien de l’objectivité. Une empathie bien régulée, associée à des limites émotionnelles professionnelles, favorise les relations durables avec les patients. L’étude citée décrit chez les résidents en médecine interne l’attention, la curiosité intellectuelle, l’imagination, des aspirations élevées et la réflexion avant l’action, ainsi qu’un intérêt pour les expériences intellectuellement stimulantes.",
+      "en": "This specialty may suit someone who is organized, disciplined, quality-focused, and deliberate in decision-making. Analytical and abstract thinking, complex clinical reasoning, and the ability to integrate information across many organs and systems are particularly useful. Heavy workloads, stress, and uncertainty call for resilience, healthy professional coping strategies, and sustained objectivity. Well-regulated empathy combined with professional emotional boundaries supports long-term patient relationships. The cited study describes internal medicine residents as attentive, intellectually curious, imaginative, ambitious, and reflective before acting, with an interest in intellectually stimulating experiences."
+    },
+    "sourceReferences": [
+      "5. Hojat M, Nasca TJ, Magee M, Feeney K, Pascual R, Urbano F, Gonnella JS. A comparison of the personality profiles of internal medicine residents, physician role models, and the general population. Acad Med. 1999 Dec;74(12):1327-33. doi: 10.1097/00001888-199912000-00017. PMID: 10619012."
+    ]
+  },
+  "Emergency Medicine": {
+    "overview": {
+      "ro": "Medicina de urgență este specialitatea care asigură evaluarea, diagnosticul și tratamentul rapid al situațiilor acute, critice sau amenințătoare de viață. Ea reprezintă prima etapă a stabilizării pacienților și contribuie la prevenirea agravării stării lor.",
+      "fr": "La médecine d’urgence assure l’évaluation, le diagnostic et le traitement rapides des situations aiguës, critiques ou mettant en jeu le pronostic vital. Elle constitue la première étape de la stabilisation des patients et contribue à prévenir l’aggravation de leur état.",
+      "en": "Emergency medicine provides rapid assessment, diagnosis, and treatment for acute, critical, or life-threatening conditions. It is the first stage of patient stabilization and helps prevent further deterioration."
+    },
+    "fitProfile": {
+      "ro": "Această specialitate poate corespunde unei persoane foarte organizate și disciplinate, capabile să creeze ordine într-un mediu aparent haotic și să decidă prompt. Sunt importante conștiinciozitatea, toleranța la stres și ambiguitate, flexibilitatea și strategii mature de adaptare. Umorul, energia socială și spiritul de echipă pot facilita activitatea zilnică. Programul variabil, gărzile, efortul îndelungat și caracterul imprevizibil cer rezistență fizică și psihologică, precum și preferința pentru varietate și acțiune, nu pentru rutină. Studiul citat descrie rezidenții de medicină de urgență ca vigilenți, pragmatici, flexibili, orientați spre echipă și atrași de o abordare practică a învățării.",
+      "fr": "Cette spécialité peut correspondre à une personne très organisée et disciplinée, capable de créer de l’ordre dans un environnement apparemment chaotique et de décider rapidement. La conscience professionnelle, la tolérance au stress et à l’ambiguïté, la souplesse et des stratégies d’adaptation solides sont importantes. L’humour, l’aisance relationnelle et l’esprit d’équipe peuvent faciliter le travail quotidien. Les horaires variables, les gardes, les efforts prolongés et l’imprévisibilité exigent une bonne endurance physique et psychologique ainsi qu’un goût pour la variété et l’action plutôt que pour la routine. L’étude citée décrit les résidents en médecine d’urgence comme vigilants, pragmatiques, flexibles, tournés vers le travail en équipe et attirés par une approche pratique de l’apprentissage.",
+      "en": "This specialty may suit a highly organized and disciplined person who can create order in an apparently chaotic environment and make timely decisions. Conscientiousness, tolerance of stress and ambiguity, flexibility, and robust coping strategies are important. Humor, social ease, and teamwork can support day-to-day practice. Variable schedules, on-call shifts, prolonged effort, and unpredictability require physical and psychological stamina as well as a preference for variety and action over routine. The cited study describes emergency medicine residents as vigilant, pragmatic, flexible, team-oriented, and drawn to a practical approach to learning."
+    },
+    "sourceReferences": [
+      "6. Jordan J, Linden JA, Maculatis MC, Hern HG Jr, Schneider JI, Wills CP, Marshall JP, Friedman A, Yarris LM. Identifying the Emergency Medicine Personality: A Multisite Exploratory Pilot Study. AEM Educ Train. 2018 Jan 31;2(2):91-99. doi: 10.1002/aet2.10078. PMID: 30051075; PMCID: PMC6001604."
+    ]
+  },
+  "Physical Medicine and Rehabilitation": {
+    "overview": {
+      "ro": "Medicina fizică și de reabilitare urmărește recuperarea funcțională după diferite boli, intervenții chirurgicale sau traumatisme. Ea propune planuri individualizate pentru recuperarea motorie și senzitivă și pentru prevenirea complicațiilor ulterioare.",
+      "fr": "La médecine physique et de réadaptation vise la récupération fonctionnelle après différentes maladies, interventions chirurgicales ou traumatismes. Elle élabore des programmes individualisés pour restaurer les fonctions motrices et sensitives et prévenir les complications ultérieures.",
+      "en": "Physical medicine and rehabilitation focuses on functional recovery after illness, surgery, or trauma. It develops individualized plans to restore motor and sensory function and prevent subsequent complications."
+    },
+    "fitProfile": {
+      "ro": "Această specialitate poate fi potrivită unei persoane empatice, calde și atente la nevoile celorlalți, care apreciază contactul direct și comunicarea cu pacienții. Echilibrul emoțional este util în situațiile cu impact afectiv, iar preferința pentru un cadru calm și structurat se potrivește ritmului progresiv al reabilitării mai bine decât presiunea acută permanentă. Răbdarea și perseverența sunt esențiale, deoarece recuperarea poate fi îndelungată, iar satisfacția vine adesea din observarea îmbunătățirilor treptate ale funcției și autonomiei pacientului.",
+      "fr": "Cette spécialité peut convenir à une personne empathique, chaleureuse et attentive aux besoins d’autrui, qui apprécie le contact direct et la communication avec les patients. L’équilibre émotionnel aide face aux situations à forte charge affective, tandis qu’une préférence pour un cadre calme et structuré correspond mieux au rythme progressif de la réadaptation qu’à une pression aiguë permanente. La patience et la persévérance sont essentielles, car la récupération peut être longue et la satisfaction provient souvent de l’amélioration graduelle de la fonction et de l’autonomie du patient.",
+      "en": "This specialty may suit an empathetic, warm person who is attentive to others’ needs and values direct patient contact and communication. Emotional steadiness helps in situations with significant emotional impact, while a preference for a calm, structured setting may fit the gradual pace of rehabilitation better than constant acute pressure. Patience and perseverance are essential because recovery can be lengthy, and fulfillment often comes from seeing gradual improvements in a patient’s function and independence."
+    },
+    "sourceReferences": []
+  },
+  "Pediatric Nephrology": {
+    "overview": {
+      "ro": "Nefrologia pediatrică se ocupă cu prevenirea, diagnosticul și tratamentul bolilor sistemului renal la copii, incluzând infecții, inflamații, sindroame dobândite sau congenitale, dezechilibre electrolitice și malformații congenitale.",
+      "fr": "La néphrologie pédiatrique assure la prévention, le diagnostic et le traitement des maladies du système rénal chez l’enfant, notamment les infections, les inflammations, les syndromes acquis ou congénitaux, les déséquilibres électrolytiques et les malformations congénitales.",
+      "en": "Pediatric nephrology focuses on the prevention, diagnosis, and treatment of renal disorders in children, including infections, inflammation, acquired or congenital syndromes, electrolyte imbalances, and congenital malformations."
+    },
+    "fitProfile": {
+      "ro": "Această specialitate poate corespunde unei persoane calme, răbdătoare, perseverente și foarte atente la detalii. Înțelegerea mecanismelor renale complexe la organisme aflate în dezvoltare cere gândire analitică și cantitativă, rigoare și interes continuu pentru cunoaștere. Empatia și comunicarea adaptată sunt importante atât în relația cu copilul, inclusiv prin indicii nonverbale, cât și cu părinții. Toleranța la incertitudine și frustrare, maturitatea emoțională și conștiinciozitatea permit îmbinarea preciziei științifice cu o îngrijire umană.",
+      "fr": "Cette spécialité peut correspondre à une personne calme, patiente, persévérante et très attentive aux détails. Comprendre des mécanismes rénaux complexes chez des organismes en développement demande une pensée analytique et quantitative, de la rigueur et un intérêt constant pour l’apprentissage. L’empathie et une communication adaptée sont importantes avec l’enfant, y compris à travers les indices non verbaux, comme avec les parents. La tolérance à l’incertitude et à la frustration, la maturité émotionnelle et la conscience professionnelle permettent d’associer précision scientifique et soins profondément humains.",
+      "en": "This specialty may suit someone who is calm, patient, persistent, and highly attentive to detail. Understanding complex renal mechanisms in developing bodies requires analytical and quantitative thinking, rigor, and sustained intellectual curiosity. Empathy and adaptable communication are important with both the child, including through nonverbal cues, and the parents. Tolerance of uncertainty and frustration, emotional maturity, and conscientiousness make it possible to combine scientific precision with humane care."
+    },
+    "sourceReferences": []
+  },
+  "Pediatric Oncology and Hematology": {
+    "overview": {
+      "ro": "Oncologia și hematologia pediatrică vizează diagnosticul, tratamentul, monitorizarea și urmărirea cancerelor și a bolilor sângelui la copii și adolescenți cu vârste între 0 și 18 ani. Evaluarea poate include biopsii, imagistică și analize genetice, iar tratamentele pot cuprinde chimioterapie, radioterapie, imunoterapie, hormonoterapie și chirurgie oncologică.",
+      "fr": "L’oncologie et l’hématologie pédiatriques assurent le diagnostic, le traitement, la surveillance et le suivi des cancers et des maladies du sang chez les enfants et adolescents de 0 à 18 ans. L’évaluation peut inclure des biopsies, l’imagerie et des analyses génétiques, tandis que les traitements peuvent comprendre la chimiothérapie, la radiothérapie, l’immunothérapie, l’hormonothérapie et la chirurgie oncologique.",
+      "en": "Pediatric oncology and hematology covers the diagnosis, treatment, monitoring, and follow-up of cancers and blood disorders in children and adolescents aged 0 to 18. Assessment may include biopsies, imaging, and genetic tests, while treatment may involve chemotherapy, radiotherapy, immunotherapy, hormone therapy, and oncologic surgery."
+    },
+    "fitProfile": {
+      "ro": "Această specialitate poate fi compatibilă cu o persoană capabilă să lucreze cu o încărcătură emoțională foarte mare și cu situații grave sau uneori terminale. Sunt esențiale empatia, dorința de a ajuta, reziliența și limitele emoționale profesionale care protejează continuitatea îngrijirii. Comunicarea apropiată cu familia și colaborarea interdisciplinară au un rol central. Evoluția rapidă a cunoașterii despre celule, boli hematologice și tratamente cere actualizare permanentă, toleranță la incertitudine și adaptabilitate. Calmul, curajul, perseverența, curiozitatea științifică și autoreglarea emoțională sunt resurse importante în acest domeniu.",
+      "fr": "Cette spécialité peut convenir à une personne capable de travailler dans des situations à très forte charge émotionnelle, graves et parfois terminales. L’empathie, le désir d’aider, la résilience et des limites émotionnelles professionnelles protégeant la continuité des soins sont essentiels. La communication étroite avec la famille et la collaboration interdisciplinaire occupent une place centrale. L’évolution rapide des connaissances sur les cellules, les maladies hématologiques et les traitements exige une mise à jour permanente, une tolérance à l’incertitude et une grande adaptabilité. Le calme, le courage, la persévérance, la curiosité scientifique et l’autorégulation émotionnelle sont des ressources importantes dans ce domaine.",
+      "en": "This specialty may suit someone able to work with an exceptionally high emotional load and with serious or sometimes terminal conditions. Empathy, a strong wish to help, resilience, and professional emotional boundaries that protect continuity of care are essential. Close communication with families and interdisciplinary collaboration are central to the work. Rapid advances in knowledge about cells, hematologic diseases, and treatments require continuous learning, tolerance of uncertainty, and adaptability. Calmness, courage, perseverance, scientific curiosity, and emotional self-regulation are important resources in this field."
+    },
+    "sourceReferences": []
+  },
+  "Pediatric Gastroenterology": {
+    "overview": {
+      "ro": "Gastroenterologia pediatrică se ocupă cu sănătatea tractului digestiv și cu prevenirea, diagnosticul și tratamentul bolilor aparatului digestiv la copii și adolescenți cu vârste între 0 și 18 ani, de la refluxul gastroesofagian până la malformațiile congenitale.",
+      "fr": "La gastro-entérologie pédiatrique prend en charge la santé du tube digestif ainsi que la prévention, le diagnostic et le traitement des maladies digestives chez les enfants et adolescents de 0 à 18 ans, du reflux gastro-œsophagien aux malformations congénitales.",
+      "en": "Pediatric gastroenterology addresses digestive tract health and the prevention, diagnosis, and treatment of digestive disorders in children and adolescents aged 0 to 18, ranging from gastroesophageal reflux to congenital malformations."
+    },
+    "fitProfile": {
+      "ro": "Această specialitate poate corespunde unei persoane organizate, responsabile, raționale și atente la detalii. Înțelegerea mecanismelor fiziopatologice complexe solicită gândire analitică și logică. Căldura, creativitatea în comunicare și capacitatea de a câștiga încrederea copiilor sunt la fel de importante, alături de comunicarea cu familia și interpretarea indiciilor nonverbale. Diversitatea și complexitatea cazurilor cer toleranță la stres, adaptabilitate, echilibru emoțional, curaj și un nivel ridicat de conștiinciozitate.",
+      "fr": "Cette spécialité peut correspondre à une personne organisée, responsable, rationnelle et attentive aux détails. La compréhension de mécanismes physiopathologiques complexes sollicite une pensée analytique et logique. La chaleur relationnelle, la créativité dans la communication et la capacité à gagner la confiance des enfants sont tout aussi importantes, de même que les échanges avec la famille et l’interprétation des indices non verbaux. La diversité et la complexité des cas demandent une bonne tolérance au stress, de l’adaptabilité, un équilibre émotionnel, du courage et une grande conscience professionnelle.",
+      "en": "This specialty may suit someone who is organized, responsible, rational, and attentive to detail. Understanding complex pathophysiological mechanisms calls for analytical and logical thinking. Warmth, creativity in communication, and the ability to earn a child’s trust are equally important, alongside communication with families and interpretation of nonverbal cues. The variety and complexity of cases require tolerance of stress, adaptability, emotional steadiness, courage, and strong conscientiousness."
+    },
+    "sourceReferences": []
+  },
+  "Pediatric Cardiology": {
+    "overview": {
+      "ro": "Cardiologia pediatrică se ocupă cu diagnosticul și tratamentul bolilor cardiovasculare la copii și adolescenți cu vârste între 0 și 18 ani, precum aritmiile, valvulopatiile, șunturile și malformațiile cardiace congenitale. Activitatea include consultații, prescrierea tratamentelor, interpretarea electrocardiogramei și ecocardiografiei și participarea, alături de chirurgia pediatrică, la unele intervenții corective.",
+      "fr": "La cardiologie pédiatrique assure le diagnostic et le traitement des maladies cardiovasculaires chez les enfants et adolescents de 0 à 18 ans, telles que les arythmies, les valvulopathies, les shunts et les cardiopathies congénitales. L’activité comprend les consultations, la prescription de traitements, l’interprétation de l’électrocardiogramme et de l’échocardiographie, ainsi que la participation, avec la chirurgie pédiatrique, à certaines interventions correctrices.",
+      "en": "Pediatric cardiology diagnoses and treats cardiovascular disorders in children and adolescents aged 0 to 18, including arrhythmias, valvular disease, shunts, and congenital heart defects. The work includes consultations, prescribing treatment, interpreting electrocardiograms and echocardiograms, and participating with pediatric surgeons in selected corrective procedures."
+    },
+    "fitProfile": {
+      "ro": "Această specialitate poate fi compatibilă cu o persoană disciplinată, organizată și extrem de atentă la detaliile fine, care menține standarde înalte de precizie. Reglarea emoțională și limitele profesionale ajută în cazurile dificile, în timp ce empatia și comunicarea trebuie extinse atât către copil, cât și către familie. Complexitatea inimii în dezvoltare cere gândire analitică și abstractă, conștiinciozitate și toleranță la stres și neprevăzut. Este un domeniu dinamic, în continuă evoluție, potrivit unei persoane perseverente, motivate de învățarea și perfecționarea continuă.",
+      "fr": "Cette spécialité peut convenir à une personne disciplinée, organisée et extrêmement attentive aux détails fins, qui maintient des standards élevés de précision. La régulation émotionnelle et les limites professionnelles aident dans les situations difficiles, tandis que l’empathie et la communication doivent s’adresser à la fois à l’enfant et à sa famille. La complexité du cœur en développement exige une pensée analytique et abstraite, de la conscience professionnelle et une bonne tolérance au stress et à l’imprévu. C’est un domaine dynamique et en évolution constante, adapté à une personne persévérante, motivée par l’apprentissage et le perfectionnement continus.",
+      "en": "This specialty may suit someone who is disciplined, organized, and exceptionally attentive to fine detail, with high standards of precision. Emotional regulation and professional boundaries help in difficult cases, while empathy and communication need to extend to both the child and the family. The complexity of the developing heart requires analytical and abstract thinking, conscientiousness, and tolerance of stress and unexpected situations. It is a dynamic, continually evolving field for someone persistent and motivated by lifelong learning and refinement."
+    },
+    "sourceReferences": []
+  },
+  "Pediatric Neurology": {
+    "overview": {
+      "ro": "Neurologia pediatrică studiază, diagnostichează și tratează bolile sistemului nervos la copii și adolescenți cu vârste între 0 și 18 ani, precum epilepsia, neuropatiile, tulburările neuromusculare și malformațiile congenitale. Este o specialitate deosebit de complexă.",
+      "fr": "La neurologie pédiatrique étudie, diagnostique et traite les maladies du système nerveux chez les enfants et adolescents de 0 à 18 ans, notamment l’épilepsie, les neuropathies, les troubles neuromusculaires et les malformations congénitales. Il s’agit d’une spécialité particulièrement complexe.",
+      "en": "Pediatric neurology studies, diagnoses, and treats disorders of the nervous system in children and adolescents aged 0 to 18, including epilepsy, neuropathies, neuromuscular disorders, and congenital malformations. It is a particularly complex specialty."
+    },
+    "fitProfile": {
+      "ro": "Această specialitate poate corespunde unei persoane cu bună autoreglare emoțională, organizare, rigoare și atenție meticuloasă la detalii. Problemele neurologice complexe solicită gândire analitică, abstractă și cantitativă, interes intelectual susținut și capacitate de concentrare. Empatia cognitivă și limitele emoționale profesionale pot ajuta la gestionarea încărcăturii afective fără a diminua grija față de pacient. Sunt necesare comunicarea individualizată cu copilul și familia, strategii mature de adaptare, răbdare și un nivel ridicat de inteligență emoțională.",
+      "fr": "Cette spécialité peut correspondre à une personne dotée d’une bonne autorégulation émotionnelle, organisée, rigoureuse et méticuleusement attentive aux détails. Les problèmes neurologiques complexes sollicitent une pensée analytique, abstraite et quantitative, un intérêt intellectuel soutenu et une forte capacité de concentration. L’empathie cognitive et des limites émotionnelles professionnelles peuvent aider à gérer la charge affective sans réduire l’attention portée au patient. Une communication individualisée avec l’enfant et sa famille, de solides stratégies d’adaptation, de la patience et une intelligence émotionnelle développée sont nécessaires.",
+      "en": "This specialty may suit someone with strong emotional self-regulation who is organized, rigorous, and meticulous about detail. Complex neurological problems call for analytical, abstract, and quantitative thinking, sustained intellectual interest, and deep concentration. Cognitive empathy and professional emotional boundaries can help manage the emotional burden without reducing care for the patient. Individualized communication with the child and family, mature coping strategies, patience, and well-developed emotional intelligence are important."
+    },
+    "sourceReferences": []
+  },
+  "Pediatrics": {
+    "overview": {
+      "ro": "Pediatria se ocupă cu sănătatea și îngrijirea de specialitate a copiilor, de la naștere până la adolescență. Activitatea include monitorizarea dezvoltării, prevenirea, diagnosticul și tratamentul bolilor, precum și consilierea familiei.",
+      "fr": "La pédiatrie prend en charge la santé et les soins spécialisés des enfants, de la naissance à l’adolescence. Son activité comprend le suivi du développement, la prévention, le diagnostic et le traitement des maladies ainsi que l’accompagnement de la famille.",
+      "en": "Pediatrics focuses on the health and specialist care of children from birth through adolescence. The work includes monitoring development, prevention, diagnosis and treatment of disease, and guidance for families."
+    },
+    "fitProfile": {
+      "ro": "Această specialitate poate fi compatibilă cu o persoană caldă, organizată și echilibrată emoțional, capabilă să rămână calmă în fața copiilor bolnavi, a părinților îngrijorați și a situațiilor neprevăzute. Conștiinciozitatea, reziliența și motivația de a ajuta sunt calități valoroase. O atitudine jovială, dar fermă, facilitează adaptarea la nevoile copilului. Empatia, comunicarea verbală și nonverbală cu pacientul și părinții, toleranța la stres, flexibilitatea, perseverența și dorința continuă de a învăța susțin practica pediatrică.",
+      "fr": "Cette spécialité peut convenir à une personne chaleureuse, organisée et émotionnellement équilibrée, capable de rester calme face aux enfants malades, aux parents inquiets et aux situations imprévues. La conscience professionnelle, la résilience et la motivation à aider sont précieuses. Une attitude enjouée mais ferme facilite l’adaptation aux besoins de l’enfant. L’empathie, la communication verbale et non verbale avec le patient et ses parents, la tolérance au stress, la souplesse, la persévérance et le désir permanent d’apprendre soutiennent la pratique pédiatrique.",
+      "en": "This specialty may suit someone who is warm, organized, and emotionally steady, and who can remain calm with ill children, worried parents, and unexpected situations. Conscientiousness, resilience, and a motivation to help are valuable qualities. A friendly yet firm manner supports adaptation to a child’s needs. Empathy, verbal and nonverbal communication with patients and parents, tolerance of stress, flexibility, perseverance, and a continuing desire to learn all support pediatric practice."
+    },
+    "sourceReferences": []
+  },
+  "Radiation Oncology": {
+    "overview": {
+      "ro": "Radioterapia este ramura oncologiei care tratează cancerul și anumite alte afecțiuni prin utilizarea radiațiilor ionizante. Scopul său este distrugerea celulelor tumorale sau oprirea multiplicării lor, protejând în același timp țesuturile sănătoase din vecinătate.",
+      "fr": "La radiothérapie est la branche de l’oncologie qui traite le cancer et certaines autres affections au moyen de rayonnements ionisants. Elle vise à détruire les cellules tumorales ou à interrompre leur multiplication tout en protégeant les tissus sains voisins.",
+      "en": "Radiation oncology is the branch of oncology that treats cancer and certain other conditions using ionizing radiation. Its aim is to destroy tumor cells or stop their multiplication while protecting adjacent healthy tissue."
+    },
+    "fitProfile": {
+      "ro": "Această specialitate poate corespunde unei persoane analitice, răbdătoare și foarte atente la precizie. Planificarea minuțioasă, înțelegerea aprofundată a proceselor biologice și urmărirea efectelor pe termen lung sunt componente centrale. Gândirea logică trebuie completată de empatie și de comunicare adaptată cu pacientul și familia, care pot traversa perioade de teamă și speranță. Preferința pentru situații controlabile, echilibru și detalii riguros calculate poate susține activitatea în acest domeniu.",
+      "fr": "Cette spécialité peut correspondre à une personne analytique, patiente et très attentive à la précision. La planification minutieuse, la compréhension approfondie des processus biologiques et l’observation des effets à long terme sont centrales. La pensée logique doit s’accompagner d’empathie et d’une communication adaptée avec le patient et sa famille, qui peuvent traverser des périodes mêlant peur et espoir. Une préférence pour les situations maîtrisables, l’équilibre et les détails rigoureusement calculés peut soutenir l’exercice dans ce domaine.",
+      "en": "This specialty may suit someone who is analytical, patient, and highly attentive to precision. Meticulous planning, deep understanding of biological processes, and observation of long-term treatment effects are central. Logical thinking needs to be complemented by empathy and adaptable communication with patients and families who may be navigating fear and hope. A preference for controllable situations, balance, and carefully calculated detail can support work in this field."
+    },
+    "sourceReferences": [
+      "Baskar R, et al. Cancer and radiation therapy: current advances and future directions. Int J Med Sci. 2012;9(3):193–199."
+    ]
+  },
+  "Cardiovascular Surgery": {
+    "overview": {
+      "ro": "Chirurgia cardiovasculară este specialitatea chirurgicală care se ocupă cu diagnosticul și tratamentul operator al bolilor inimii și vaselor de sânge. Este un domeniu cu miză majoră, în care mișcările precise și deciziile vitale trebuie coordonate riguros.",
+      "fr": "La chirurgie cardiovasculaire est la spécialité chirurgicale consacrée au diagnostic et au traitement opératoire des maladies du cœur et des vaisseaux sanguins. C’est un domaine à forts enjeux, dans lequel les gestes précis et les décisions vitales doivent être rigoureusement coordonnés.",
+      "en": "Cardiovascular surgery is the surgical specialty concerned with the diagnosis and operative treatment of diseases of the heart and blood vessels. It is a high-stakes field in which precise movements and vital decisions must be rigorously coordinated."
+    },
+    "fitProfile": {
+      "ro": "Această specialitate poate fi compatibilă cu o persoană calmă sub presiune, strategică și orientată spre echipă. Atenția la detalii, rigoarea, precizia și stăpânirea de sine sunt importante în deciziile cu miză mare. Varietatea cazurilor și situațiile neașteptate cer interes pentru o activitate dinamică, toleranță la incertitudine și perseverență. Motivația poate veni din provocare, responsabilitate și posibilitatea de a produce schimbări decisive în viața pacienților, asumând cu luciditate greutatea hotărârilor importante.",
+      "fr": "Cette spécialité peut convenir à une personne calme sous pression, stratégique et orientée vers le travail en équipe. L’attention aux détails, la rigueur, la précision et la maîtrise de soi sont importantes lorsque les décisions ont des conséquences majeures. La variété des cas et les situations inattendues demandent un goût pour une activité dynamique, une tolérance à l’incertitude et de la persévérance. La motivation peut venir du défi, de la responsabilité et de la possibilité de transformer de manière décisive la vie des patients, tout en assumant lucidement le poids des décisions importantes.",
+      "en": "This specialty may suit someone who remains calm under pressure, thinks strategically, and works well in a team. Attention to detail, rigor, precision, and self-control matter when decisions carry major consequences. Varied cases and unexpected situations require an interest in dynamic work, tolerance of uncertainty, and perseverance. Motivation may come from challenge, responsibility, and the opportunity to make a decisive difference in patients’ lives while carrying the weight of important decisions with clarity."
+    },
+    "sourceReferences": [
+      "Vohra HA, et al. Cardiothoracic surgery: training, outcomes, and personality traits. Eur J Cardiothorac Surg. 2018;53(2):335–343."
+    ]
+  },
+  "General Surgery": {
+    "overview": {
+      "ro": "Chirurgia generală este una dintre cele mai vaste specialități chirurgicale și se ocupă cu diagnosticul, tratamentul și prevenirea bolilor care afectează diferite organe și structuri. Activitatea se concentrează în special asupra abdomenului, peretelui abdominal și tubului digestiv, fără a se limita la acestea.",
+      "fr": "La chirurgie générale est l’une des spécialités chirurgicales les plus vastes. Elle assure le diagnostic, le traitement et la prévention de maladies touchant différents organes et structures, avec une activité particulièrement centrée sur l’abdomen, la paroi abdominale et le tube digestif, sans s’y limiter.",
+      "en": "General surgery is one of the broadest surgical specialties and covers the diagnosis, treatment, and prevention of conditions affecting many organs and structures. Its work focuses especially on the abdomen, abdominal wall, and digestive tract, but is not limited to them."
+    },
+    "fitProfile": {
+      "ro": "Această specialitate poate corespunde unei persoane exigente, riguroase, organizate și atente la detalii. Adaptabilitatea, acceptarea neprevăzutului, energia practică și rezistența fizică sunt utile într-un domeniu dinamic și solicitant. Încrederea profesională și stăpânirea de sine susțin gândirea și acțiunea rapidă. Chirurgia generală cere implicare deplină a minții și mâinilor și oferă varietate, de la urgențe acute la intervenții minuțioase. Poate atrage o persoană motivată de provocare, de rezultate vizibile și de satisfacția de a restabili sănătatea, într-o specialitate intensă și formatoare.",
+      "fr": "Cette spécialité peut correspondre à une personne exigeante, rigoureuse, organisée et attentive aux détails. L’adaptabilité, l’acceptation de l’imprévu, l’énergie pratique et l’endurance physique sont utiles dans un domaine dynamique et exigeant. La confiance professionnelle et la maîtrise de soi soutiennent une réflexion et une action rapides. La chirurgie générale mobilise pleinement l’esprit et les mains et offre une grande variété, des urgences aiguës aux interventions minutieuses. Elle peut attirer une personne motivée par le défi, les résultats visibles et la satisfaction de restaurer la santé, dans une spécialité intense et formatrice.",
+      "en": "This specialty may suit someone who is exacting, rigorous, organized, and attentive to detail. Adaptability, acceptance of the unexpected, practical energy, and physical endurance are useful in a dynamic and demanding field. Professional confidence and self-control support rapid thinking and action. General surgery fully engages both mind and hands and offers broad variety, from acute emergencies to meticulous procedures. It may appeal to someone motivated by challenge, visible results, and the satisfaction of restoring health in an intense and formative specialty."
+    },
+    "sourceReferences": [
+      "Balch CM, et al. The personality and professional satisfaction of general surgeons. Ann Surg. 2015;261(2):311–318."
+    ]
+  },
+  "Ophthalmology": {
+    "overview": {
+      "ro": "Oftalmologia se ocupă cu prevenirea, diagnosticul și tratamentul afecțiunilor ochiului și ale anexelor sale.",
+      "fr": "L’ophtalmologie assure la prévention, le diagnostic et le traitement des affections de l’œil et de ses annexes.",
+      "en": "Ophthalmology focuses on the prevention, diagnosis, and treatment of conditions affecting the eye and its associated structures."
+    },
+    "fitProfile": {
+      "ro": "Această specialitate poate fi compatibilă cu o persoană calmă, perseverentă, meticuloasă și atrasă de lucrul la scară foarte mică. Răbdarea, precizia, curiozitatea științifică și interesul pentru tehnologii noi permit îmbinarea medicinei cu instrumente avansate. Un mediu ordonat, controlat și previzibil poate susține performanța, iar toleranța la activități repetitive favorizează perfecționarea tehnică. Simțul estetic și motivația de a restaura vederea completează un profil orientat spre claritate, finețe și echilibru.",
+      "fr": "Cette spécialité peut convenir à une personne calme, persévérante, méticuleuse et attirée par le travail à très petite échelle. La patience, la précision, la curiosité scientifique et l’intérêt pour les nouvelles technologies permettent d’associer médecine et outils avancés. Un environnement ordonné, contrôlé et prévisible peut soutenir la performance, tandis que l’aisance avec les activités répétitives favorise le perfectionnement technique. Le sens esthétique et la motivation à restaurer la vision complètent un profil orienté vers la clarté, la finesse et l’équilibre.",
+      "en": "This specialty may suit someone who is calm, persistent, meticulous, and drawn to work at a very small scale. Patience, precision, scientific curiosity, and interest in new technologies allow medicine to be combined with advanced tools. An orderly, controlled, and predictable setting can support performance, while comfort with repetitive work helps refine technique. Aesthetic awareness and the motivation to restore sight complement a profile oriented toward clarity, fine detail, and balance."
+    },
+    "sourceReferences": [
+      "Yang YC, et al. Personality profiles of ophthalmologists: a nationwide survey. Br J Ophthalmol. 2021;105(8):1125–1130."
+    ]
+  },
+  "Pediatric Orthopedics": {
+    "overview": {
+      "ro": "Ortopedia pediatrică studiază și tratează afecțiunile sistemului musculoscheletal la copii și adolescenți în perioada de creștere. Ea diferă de ortopedia adultului deoarece bolile ortopedice pediatrice au particularități proprii și necesită tratamente adaptate dezvoltării.",
+      "fr": "L’orthopédie pédiatrique étudie et traite les affections du système musculosquelettique chez les enfants et adolescents en croissance. Elle diffère de l’orthopédie de l’adulte, car les pathologies pédiatriques présentent des particularités propres et nécessitent des traitements adaptés au développement.",
+      "en": "Pediatric orthopedics studies and treats musculoskeletal conditions in growing children and adolescents. It differs from adult orthopedics because pediatric disorders have distinct features and require treatments adapted to development."
+    },
+    "fitProfile": {
+      "ro": "Această specialitate poate corespunde unei persoane blânde, calme și perseverente, care apreciază progresul în pași mici și colaborarea apropiată cu familia. Precizia și curajul trebuie însoțite de empatie, răbdare și capacitatea de a inspira încredere. Activitatea presupune interacțiune umană, autocontrol și disponibilitatea de a gestiona situații complexe sau neașteptate. O atitudine caldă și optimistă poate ajuta la transformarea intervenției medicale într-o nouă șansă pentru mișcare, joacă și dezvoltare.",
+      "fr": "Cette spécialité peut correspondre à une personne douce, calme et persévérante, qui apprécie les progrès par petites étapes et la collaboration étroite avec la famille. La précision et le courage doivent s’accompagner d’empathie, de patience et de la capacité à inspirer confiance. Le travail implique des interactions humaines, de la maîtrise de soi et une disponibilité face aux situations complexes ou inattendues. Une attitude chaleureuse et optimiste peut aider à faire de l’intervention médicale une nouvelle chance de bouger, de jouer et de se développer.",
+      "en": "This specialty may suit someone who is gentle, calm, and persistent, and who values progress in small steps and close collaboration with families. Precision and courage need to be paired with empathy, patience, and the ability to inspire trust. The work involves human interaction, self-control, and readiness for complex or unexpected situations. A warm and optimistic manner can help turn medical intervention into a new opportunity for movement, play, and development."
+    },
+    "sourceReferences": [
+      "Sponseller PD, et al. Pediatric orthopaedics: principles and practice. J Pediatr Orthop. 2020;40(Suppl 1):S1–S5."
+    ]
+  },
+  "Orthopedics and Traumatology": {
+    "overview": {
+      "ro": "Ortopedia și traumatologia se ocupă cu prevenirea, diagnosticul și tratamentul bolilor, traumatismelor și deformărilor sistemului musculoscheletal. De la accidente până la intervenții complexe, specialitatea urmărește să restaureze structura și funcția corpului.",
+      "fr": "L’orthopédie et la traumatologie assurent la prévention, le diagnostic et le traitement des maladies, traumatismes et déformations du système musculosquelettique. Des accidents aux interventions complexes, la spécialité cherche à restaurer la structure et la fonction du corps.",
+      "en": "Orthopedics and traumatology focuses on the prevention, diagnosis, and treatment of diseases, injuries, and deformities of the musculoskeletal system. From accidents to complex procedures, the specialty seeks to restore the body’s structure and function."
+    },
+    "fitProfile": {
+      "ro": "Această specialitate poate fi compatibilă cu o persoană calmă, precisă și curajoasă, atrasă de situații dinamice în care problemele structurale trebuie reparate. Acceptarea provocărilor, încrederea profesională, rezistența și perseverența completează gândirea analitică și rațională. Atenția la detalii și standardele tehnice înalte sunt importante pentru reușita intervențiilor. Domeniul combină structura, forța și reconstrucția și poate oferi satisfacția unor rezultate vizibile, precum redobândirea mobilității și autonomiei pacientului, alături de nevoia unei dedicări constante.",
+      "fr": "Cette spécialité peut convenir à une personne calme, précise et courageuse, attirée par des situations dynamiques dans lesquelles il faut réparer des problèmes structurels. Le goût du défi, la confiance professionnelle, l’endurance et la persévérance complètent une pensée analytique et rationnelle. L’attention aux détails et des standards techniques élevés sont importants pour la réussite des interventions. Le domaine associe structure, force et reconstruction et peut offrir la satisfaction de résultats visibles, comme le retour de la mobilité et de l’autonomie du patient, tout en demandant un engagement constant.",
+      "en": "This specialty may suit someone who is calm, precise, courageous, and drawn to dynamic situations where structural problems need to be repaired. Willingness to take on challenges, professional confidence, stamina, and perseverance complement analytical and rational thinking. Attention to detail and high technical standards are important for successful procedures. The field combines structure, strength, and reconstruction and can offer the satisfaction of visible outcomes, such as restored mobility and independence, while requiring sustained dedication."
+    },
+    "sourceReferences": [
+      "Johnson-Lynn SE, et al. Personality traits and professional satisfaction in orthopaedic surgeons. Bone Joint J. 2019;101-B(6):650–656."
+    ]
+  },
+  "Otorhinolaryngology (ENT)": {
+    "overview": {
+      "ro": "Otorinolaringologia (ORL) se ocupă cu prevenirea, diagnosticul și tratamentul bolilor urechii, nasului și gâtului. Este o specialitate chirurgicală care păstrează și o componentă clinică solidă.",
+      "fr": "L’oto-rhino-laryngologie (ORL) assure la prévention, le diagnostic et le traitement des maladies de l’oreille, du nez et de la gorge. C’est une spécialité chirurgicale qui conserve également une importante composante clinique.",
+      "en": "Otorhinolaryngology (ENT) focuses on the prevention, diagnosis, and treatment of disorders of the ear, nose, and throat. It is a surgical specialty with a substantial clinical component."
+    },
+    "fitProfile": {
+      "ro": "Această specialitate poate corespunde unei persoane cu raționament tehnic și atenție susținută la detalii, motivată de rezolvarea problemelor care influențează direct calitatea vieții. Diversitatea cazurilor cere toleranță la stres și adaptabilitate. Gândirea logică, dexteritatea, organizarea, eficiența și pragmatismul sunt calități utile, alături de standarde tehnice înalte. Cercetarea citată descrie la medicii ORL niveluri moderate de extraversiune, orientare spre soluții și reziliență psihologică.",
+      "fr": "Cette spécialité peut correspondre à une personne dotée d’un raisonnement technique et d’une attention soutenue aux détails, motivée par la résolution de problèmes qui influencent directement la qualité de vie. La diversité des cas demande une bonne tolérance au stress et de l’adaptabilité. La pensée logique, la dextérité, l’organisation, l’efficacité et le pragmatisme sont utiles, de même que des standards techniques élevés. La recherche citée décrit chez les médecins ORL une extraversion modérée, une orientation vers les solutions et une bonne résilience psychologique.",
+      "en": "This specialty may suit someone with technical reasoning and sustained attention to detail who is motivated by solving problems that directly affect quality of life. The variety of cases calls for tolerance of stress and adaptability. Logical thinking, dexterity, organization, efficiency, and pragmatism are useful, together with high technical standards. The cited research describes ENT physicians as showing moderate extraversion, solution orientation, and psychological resilience."
+    },
+    "sourceReferences": [
+      "Loh C, et al. Personality traits of otorhinolaryngologists: associations with career satisfaction. Eur Arch Otorhinolaryngol. 2022;279(4):1807–1815."
+    ]
+  },
+  "Urology": {
+    "overview": {
+      "ro": "Urologia se ocupă cu prevenirea, diagnosticul și tratamentul bolilor aparatului urinar feminin și masculin, precum și ale aparatului genital masculin.",
+      "fr": "L’urologie assure la prévention, le diagnostic et le traitement des maladies de l’appareil urinaire féminin et masculin ainsi que de l’appareil génital masculin.",
+      "en": "Urology focuses on the prevention, diagnosis, and treatment of disorders of the female and male urinary systems and the male reproductive system."
+    },
+    "fitProfile": {
+      "ro": "Această specialitate poate fi compatibilă cu o persoană răbdătoare, calmă, atentă și perseverentă. Deși include o componentă chirurgicală importantă, empatia și comunicarea sunt esențiale într-un domeniu care implică intimitate, încredere și uneori reticența pacientului de a solicita ajutor. Respectul și sprijinul oferit pacientului trebuie să însoțească gândirea analitică, precizia tehnică și meticulozitatea. Combinarea medicinei, chirurgiei și relației umane cere maturitate și inteligență emoțională.",
+      "fr": "Cette spécialité peut convenir à une personne patiente, calme, attentive et persévérante. Bien qu’elle comporte une importante dimension chirurgicale, l’empathie et la communication sont essentielles dans un domaine qui touche à l’intimité, à la confiance et parfois à la réticence du patient à demander de l’aide. Le respect et le soutien apportés au patient doivent accompagner la pensée analytique, la précision technique et la minutie. L’association de la médecine, de la chirurgie et de la relation humaine demande de la maturité et une intelligence émotionnelle développée.",
+      "en": "This specialty may suit someone who is patient, calm, attentive, and persistent. Although it includes a major surgical component, empathy and communication are essential in a field involving intimacy, trust, and sometimes reluctance to seek care. Respect and support for the patient need to accompany analytical thinking, technical precision, and meticulous work. Combining medicine, surgery, and human connection calls for maturity and well-developed emotional intelligence."
+    },
+    "sourceReferences": [
+      "Joyce AD, et al. Personality traits and communication skills in urologists. BJU Int. 2020;125(3):389–396."
+    ]
+  },
+  "Epidemiology": {
+    "overview": {
+      "ro": "Epidemiologia studiază apariția, frecvența, cauzele și răspândirea bolilor la nivelul populației. Ea contribuie la controlul acestora și joacă un rol important în prevenție.",
+      "fr": "L’épidémiologie étudie l’apparition, la fréquence, les causes et la propagation des maladies dans les populations. Elle contribue à leur contrôle et joue un rôle important dans la prévention.",
+      "en": "Epidemiology studies the occurrence, frequency, causes, and spread of disease in populations. It contributes to disease control and plays an important role in prevention."
+    },
+    "fitProfile": {
+      "ro": "Această specialitate poate corespunde unei persoane curioase, cu raționament tehnic și structurat, interesată de conexiuni care nu sunt imediat vizibile. Plăcerea de a lucra cu date, de a identifica tipare și de a gândi sistemic este centrală. Un mediu calm, previzibil și orientat spre analiză, mai degrabă decât spre urgențe clinice continue, poate favoriza concentrarea. Contribuția la strategii de sănătate publică, cu impact la scară largă, cere viziune pe termen lung, responsabilitate și aprecierea muncii metodice.",
+      "fr": "Cette spécialité peut correspondre à une personne curieuse, au raisonnement technique et structuré, intéressée par des liens qui ne sont pas immédiatement visibles. Le goût des données, de l’identification de tendances et de la pensée systémique y est central. Un environnement calme, prévisible et tourné vers l’analyse, plutôt que vers des urgences cliniques permanentes, peut favoriser la concentration. La contribution à des stratégies de santé publique ayant un impact à grande échelle demande une vision à long terme, un sens des responsabilités et un goût pour le travail méthodique.",
+      "en": "This specialty may suit a curious person with technical, structured reasoning who is interested in connections that are not immediately visible. Enjoyment of data, pattern recognition, and systems thinking is central. A calm, predictable, analysis-focused environment rather than continuous clinical emergencies may support concentration. Contributing to public health strategies with large-scale impact requires long-term vision, responsibility, and an appreciation for methodical work."
+    },
+    "sourceReferences": [
+      "Porta M. A Dictionary of Epidemiology. Oxford University Press, 2014."
+    ]
+  },
+  "Hygiene": {
+    "overview": {
+      "ro": "Igiena medicală este știința care protejează sănătatea comunităților. Este o specialitate a prevenției, echilibrului și responsabilității, care privește medicina din perspectiva mediului, societății și comportamentului uman.",
+      "fr": "L’hygiène médicale est la science qui protège la santé des communautés. Cette spécialité de prévention, d’équilibre et de responsabilité envisage la médecine sous l’angle de l’environnement, de la société et du comportement humain.",
+      "en": "Medical hygiene is the science of protecting community health. It is a specialty centered on prevention, balance, and responsibility that views medicine through the lenses of environment, society, and human behavior."
+    },
+    "fitProfile": {
+      "ro": "Această specialitate poate fi compatibilă cu o persoană organizată și strategică, animată de responsabilitate civică. Anticiparea riscurilor, proiectarea unor sisteme eficiente și observarea efectelor la nivel colectiv cer curiozitate, ordine și gândire logică. Empatia ajută la înțelegerea faptului că sănătatea depinde nu doar de tratamente, ci și de educație, obiceiuri și context social. Domeniul poate atrage o persoană orientată spre stabilitate, prevenție și rezultate pe termen lung, care dorește să reducă suferința înainte ca aceasta să apară.",
+      "fr": "Cette spécialité peut convenir à une personne organisée et stratégique, animée par un véritable sens civique. Anticiper les risques, concevoir des systèmes efficaces et observer leurs effets à l’échelle collective demande de la curiosité, de l’ordre et une pensée logique. L’empathie aide à comprendre que la santé dépend non seulement des traitements, mais aussi de l’éducation, des habitudes et du contexte social. Le domaine peut attirer une personne tournée vers la stabilité, la prévention et les résultats à long terme, qui souhaite réduire la souffrance avant qu’elle n’apparaisse.",
+      "en": "This specialty may suit an organized, strategic person with a strong sense of civic responsibility. Anticipating risks, designing effective systems, and observing collective outcomes require curiosity, order, and logical thinking. Empathy helps recognize that health depends not only on treatment but also on education, habits, and social context. The field may appeal to someone oriented toward stability, prevention, and long-term outcomes who wants to reduce suffering before it occurs."
+    },
+    "sourceReferences": [
+      "Friis RH, Sellers TA. Epidemiology for Public Health Practice. Jones & Bartlett Learning, 2021."
+    ]
+  },
+  "Laboratory Medicine": {
+    "overview": {
+      "ro": "Medicina de laborator analizează probe biologice și contribuie la prevenirea, diagnosticul și monitorizarea bolilor. Ea reprezintă o parte esențială, adesea invizibilă, a procesului care conduce la un diagnostic corect.",
+      "fr": "La médecine de laboratoire analyse des échantillons biologiques et contribue à la prévention, au diagnostic et au suivi des maladies. Elle constitue une composante essentielle, souvent invisible, du processus qui mène à un diagnostic correct.",
+      "en": "Laboratory medicine analyzes biological samples and contributes to disease prevention, diagnosis, and monitoring. It is an essential, often unseen part of the process leading to an accurate diagnosis."
+    },
+    "fitProfile": {
+      "ro": "Această specialitate poate corespunde unei persoane ordonate, riguroase și meticuloase, cu gândire logică și cantitativă și cu standarde înalte de precizie. Curiozitatea pentru cunoaștere și descoperire susține munca analitică. Activitatea contribuie adesea din culise la calitatea actului medical și poate fi potrivită unei persoane care apreciază concentrarea, calmul, autonomia și un mediu structurat mai mult decât interacțiunile clinice intense. Fiecare rezultat corect poate schimba semnificativ direcția tratamentului, ceea ce cere responsabilitate și consecvență.",
+      "fr": "Cette spécialité peut correspondre à une personne ordonnée, rigoureuse et méticuleuse, dotée d’une pensée logique et quantitative et de standards élevés de précision. La curiosité pour la connaissance et la découverte soutient le travail analytique. L’activité contribue souvent en coulisses à la qualité des soins et peut convenir à une personne qui apprécie la concentration, le calme, l’autonomie et un environnement structuré davantage que les interactions cliniques intenses. Chaque résultat exact peut modifier sensiblement l’orientation d’un traitement, ce qui exige responsabilité et constance.",
+      "en": "This specialty may suit an orderly, rigorous, and meticulous person with logical and quantitative thinking and high standards of precision. Curiosity about knowledge and discovery supports analytical work. The specialty often contributes behind the scenes to the quality of medical care and may suit someone who values concentration, calm, autonomy, and a structured environment more than intense clinical interaction. Every accurate result can significantly change the direction of treatment, requiring responsibility and consistency."
+    },
+    "sourceReferences": [
+      "McPherson RA, Pincus MR. Henry’s Clinical Diagnosis and Management by Laboratory Methods. Elsevier, 2022."
+    ]
+  }
+}

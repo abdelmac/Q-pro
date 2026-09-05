@@ -2,7 +2,7 @@ BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
 
-SELECT extensions.plan(104);
+SELECT extensions.plan(111);
 
 SELECT extensions.has_schema('private', 'private schema exists');
 SELECT extensions.has_table('public', 'student_responses', 'student table exists');
@@ -63,6 +63,97 @@ SELECT extensions.is(
   ),
   58::bigint,
   'the active specialty catalog contains all 58 specialties'
+);
+SELECT extensions.ok(
+  NOT EXISTS (
+    SELECT 1
+    FROM private.specialty_catalog_entries AS entry
+    JOIN private.specialty_catalog_versions AS version ON version.id = entry.version_id
+    WHERE version.status = 'active'
+      AND (
+        private.valid_localized_catalog_text(entry.descriptions, 1, 2000) IS NOT TRUE
+        OR private.valid_localized_catalog_text(entry.clinical_summaries, 20, 5000) IS NOT TRUE
+      )
+  ),
+  'all active specialty narratives contain valid Romanian, French, and English text'
+);
+SELECT extensions.ok(
+  NOT EXISTS (
+    SELECT 1
+    FROM private.specialty_catalog_entries AS entry
+    JOIN private.specialty_catalog_versions AS version ON version.id = entry.version_id
+    WHERE version.status = 'active'
+      AND (
+        entry.clinical_summaries::text LIKE '%Initial clinical summary, not yet clinically reviewed:%'
+        OR entry.clinical_summaries::text LIKE '%Résumé clinique initial, pas encore validé cliniquement%'
+        OR entry.clinical_summaries::text LIKE '%Rezumat clinic inițial, care nu a fost încă validat clinic%'
+      )
+  ),
+  'no legacy placeholder remains in the active professional narratives'
+);
+SELECT extensions.ok(
+  NOT EXISTS (
+    SELECT 1
+    FROM private.specialty_catalog_entries AS entry
+    JOIN private.specialty_catalog_versions AS version ON version.id = entry.version_id
+    WHERE version.status = 'active'
+      AND (
+        entry.descriptions::text ~ '[�ǎşţŞŢ]'
+        OR entry.clinical_summaries::text ~ '[�ǎşţŞŢ]'
+        OR position('Ã' IN entry.descriptions::text) > 0
+        OR position('Ã' IN entry.clinical_summaries::text) > 0
+      )
+  ),
+  'active specialty narratives do not contain known Unicode corruption markers'
+);
+SELECT extensions.is(
+  (
+    SELECT count(*)
+    FROM private.specialty_catalog_versions AS narrative_version
+    JOIN private.specialty_catalog_entries AS narrative_entry
+      ON narrative_entry.version_id = narrative_version.id
+    JOIN private.specialty_catalog_entries AS parent_entry
+      ON parent_entry.version_id = narrative_version.parent_version_id
+     AND parent_entry.name = narrative_entry.name
+    WHERE narrative_version.note = 'Reviewed Romanian, French, and English specialty narratives supplied for the complete Top-10 results view'
+  ),
+  58::bigint,
+  'the multilingual publication has a complete parent snapshot for comparison'
+);
+SELECT extensions.ok(
+  NOT EXISTS (
+    SELECT 1
+    FROM private.specialty_catalog_versions AS narrative_version
+    JOIN private.specialty_catalog_entries AS narrative_entry
+      ON narrative_entry.version_id = narrative_version.id
+    JOIN private.specialty_catalog_entries AS parent_entry
+      ON parent_entry.version_id = narrative_version.parent_version_id
+     AND parent_entry.name = narrative_entry.name
+    WHERE narrative_version.note = 'Reviewed Romanian, French, and English specialty narratives supplied for the complete Top-10 results view'
+      AND narrative_entry.profile IS DISTINCT FROM parent_entry.profile
+  ),
+  'the multilingual editorial publication does not modify matching profiles'
+);
+SELECT extensions.ok(
+  EXISTS (
+    SELECT 1
+    FROM private.specialty_catalog_versions AS narrative_version
+    WHERE narrative_version.note = 'Reviewed Romanian, French, and English specialty narratives supplied for the complete Top-10 results view'
+      AND narrative_version.status IN ('active', 'archived')
+      AND narrative_version.checksum = private.specialty_catalog_content_hash(narrative_version.id)
+  ),
+  'the multilingual publication stores its computed content checksum'
+);
+SELECT extensions.ok(
+  EXISTS (
+    SELECT 1
+    FROM private.specialty_catalog_versions AS narrative_version
+    JOIN private.specialty_catalog_versions AS parent_version
+      ON parent_version.id = narrative_version.parent_version_id
+    WHERE narrative_version.note = 'Reviewed Romanian, French, and English specialty narratives supplied for the complete Top-10 results view'
+      AND parent_version.status = 'archived'
+  ),
+  'the multilingual publication preserves its parent as an archived snapshot'
 );
 SELECT extensions.is(
   (SELECT count(*) FROM private.trait_catalog),

@@ -33,6 +33,9 @@ jobs:
       - name: Run dashboard regression tests
         run: npm run test:dashboard
 
+      - name: Validate multilingual specialty content
+        run: npm run test:specialty-content
+
       - name: Build app
         env:
           # Both values are intentionally public and are embedded in the browser bundle.

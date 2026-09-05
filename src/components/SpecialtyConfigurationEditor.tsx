@@ -922,7 +922,7 @@ export default function SpecialtyConfigurationEditor({
                   <label className="block">
                     <span className="inline-flex items-center gap-2 text-sm font-semibold text-ink-800">
                       <Stethoscope className="h-4 w-4 text-brand-600" />
-                      {french ? 'Résumé clinique' : 'Clinical summary'}
+                      {french ? 'Profil professionnel détaillé' : 'Detailed professional profile'}
                     </span>
                     <textarea
                       value={workingEntry.clinicalSummaries[contentLanguage]}
