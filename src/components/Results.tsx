@@ -6,14 +6,9 @@ import {
   type Dimension,
 } from '@/lib/scoring';
 import { CATEGORY_ORDER } from '@/data/specialties';
-import { SPECIALTY_METADATA } from '@/data/specialtyMetadata';
 import { getSpecialtyNarrative, hasSpecialistAuthoredNarrative } from '@/data/specialtyNarratives';
 import {
-  translateCareType,
-  translatePatientContact,
-  translateProceduralIntensity,
   translateTrait,
-  translateWorkStyle,
 } from '@/data/specialtyDisplayI18n';
 import { translateSpecialtyName, translateCategory } from '@/data/i18n';
 import { FEATURE_FLAGS } from '@/config/features';
@@ -92,15 +87,6 @@ const DIMENSION_LABELS: Record<Dimension, string> = {
   lifestyle: 'subScoreLifestyle',
 };
 
-function SpecialtyInfoCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl border border-ink-100 bg-ink-50/70 p-3">
-      <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-ink-400">{label}</p>
-      <p className="text-sm font-medium text-ink-700">{value}</p>
-    </div>
-  );
-}
-
 interface SpecialtyFactsProps {
   specialtyName: string;
   blurb: string;
@@ -115,7 +101,6 @@ function SpecialtyFacts({
   nested = false,
 }: SpecialtyFactsProps) {
   const { lang, t } = useLanguage();
-  const meta = SPECIALTY_METADATA[specialtyName];
   const hasSuppliedNarrative = hasSpecialistAuthoredNarrative(specialtyName);
   const suppliedNarrative = getSpecialtyNarrative(specialtyName);
   const narrativeMatchesSource = Boolean(
@@ -124,10 +109,6 @@ function SpecialtyFacts({
       && suppliedNarrative.overview[lang] === blurb
       && suppliedNarrative.fitProfile[lang] === clinicalSummary,
   );
-  const suppliedReferences = hasSuppliedNarrative
-    ? suppliedNarrative?.sourceReferences ?? []
-    : [];
-  const metadataReferences = meta?.references ?? [];
   const GroupHeading = nested ? 'h4' : 'h2';
   const DetailHeading = nested ? 'h5' : 'h3';
 
@@ -165,75 +146,9 @@ function SpecialtyFacts({
               </section>
             )}
 
-            <section>
-              <DetailHeading className="mb-2 text-xs font-semibold uppercase tracking-wider text-brand-700">
-                {t.resultsSourceReferences}
-              </DetailHeading>
-              {suppliedReferences.length > 0 ? (
-                <>
-                  <ul className="space-y-1.5">
-                    {suppliedReferences.map((reference) => (
-                      <li key={reference} className="break-words text-xs leading-relaxed text-ink-600">
-                        {reference}
-                      </li>
-                    ))}
-                  </ul>
-                  <p className="mt-2 text-[11px] leading-relaxed text-ink-500">{t.resultsReferencesDisclaimer}</p>
-                </>
-              ) : (
-                <p className="text-xs leading-relaxed text-ink-500">{t.resultsNoSourceReferences}</p>
-              )}
-            </section>
           </div>
         )}
       </section>
-
-      {meta && (
-        <section className="rounded-2xl border border-ink-100 bg-white p-5 shadow-soft sm:p-6">
-          <header className="mb-5 border-b border-ink-100 pb-4">
-            <GroupHeading className="font-display text-lg font-semibold text-ink-900">
-              {t.resultsQProMetadataTitle}
-            </GroupHeading>
-            <p className="mt-1.5 text-xs leading-relaxed text-ink-500">{t.resultsQProMetadataNote}</p>
-          </header>
-
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <SpecialtyInfoCard label={t.explorerWorkStyle} value={translateWorkStyle(meta.workStyle, lang)} />
-            <SpecialtyInfoCard label={t.explorerPatientContact} value={translatePatientContact(meta.patientContact, lang)} />
-            <SpecialtyInfoCard label={t.explorerCareType} value={translateCareType(meta.careType, lang)} />
-            <SpecialtyInfoCard label={t.explorerProceduralIntensity} value={translateProceduralIntensity(meta.proceduralIntensity, lang)} />
-          </div>
-
-          <section>
-            <DetailHeading className="mb-2 mt-5 text-xs font-semibold uppercase tracking-wider text-ink-400">
-              {t.explorerKeyTraits}
-            </DetailHeading>
-            <div className="flex flex-wrap gap-2">
-              {meta.keyTraits.map((trait) => (
-                <span key={trait} className="inline-flex rounded-full border border-brand-100 bg-brand-50 px-3 py-1.5 text-xs font-medium text-brand-700">
-                  {translateTrait(trait, lang)}
-                </span>
-              ))}
-            </div>
-          </section>
-
-          {metadataReferences.length > 0 && (
-            <section>
-              <DetailHeading className="mb-2 mt-5 text-xs font-semibold uppercase tracking-wider text-ink-400">
-                {t.resultsQProMetadataReferences}
-              </DetailHeading>
-              <ul className="space-y-1.5">
-                {metadataReferences.map((reference) => (
-                  <li key={reference} className="break-words text-xs leading-relaxed text-ink-500">
-                    {reference}
-                  </li>
-                ))}
-              </ul>
-              <p className="mt-2 text-[11px] leading-relaxed text-ink-400">{t.resultsReferencesDisclaimer}</p>
-            </section>
-          )}
-        </section>
-      )}
     </div>
   );
 }

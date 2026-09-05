@@ -67,15 +67,9 @@ export interface UIStrings {
   resultsNoSpecialistNarrative: string;
   resultsSpecialtyOverview: string;
   resultsProfessionalProfile: string;
-  resultsSourceReferences: string;
-  resultsNoSourceReferences: string;
-  resultsQProMetadataTitle: string;
-  resultsQProMetadataNote: string;
-  resultsQProMetadataReferences: string;
   resultsCalculatedAnalysisTitle: string;
   resultsCalculatedAnalysisNote: string;
   resultsInformationDisclaimer: string;
-  resultsReferencesDisclaimer: string;
   fullRanking: string;
   fullRankingDesc: (n: number) => string;
   retakeAssessment: string;
@@ -333,15 +327,9 @@ const en: UIStrings = {
   resultsNoSpecialistNarrative: 'No specialist-supplied narrative was available for this specialty.',
   resultsSpecialtyOverview: 'About the specialty',
   resultsProfessionalProfile: 'Full professional and compatibility perspective',
-  resultsSourceReferences: 'References supplied with the original specialist source',
-  resultsNoSourceReferences: 'No bibliography was supplied with this narrative.',
-  resultsQProMetadataTitle: 'Q-Pro descriptive metadata',
-  resultsQProMetadataNote: 'These structured labels are maintained by Q-Pro and are separate from the supplied narrative.',
-  resultsQProMetadataReferences: 'Q-Pro metadata references',
   resultsCalculatedAnalysisTitle: 'Q-Pro calculated analysis',
   resultsCalculatedAnalysisNote: 'These indices are calculated from the questionnaire and the active matching profile; they are not part of the specialist-supplied narrative.',
-  resultsInformationDisclaimer: 'The specialist-supplied narrative, Q-Pro metadata, and calculated indices are presented separately. They are orientation material, not psychological diagnoses or guarantees. Medical practice varies by country, institution, role, and individual career path.',
-  resultsReferencesDisclaimer: 'References are shown for traceability and should be checked before academic or clinical use.',
+  resultsInformationDisclaimer: 'The specialist-supplied narrative and calculated indices are presented separately. They are orientation material, not psychological diagnoses or guarantees. Medical practice varies by country, institution, role, and individual career path.',
   fullRanking: 'Full ranking',
   fullRankingDesc: (n: number) => `All ${n} specialties, grouped by field.`,
   retakeAssessment: 'Retake the assessment',
@@ -589,15 +577,9 @@ const ro: UIStrings = {
   resultsNoSpecialistNarrative: 'Pentru această specialitate nu a fost disponibilă o prezentare furnizată de specialist.',
   resultsSpecialtyOverview: 'Despre specialitate',
   resultsProfessionalProfile: 'Perspectiva completă asupra mediului profesional și compatibilității',
-  resultsSourceReferences: 'Referințe furnizate cu sursa originală a specialistului',
-  resultsNoSourceReferences: 'Pentru această prezentare nu a fost furnizată nicio bibliografie.',
-  resultsQProMetadataTitle: 'Metadate descriptive Q-Pro',
-  resultsQProMetadataNote: 'Aceste etichete structurate sunt gestionate de Q-Pro și sunt separate de prezentarea furnizată.',
-  resultsQProMetadataReferences: 'Referințe pentru metadatele Q-Pro',
   resultsCalculatedAnalysisTitle: 'Analiză calculată de Q-Pro',
   resultsCalculatedAnalysisNote: 'Acești indici sunt calculați din chestionar și profilul activ de potrivire; ei nu fac parte din prezentarea furnizată de specialist.',
-  resultsInformationDisclaimer: 'Prezentarea furnizată de specialist, metadatele Q-Pro și indicii calculați sunt afișați separat. Acestea sunt materiale de orientare, nu diagnostice psihologice și nici garanții. Practica medicală variază în funcție de țară, instituție, rol și parcursul profesional individual.',
-  resultsReferencesDisclaimer: 'Referințele sunt afișate pentru trasabilitate și trebuie verificate înainte de utilizarea academică sau clinică.',
+  resultsInformationDisclaimer: 'Prezentarea furnizată de specialist și indicii calculați sunt afișați separat. Acestea sunt materiale de orientare, nu diagnostice psihologice și nici garanții. Practica medicală variază în funcție de țară, instituție, rol și parcursul profesional individual.',
   fullRanking: 'Clasament complet',
   fullRankingDesc: (n: number) => `Toate cele ${n} specialități, grupate pe domenii.`,
   retakeAssessment: 'Reia evaluarea',
@@ -845,15 +827,9 @@ const fr: UIStrings = {
   resultsNoSpecialistNarrative: 'Aucune présentation fournie par un spécialiste n’était disponible pour cette spécialité.',
   resultsSpecialtyOverview: 'Présentation de la spécialité',
   resultsProfessionalProfile: 'Perspective complète sur l’environnement professionnel et la compatibilité',
-  resultsSourceReferences: 'Références fournies avec la source originale du spécialiste',
-  resultsNoSourceReferences: 'Aucune bibliographie n’a été fournie avec cette présentation.',
-  resultsQProMetadataTitle: 'Métadonnées descriptives Q-Pro',
-  resultsQProMetadataNote: 'Ces libellés structurés sont maintenus par Q-Pro et sont distincts de la présentation fournie.',
-  resultsQProMetadataReferences: 'Références des métadonnées Q-Pro',
   resultsCalculatedAnalysisTitle: 'Analyse calculée par Q-Pro',
   resultsCalculatedAnalysisNote: 'Ces indices sont calculés à partir du questionnaire et du profil de matching actif ; ils ne font pas partie de la présentation fournie par le spécialiste.',
-  resultsInformationDisclaimer: 'La présentation fournie par le spécialiste, les métadonnées Q-Pro et les indices calculés sont affichés séparément. Il s’agit de contenus d’orientation, et non de diagnostics psychologiques ou de garanties. La pratique médicale varie selon le pays, l’établissement, le poste et le parcours professionnel individuel.',
-  resultsReferencesDisclaimer: 'Les références sont affichées à des fins de traçabilité et doivent être vérifiées avant tout usage universitaire ou clinique.',
+  resultsInformationDisclaimer: 'La présentation fournie par le spécialiste et les indices calculés sont affichés séparément. Il s’agit de contenus d’orientation, et non de diagnostics psychologiques ou de garanties. La pratique médicale varie selon le pays, l’établissement, le poste et le parcours professionnel individuel.',
   fullRanking: 'Classement complet',
   fullRankingDesc: (n: number) => `Les ${n} spécialités, groupées par domaine.`,
   retakeAssessment: 'Recommencer l\'évaluation',
