@@ -2,8 +2,10 @@
 
 ## Structure de la base de données et portail Specialist/Admin
 
-**Version documentaire :** 31 août 2026  
-**Migration de référence :** `supabase/migrations/20260831120000_specialist_admin_portal.sql`  
+**Version documentaire :** 5 septembre 2026
+
+**Migrations de référence :** `supabase/migrations/20260831120000_specialist_admin_portal.sql` et `supabase/migrations/20260904193000_accuracy_and_qualitative_specialist_v2.sql`
+
 **Périmètre :** Supabase Auth, PostgreSQL, collecte de recherche, catalogue éditable des spécialités, sécurité, versionnement et provenance scientifique.
 
 Ce document décrit la structure fonctionnelle et technique de la base Q Project après l’introduction du portail Specialist/Admin. Il ne contient aucun secret, aucune adresse de compte et aucun mot de passe.
@@ -46,10 +48,12 @@ Les principes structurants sont les suivants :
 - Doctor et Professor peuvent modifier un brouillon ;
 - seul Professor peut publier ou demander la restauration d’une version historique ;
 - une version publiée est un instantané immuable ;
-- chaque nouvelle soumission v2 enregistre la version exacte du catalogue utilisée ;
+- chaque nouvelle soumission de schéma 2, envoyée par une RPC v3, enregistre la version exacte du catalogue utilisée ;
+- l'entretien spécialiste de schéma 2 collecte cinq réponses qualitatives après les 81 items, au lieu des anciens champs structurés d'expérience, satisfaction, intention de changement et caractère volontaire du choix ;
+- les anciennes colonnes et les anciennes RPC restent présentes afin de conserver l'historique sans le mélanger au protocole courant ;
 - les indicateurs Top-k sont descriptifs et ne modifient jamais automatiquement les poids.
 
-La migration `20260831120000_specialist_admin_portal.sql` ajoute cette couche sans supprimer les fonctions v1 historiques. Les appels v2 assurent désormais la provenance du catalogue de spécialités.
+La migration `20260831120000_specialist_admin_portal.sql` ajoute la couche éditoriale sans supprimer les fonctions v1 historiques. La migration `20260904193000_accuracy_and_qualitative_specialist_v2.sql` ajoute le schéma de soumission 2 et les RPC v3, publie un nouvel instantané immuable qui complète les traits clés mesurés manquants, et laisse volontairement `prevention_orientation` non mesuré. Les appels v2 restent utilisables pour l'historique ; les nouvelles collectes utilisent v3.
 
 ## 2. Architecture générale
 
@@ -59,7 +63,7 @@ La migration `20260831120000_specialist_admin_portal.sql` ajoute cette couche sa
 │                                                                     │
 │  Questionnaire public             Dashboard sécurisé                │
 │  - catalogue actif                - réponses de recherche            │
-│  - soumissions v2                 - brouillon de configuration       │
+│  - soumissions v3 / schéma 2      - réponses qualitatives            │
 │                                    - publication / historique        │
 └───────────────┬───────────────────────────────┬─────────────────────┘
                 │ clé publique                  │ session Auth JWT
@@ -69,7 +73,7 @@ La migration `20260831120000_specialist_admin_portal.sql` ajoute cette couche sa
 │                                                                     │
 │ RPC publiques validées             RPC administratives contrôlées   │
 │ get_active_specialty_catalog       current_user_portal_profile      │
-│ submit_*_response_v1/v2            get/save/publish/list/restore     │
+│ submit_*_response_v1/v2/v3         get/save/publish/list/restore     │
 └───────────────┬───────────────────────────────┬─────────────────────┘
                 ▼                               ▼
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -85,15 +89,16 @@ La migration `20260831120000_specialist_admin_portal.sql` ajoute cette couche sa
 
 1. L’application charge l’unique catalogue publié avec `get_active_specialty_catalog()`.
 2. Le moteur construit le profil et le classement dans le navigateur.
-3. La soumission v2 transmet l’identifiant UUID de la version publiée utilisée.
+3. La soumission v3 transmet l’identifiant UUID de la version publiée utilisée et crée une ligne de `submission_schema_version = 2`.
 4. PostgreSQL vérifie que cet UUID correspond bien à un instantané publié.
 5. La réponse et la révision du catalogue sont enregistrées ensemble.
+6. Pour un spécialiste, la spécialité réelle et les cinq réponses qualitatives ne sont demandées qu'après les 81 notes et le choix des valeurs, afin de réduire le biais d'ancrage pendant le questionnaire principal.
 
 ### 2.2 Flux administratif
 
 1. Supabase Auth authentifie le compte.
 2. `current_user_portal_profile()` résout son autorisation et son rôle.
-3. Les données de recherche restent accessibles uniquement aux chercheurs allowlistés.
+3. Les données de recherche, y compris le verbatim qualitatif des spécialistes et les exports, restent accessibles uniquement aux chercheurs allowlistés.
 4. Doctor ou Professor ouvre le brouillon, le modifie et fournit une justification.
 5. Le verrou optimiste empêche l’écrasement silencieux d’un changement concurrent.
 6. Professor publie atomiquement la version complète.
@@ -192,6 +197,8 @@ Catalogue technique des traits connus par le moteur. Cette table documente surto
 
 Le profil JSONB de chaque spécialité ne peut référencer qu’un code présent dans cette table.
 
+Le catalogue courant contient 96 traits : 92 sont produits par les notes du questionnaire, 3 (`manual_orientation`, `prestige_priority`, `security_priority`) uniquement lorsqu'une valeur professionnelle correspondante est sélectionnée, et 1 (`prevention_orientation`) n'est actuellement produit par aucune question ni valeur.
+
 ### 5.4 `private.specialty_catalog_versions`
 
 Registre des instantanés du catalogue.
@@ -246,6 +253,14 @@ Règles principales :
 - une entrée d’une version publiée ne peut pas être modifiée ou supprimée ;
 - `prevention_orientation` ne peut pas être modifié tant qu’il reste non mesuré.
 
+#### Révision d'intégrité du schéma 2
+
+La migration du 4 septembre 2026 ne modifie pas en place l'instantané actif. Elle en crée une copie, complète uniquement des clés absentes puis publie la copie comme une nouvelle révision immuable. L'ancien actif devient `archived`, un nouveau checksum est calculé et l'opération est inscrite dans `private.specialty_catalog_audit` avec l'acteur `system`.
+
+Cette réparation aligne les profils avec les traits clés déjà annoncés dans les métadonnées des spécialités, par exemple `communication`, `precision`, `detail_orientation`, `long_term_orientation`, `cognitive_empathy`, `care_coordination`, `teamwork`, `patience`, `technology_interest`, `social_energy`, `independence` et `lifestyle_priority`. Une cible existante gagne toujours sur la valeur proposée par la migration : seules les omissions sont comblées. Un éventuel brouillon en cours reçoit la même réparation additive, son `lock_version` est incrémenté et chaque changement est audité.
+
+`prevention_orientation` est explicitement exclu de cette opération. Sa présence dans une description ou parmi des traits clés ne transforme pas ce concept en mesure : `q81-v1` ne produit toujours aucune valeur comparable pour ce trait.
+
 ### 5.6 `private.specialty_catalog_audit`
 
 Journal append-only de chaque action significative.
@@ -277,7 +292,7 @@ Réponses anonymes des étudiants.
 | Données brutes | `ratings`, `selected_values` | 81 notes et 1 à 4 valeurs professionnelles. |
 | Résultat client | `client_scores` | Classement calculé dans le navigateur, non vérifié. |
 | Versions scientifiques | `submission_schema_version`, `questionnaire_version`, `value_catalog_version`, `specialty_catalog_version`, `scoring_version`, `consent_version` | Versions nécessaires à l’interprétation. |
-| Provenance du catalogue | `specialty_config_version_id`, `specialty_config_revision` | Instantané publié utilisé par une soumission v2. |
+| Provenance du catalogue | `specialty_config_version_id`, `specialty_config_revision` | Instantané publié exact utilisé par les soumissions v2 et v3 ; obligatoire pour le schéma 2. |
 
 La paire de provenance est soit entièrement absente, soit entièrement présente. Une clé étrangère composite pointe vers `(id, revision)` de `private.specialty_catalog_versions`.
 
@@ -290,13 +305,26 @@ Réponses anonymes des médecins spécialistes utilisées pour étudier la calib
 | Identité technique | `id`, `created_at` | UUID de soumission et horodatage. Aucun lien vers Auth. |
 | Spécialité réelle | `actual_specialty` | Spécialité déclarée par le participant. |
 | Données brutes | `ratings`, `selected_values`, `language` | 81 notes, valeurs choisies et langue. |
-| Métadonnées de carrière | `years_of_experience`, `career_satisfaction` | Expérience et satisfaction facultatives. |
-| Choix professionnel | `would_choose_again_code`, `intention_to_change_code`, `voluntary_choice_code` | Codes canoniques indépendants de la langue. |
-| Colonnes legacy | `would_choose_again`, `intention_to_change`, `voluntary_choice` | Anciennes étiquettes localisées, conservées pour l’historique. |
+| Entretien qualitatif courant | `current_specialty_view`, `specialty_changes_over_years`, `most_important_specialty_quality`, `student_self_question` | Quatre textes obligatoires du schéma 2, nettoyés des espaces périphériques. Les trois premiers acceptent 3 à 2 000 caractères ; la question destinée à l'étudiant, 3 à 1 000 caractères. |
+| Choix à refaire | `would_choose_again_code`, `would_not_choose_again_reason` | Code obligatoire `yes` ou `no`. La raison de 3 à 2 000 caractères est obligatoire si la réponse vaut `no` et doit rester `NULL` si elle vaut `yes`. |
+| Champs structurés legacy | `years_of_experience`, `career_satisfaction`, `intention_to_change_code`, `voluntary_choice_code` | Anciens champs conservés pour relire les lignes historiques. Les nouvelles lignes de schéma 2 les laissent à `NULL`. |
+| Libellés legacy | `would_choose_again`, `intention_to_change`, `voluntary_choice` | Anciennes étiquettes localisées conservées pour l'historique ; elles restent `NULL` pour le schéma 2. |
 | Versions scientifiques | `submission_schema_version`, `questionnaire_version`, `value_catalog_version`, `specialty_catalog_version`, `calibration_version`, `consent_version` | Versions nécessaires à l’analyse. |
-| Provenance du catalogue | `specialty_config_version_id`, `specialty_config_revision` | Instantané publié utilisé par une soumission v2. |
+| Provenance du catalogue | `specialty_config_version_id`, `specialty_config_revision` | Instantané publié exact utilisé par les soumissions v2 et v3 ; obligatoire pour le schéma 2. |
 
-Comme pour les étudiants, la paire `(specialty_config_version_id, specialty_config_revision)` est cohérente et contrôlée par une clé étrangère composite.
+Comme pour les étudiants, la paire `(specialty_config_version_id, specialty_config_revision)` est cohérente et contrôlée par une clé étrangère composite. La suppression de l'ancien formulaire ne supprime donc aucune colonne ni aucune réponse historique : elle sépare le protocole courant de l'ancien par `submission_schema_version` et les versions scientifiques.
+
+Pour le protocole courant, les versions enregistrées sont :
+
+- `submission_schema_version = 2` ;
+- `questionnaire_version = q81-v1` ;
+- `value_catalog_version = career-values-v1` ;
+- `specialty_catalog_version = medical-specialties-v1` ;
+- `scoring_version = client-scoring-v2` pour les étudiants ;
+- `calibration_version = calibration-v2-qualitative` pour les spécialistes ;
+- `consent_version = research-consent-2026-09-04`.
+
+Le libellé stable `medical-specialties-v1` désigne le format canonique du catalogue. La provenance de son contenu effectif est donnée séparément par l'UUID et la révision de l'instantané publié.
 
 ## 6. Fonctions RPC et points d’entrée
 
@@ -366,13 +394,45 @@ Ajoutent `p_specialty_config_version_id`. La base refuse un identifiant absent o
 
 Les fonctions restent idempotentes sur l’UUID de soumission. Un rejeu avec une provenance différente est refusé.
 
+#### `submit_student_response_v3(...)`
+
+Point d'entrée courant des étudiants. Il conserve les 81 items et le catalogue de valeurs, impose `client-scoring-v2`, `research-consent-2026-09-04` et la provenance exacte d'un catalogue publié, puis écrit `submission_schema_version = 2`. L'UUID fourni par le client reste idempotent : un rejeu strictement identique renvoie le même identifiant, tandis qu'un payload différent avec le même UUID est refusé.
+
+#### `submit_specialist_response_v3(...)`
+
+Point d'entrée courant des spécialistes. Après les 81 notes et les valeurs, il reçoit :
+
+1. la spécialité actuelle ;
+2. la manière dont le spécialiste voit aujourd'hui sa spécialité ;
+3. ce qui a changé au fil des années ;
+4. la qualité la plus importante pour cette spécialité ;
+5. le choix `yes` ou `no` de refaire la même spécialité, avec une justification obligatoire seulement pour `no` ;
+6. la question qu'un étudiant devrait se poser avant de choisir cette spécialité.
+
+La fonction normalise les espaces périphériques, vérifie les longueurs et le caractère conditionnel de la justification, exige `calibration-v2-qualitative`, `research-consent-2026-09-04` et une provenance publiée, puis écrit une ligne de schéma 2. Les anciens champs d'expérience, satisfaction, intention de changement et caractère volontaire sont volontairement écrits à `NULL`.
+
+Les façades `public.*_v3` sont exécutables par `anon` et `authenticated`. Elles délèguent aux implémentations `private.*_v3`, auxquelles ces rôles n'ont aucun droit direct.
+
+### 6.5 Consultation et export des réponses qualitatives
+
+Les comptes allowlistés disposant du droit de recherche peuvent :
+
+- filtrer les spécialistes selon la complétude de l'entretien qualitatif ;
+- prévisualiser la réponse sur la perception actuelle dans la liste ;
+- ouvrir le détail d'une réponse et lire les cinq réponses dans leur intégralité ;
+- exporter les colonnes qualitatives en JSON ou dans les CSV large, long et analytique ;
+- consulter séparément les anciens champs pour les lignes antérieures au schéma 2.
+
+La recherche, la pagination et l'export passent par les politiques RLS existantes. Les cellules CSV commençant comme une formule de tableur sont préfixées afin de limiter l'injection de formules lors de l'ouverture dans Excel ou un logiciel équivalent.
+
 ## 7. Matrice des permissions
 
 | Opération | `anon` | Auth ordinaire | Researcher | Doctor | Professor |
 |---|---:|---:|---:|---:|---:|
 | Lire le catalogue actif | Oui | Oui | Oui | Oui | Oui |
-| Soumettre une réponse v1/v2 | Oui | Oui | Oui | Oui | Oui |
+| Soumettre une réponse v1/v2/v3 | Oui | Oui | Oui | Oui | Oui |
 | Lire les réponses de recherche | Non | Non | Oui | Oui | Oui |
+| Lire/exporter les verbatims spécialistes | Non | Non | Oui | Oui | Oui |
 | Lire le brouillon | Non | Non | Non | Oui | Oui |
 | Modifier le brouillon | Non | Non | Non | Oui | Oui |
 | Consulter l’historique éditorial | Non | Non | Non | Oui | Oui |
@@ -455,17 +515,28 @@ Le navigateur n’a aucun `INSERT`, `UPDATE` ou `DELETE` direct sur les tables d
 
 ### 9.4 Validation des payloads
 
-Pour les lignes v1 courantes, la base contrôle notamment :
+Les contraintes de table distinguent trois générations sans réinterpréter les anciennes lignes :
+
+- le schéma 0 reste lisible comme legacy ;
+- le schéma 1 conserve exactement `client-scoring-v1` ou `calibration-v1` et le consentement du 26 août 2026 ;
+- le schéma 2 exige les versions courantes, les deux colonnes de provenance et les nouvelles règles qualitatives.
+
+Pour le schéma 2, la base contrôle notamment :
 
 - exactement 81 identifiants de questions attendus ;
 - des notes entières de 1 à 10 ;
 - une à quatre valeurs canoniques, distinctes ;
 - une spécialité parmi les 58 valeurs du catalogue ;
 - une langue parmi `en`, `fr`, `ro` ;
-- les versions exactes du questionnaire, des catalogues, du scoring/calibrage et du consentement ;
-- la structure des scores clients étudiants.
+- les versions exactes du questionnaire, des catalogues, du scoring ou du calibrage et du consentement ;
+- la structure des scores clients étudiants ;
+- l'existence de l'instantané publié référencé et la cohérence UUID/révision ;
+- quatre textes spécialistes obligatoires, non vides après normalisation et dans leurs longueurs maximales ;
+- `would_choose_again_code` limité à `yes` ou `no` ;
+- la présence d'une justification uniquement lorsque le choix vaut `no` ;
+- la nullité des anciens champs structurés dans toute nouvelle réponse spécialiste.
 
-Les lignes historiques v0 sont conservées et identifiées comme legacy ; elles ne doivent pas être confondues avec une réponse éligible au protocole courant.
+Les contrôles existent à la fois dans les RPC et dans des contraintes `CHECK`, afin qu'une erreur interne ne puisse pas créer silencieusement une ligne de schéma 2 incohérente. Les lignes historiques restent consultables et exportables, mais le dashboard les signale comme incompatibles avec les indicateurs du protocole courant.
 
 ## 10. Versionnement et provenance des résultats
 
@@ -480,7 +551,7 @@ Une recommandation reproductible dépend de plusieurs éléments :
 - la version du consentement ;
 - l’UUID et la révision du catalogue dynamique publié.
 
-Les RPC v2 enregistrent les deux derniers champs de provenance dans la ligne de réponse. Cela permet de retrouver l’instantané exact même après plusieurs publications.
+Les RPC v2 et v3 enregistrent les deux derniers champs de provenance dans la ligne de réponse. Les RPC v3 les rendent obligatoires pour le schéma 2. Cela permet de retrouver l'instantané exact même après plusieurs publications et d'éviter d'analyser une réponse avec un catalogue différent de celui réellement utilisé.
 
 Le `checksum` sert à détecter une différence de contenu et à identifier un instantané. Il n’est pas un secret et ne remplace pas le contrôle d’accès.
 
@@ -490,10 +561,10 @@ Le `checksum` sert à détecter une différence de contenu et à identifier un i
 
 ### 10.2 Anciennes soumissions
 
-Les fonctions v1 restent disponibles pour la compatibilité et certaines lignes peuvent ne pas avoir une provenance dynamique complète. Le dashboard doit distinguer :
+Les fonctions v1 et v2 restent disponibles pour la compatibilité et certaines lignes anciennes peuvent ne pas avoir une provenance dynamique complète. Le dashboard distingue :
 
-- données courantes et reproductibles ;
-- données legacy consultables ;
+- données de schéma 2 courantes et reproductibles ;
+- données de schéma 0 ou 1 consultables et exportables comme legacy ;
 - données exclues des indicateurs pour incompatibilité de version.
 
 ## 11. Limites scientifiques du moteur actuel
@@ -502,7 +573,9 @@ Les fonctions v1 restent disponibles pour la compatibilité et certaines lignes 
 
 Dans `private.trait_catalog`, `manual_orientation` a la provenance `value_only`.
 
-Ce trait n’est créé que lorsqu’un participant sélectionne la valeur « Manual/hands-on activity ». Il n’est donc pas mesuré pour toute la cohorte. Si une spécialité utilise ce trait, les participants qui ne sélectionnent pas cette valeur ne disposent pas d’une mesure comparable issue du questionnaire.
+Ce trait n'est créé que lorsqu'un participant sélectionne la valeur « Manual/hands-on activity ». Dans `client-scoring-v2`, cette sélection produit un signal explicite de 90/100. Elle ne part plus d'une pseudo-valeur neutre de 50 susceptible de pénaliser paradoxalement les spécialités manuelles. Pour les traits déjà mesurés par les 81 réponses, les valeurs de carrière ne changent plus le niveau du trait : elles augmentent seulement son importance dans la comparaison avec les spécialités.
+
+Cette correction supprime un défaut directionnel du moteur précédent, mais elle ne transforme pas `manual_orientation` en mesure de questionnaire. Les participants qui ne sélectionnent pas cette valeur ne disposent toujours pas d'une mesure comparable de ce trait.
 
 Conséquences :
 
@@ -526,7 +599,13 @@ Avant de rendre ce trait calibrable, il faut :
 
 Cette correction doit créer une nouvelle version du questionnaire, du moteur ou du protocole selon la nature du changement.
 
-### 11.3 Interprétation des Top-k
+### 11.3 Dimensions non observées et portée du score
+
+Lorsqu'un profil de spécialité ne contient aucun trait d'une dimension, `client-scoring-v2` représente le sous-score comme non mesuré (`NULL` dans le modèle applicatif, affiché par un tiret) et non comme 0 %. Cette distinction évite de présenter une absence de preuve comme une incompatibilité.
+
+Le score global reste un indice de proximité interne au moteur et au catalogue versionnés. Il ne doit pas être interprété comme une probabilité de réussite, une certitude d'orientation ou une validation clinique. Les poids par défaut et les préférences sélectionnées doivent toujours accompagner un export analytique afin de rendre le calcul interprétable.
+
+### 11.4 Interprétation des Top-k
 
 Le rappel Top-k répond uniquement à la question : « la spécialité déclarée par le spécialiste apparaît-elle parmi les k premières recommandations du moteur courant ? »
 
@@ -590,6 +669,7 @@ Les mécanismes de sauvegarde disponibles dépendent du plan Supabase. Ils doive
 - absence d’écriture directe ;
 - validation stricte des payloads ;
 - idempotence des soumissions ;
+- rejet d'un même UUID rejoué avec un payload ou une provenance différente ;
 - allowlist de recherche ;
 - résistance des gardes RLS restrictives.
 
@@ -607,9 +687,17 @@ Les mécanismes de sauvegarde disponibles dépendent du plan Supabase. Ils doive
 - la publication est atomique ;
 - le checksum est stable pour un contenu stable ;
 - `prevention_orientation` ne peut pas changer ;
-- les appels v2 refusent une version non publiée ;
+- les appels v2 et v3 refusent une version non publiée ;
 - l’UUID et la révision enregistrés sont cohérents ;
-- les fonctions v1 restent compatibles avec les données historiques.
+- les fonctions v1 et v2 restent compatibles avec les données historiques ;
+- les soumissions v3 écrivent le schéma 2 et les versions scientifiques exactes ;
+- les quatre textes permanents et, pour une réponse `no`, le texte conditionnel sont obligatoires selon leurs règles de longueur ;
+- une réponse `no` exige une raison et une réponse `yes` interdit cette raison ;
+- les champs structurés legacy restent `NULL` dans le schéma 2 ;
+- le nouvel instantané actif complète seulement les traits mesurés manquants, garde les cibles existantes et laisse `prevention_orientation` inchangé ;
+- les exports contiennent les verbatims, la provenance et neutralisent les préfixes de formule CSV ;
+- la sélection d'une valeur manuelle ne peut plus diminuer le rang d'une spécialité manuelle ;
+- un sous-score sans trait disponible reste non mesuré plutôt que 0 %.
 
 ### 13.3 Vérifications applicatives
 
@@ -636,7 +724,7 @@ Après déploiement :
 3. tester chaque rôle avec un compte distinct ;
 4. tester la lecture publique du seul catalogue actif ;
 5. créer un brouillon de test, vérifier le conflit optimiste, puis l’annuler ou le publier selon le protocole ;
-6. effectuer une soumission v2 synthétique et vérifier sa provenance ;
+6. effectuer une soumission étudiante v3 et une soumission spécialiste v3 synthétiques, puis vérifier leur schéma, leurs versions, leurs réponses qualitatives et leur provenance ;
 7. supprimer les données synthétiques avec une procédure administrative contrôlée.
 
 ## 14. Exploitation et bonnes pratiques
@@ -663,7 +751,9 @@ Après déploiement :
 
 ### 14.3 Données personnelles et conservation
 
-Le questionnaire ne crée pas de relation avec un compte participant, mais les journaux techniques de la plateforme peuvent contenir des métadonnées opérationnelles. La durée de conservation, les procédures de purge, les sauvegardes et les obligations réglementaires doivent être définies avec les responsables juridiques et scientifiques du projet.
+Le questionnaire ne crée pas de relation avec un compte participant, mais les réponses qualitatives sont du texte libre : un participant pourrait malgré l'avertissement y saisir un nom, une coordonnée ou une information permettant d'identifier un patient. Ces verbatims doivent donc être traités comme des données de recherche potentiellement sensibles, avec accès restreint, exports maîtrisés et revue avant diffusion.
+
+Les journaux techniques de la plateforme peuvent aussi contenir des métadonnées opérationnelles. La durée de conservation, les procédures de purge, les sauvegardes, la pseudonymisation des exports et les obligations réglementaires doivent être définies avec les responsables juridiques et scientifiques du projet.
 
 ## 15. Glossaire
 
@@ -685,6 +775,7 @@ Le questionnaire ne crée pas de relation avec un compte participant, mais les j
 
 ---
 
-**Référence de structure :** `supabase/migrations/20260831120000_specialist_admin_portal.sql`  
+**Références de structure :** `supabase/migrations/20260831120000_specialist_admin_portal.sql` et `supabase/migrations/20260904193000_accuracy_and_qualitative_specialist_v2.sql`
+
 **Source des règles antérieures de collecte et de sécurité :** migrations précédentes du dossier `supabase/migrations`.  
 **Format Word généré :** `docs/Q-Project-Structure-Base-de-donnees.docx`.

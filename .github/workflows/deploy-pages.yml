@@ -30,6 +30,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Run dashboard regression tests
+        run: npm run test:dashboard
+
       - name: Build app
         env:
           # Both values are intentionally public and are embedded in the browser bundle.

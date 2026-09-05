@@ -16,6 +16,7 @@ import {
   type SpecialistResponseRow,
   type StudentResponseRow,
 } from '@/lib/researchDashboard';
+import { DATA_VERSIONS } from '@/lib/researchVersions';
 import { BarChart3, Braces, CheckCircle2, X } from 'lucide-react';
 import { useSpecialtyCatalog } from '@/lib/SpecialtyCatalogContext';
 
@@ -358,21 +359,91 @@ function SpecialistMetadata({
 }) {
   const french = lang === 'fr';
   const actualRank = formatRank(analysis.actualRankMin, analysis.actualRankMax);
+  const currentQualitativeSchema = response.submission_schema_version >= DATA_VERSIONS.submissionSchema;
   return (
-    <section className="rounded-2xl border border-ink-100 bg-white p-5 shadow-soft">
-      <h3 className="font-semibold text-ink-900">{french ? 'Métadonnées de calibration' : 'Calibration metadata'}</h3>
-      <dl className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <Info label={french ? 'Spécialité réelle' : 'Actual specialty'} value={translateSpecialtyName(response.actual_specialty, lang)} />
-        <Info label={french ? 'Expérience' : 'Experience'} value={response.years_of_experience === null ? '—' : `${response.years_of_experience} ${french ? 'an(s)' : 'year(s)'}`} />
-        <Info label={french ? 'Satisfaction' : 'Satisfaction'} value={response.career_satisfaction === null ? '—' : `${response.career_satisfaction}/5`} />
-        <Info label={french ? 'Rechoisirait' : 'Would choose again'} value={codeLabel(response.would_choose_again_code, lang)} />
-        <Info label={french ? 'Intention de changer' : 'Intention to change'} value={codeLabel(response.intention_to_change_code, lang)} />
-        <Info label={french ? 'Choix volontaire' : 'Voluntary choice'} value={codeLabel(response.voluntary_choice_code, lang)} />
-        <Info label={french ? 'Rang canonique réel' : 'Canonical actual rank'} value={actualRank === '—' ? '—' : `${actualRank} / ${analysis.ranking.length}`} />
-        <Info label={french ? 'Ex æquo' : 'Tied specialties'} value={analysis.actualTieCount ?? '—'} />
-        <Info label={french ? 'Indice de similarité réel' : 'Actual similarity index'} value={analysis.actualScore === null ? '—' : `${analysis.actualScore.toFixed(1)}/100`} />
-      </dl>
-    </section>
+    <>
+      <section className="rounded-2xl border border-ink-100 bg-white p-5 shadow-soft">
+        <h3 className="font-semibold text-ink-900">{french ? 'Repères de calibration' : 'Calibration overview'}</h3>
+        <dl className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <Info label={french ? 'Spécialité réelle' : 'Actual specialty'} value={translateSpecialtyName(response.actual_specialty, lang)} />
+          <Info label={french ? 'Rechoisirait' : 'Would choose again'} value={codeLabel(response.would_choose_again_code, lang)} />
+          <Info label={french ? 'Rang canonique réel' : 'Canonical actual rank'} value={actualRank === '—' ? '—' : `${actualRank} / ${analysis.ranking.length}`} />
+          <Info label={french ? 'Ex æquo' : 'Tied specialties'} value={analysis.actualTieCount ?? '—'} />
+          <Info label={french ? 'Indice de similarité réel' : 'Actual similarity index'} value={analysis.actualScore === null ? '—' : `${analysis.actualScore.toFixed(1)}/100`} />
+        </dl>
+      </section>
+
+      {currentQualitativeSchema ? (
+        <section className="rounded-2xl border border-brand-100 bg-white p-5 shadow-soft">
+          <h3 className="font-semibold text-ink-900">{french ? 'Entretien qualitatif du spécialiste' : 'Specialist qualitative interview'}</h3>
+          <p className="mt-1 text-xs leading-relaxed text-ink-500">
+            {french ? 'Réponses libres recueillies après les 81 questions principales.' : 'Free-text answers collected after the 81 main questions.'}
+          </p>
+          <div className="mt-4 grid gap-4">
+            <QualitativeAnswer
+              label={french ? 'Comment voyez-vous votre spécialité aujourd’hui ?' : 'How do you see your specialty now?'}
+              value={response.current_specialty_view}
+            />
+            <QualitativeAnswer
+              label={french ? 'Qu’est-ce qui a changé au fil des ans ?' : 'What changed over the years?'}
+              value={response.specialty_changes_over_years}
+            />
+            <QualitativeAnswer
+              label={french ? 'Quelle est la qualité la plus importante pour cette spécialité ?' : 'What is the most important quality required for this specialty?'}
+              value={response.most_important_specialty_quality}
+            />
+            <QualitativeAnswer
+              label={french ? 'Choisiriez-vous à nouveau cette spécialité ?' : 'Would you choose this specialty again?'}
+              value={response.would_choose_again_code === null ? null : codeLabel(response.would_choose_again_code, lang)}
+              detailLabel={response.would_choose_again_code === 'no' ? (french ? 'Pourquoi ?' : 'Why?') : undefined}
+              detailValue={response.would_choose_again_code === 'no' ? response.would_not_choose_again_reason : undefined}
+            />
+            <QualitativeAnswer
+              label={french ? 'Quelle question un étudiant devrait-il se poser avant de choisir cette spécialité ?' : 'What question should a student ask themselves before choosing this specialty?'}
+              value={response.student_self_question}
+            />
+          </div>
+        </section>
+      ) : (
+        <section className="rounded-2xl border border-amber-200 bg-amber-50/60 p-5 shadow-soft">
+          <h3 className="font-semibold text-amber-950">{french ? 'Métadonnées du protocole antérieur' : 'Previous-protocol metadata'}</h3>
+          <p className="mt-1 text-xs text-amber-900">
+            {french ? 'Cette réponse précède le nouvel entretien qualitatif; les anciens champs restent consultables sans être mélangés aux indicateurs courants.' : 'This response predates the new qualitative interview; its former fields remain visible without being mixed into current indicators.'}
+          </p>
+          <dl className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <Info label={french ? 'Expérience' : 'Experience'} value={response.years_of_experience === null ? '—' : `${response.years_of_experience} ${french ? 'an(s)' : 'year(s)'}`} />
+            <Info label={french ? 'Satisfaction' : 'Satisfaction'} value={response.career_satisfaction === null ? '—' : `${response.career_satisfaction}/5`} />
+            <Info label={french ? 'Intention de changer' : 'Intention to change'} value={codeLabel(response.intention_to_change_code, lang)} />
+            <Info label={french ? 'Choix volontaire' : 'Voluntary choice'} value={codeLabel(response.voluntary_choice_code, lang)} />
+          </dl>
+        </section>
+      )}
+    </>
+  );
+}
+
+function QualitativeAnswer({
+  label,
+  value,
+  detailLabel,
+  detailValue,
+}: {
+  label: string;
+  value: string | null;
+  detailLabel?: string;
+  detailValue?: string | null;
+}) {
+  return (
+    <article className="rounded-xl border border-ink-100 bg-ink-50/60 p-4">
+      <h4 className="text-xs font-semibold uppercase tracking-wide text-ink-500">{label}</h4>
+      <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-relaxed text-ink-900">{value?.trim() || '—'}</p>
+      {detailLabel && (
+        <div className="mt-3 border-t border-ink-100 pt-3">
+          <p className="text-xs font-semibold text-ink-500">{detailLabel}</p>
+          <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-ink-900">{detailValue?.trim() || '—'}</p>
+        </div>
+      )}
+    </article>
   );
 }
 

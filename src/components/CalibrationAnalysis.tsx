@@ -136,12 +136,10 @@ export default function CalibrationAnalysis({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5 xl:grid-cols-10">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 xl:grid-cols-8">
         <Metric label={french ? 'Éligibles / chargées' : 'Eligible / loaded'} value={`${summary.eligibleCount}/${summary.total}`} />
         <Metric label={french ? 'Exclues du calcul' : 'Excluded from analysis'} value={String(summary.excludedCount)} />
-        <Metric label={french ? 'Métadonnées complètes' : 'Complete metadata'} value={`${summary.completeCount}/${summary.eligibleCount}`} />
-        <Metric label={french ? 'Expérience moy.' : 'Avg. experience'} value={withN(formatNumber(summary.averageExperience), summary.experienceCount)} />
-        <Metric label={french ? 'Satisfaction moy.' : 'Avg. satisfaction'} value={withN(formatNumber(summary.averageSatisfaction), summary.satisfactionCount)} />
+        <Metric label={french ? 'Entretiens qualitatifs complets' : 'Complete qualitative interviews'} value={`${summary.completeCount}/${summary.eligibleCount}`} />
         <Metric label={french ? 'Rechoisirait' : 'Would choose again'} value={withN(formatPercent(summary.chooseAgainRate), summary.chooseAgainCount)} />
         <Metric label={french ? 'Rappel Top 1 incl. / cons.' : 'Top-1 recall incl. / cons.'} value={ratePair(summary.top1Rate, summary.top1ConservativeRate, summary.rankableCount)} />
         <Metric label={french ? 'Rappel Top 3 incl. / cons.' : 'Top-3 recall incl. / cons.'} value={ratePair(summary.top3Rate, summary.top3ConservativeRate, summary.rankableCount)} />
@@ -206,14 +204,12 @@ export default function CalibrationAnalysis({
           </p>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[980px] text-left text-sm">
+          <table className="w-full min-w-[780px] text-left text-sm">
             <thead className="bg-ink-50 text-xs text-ink-500">
               <tr>
                 <th className="px-5 py-3 font-semibold">{french ? 'Spécialité' : 'Specialty'}</th>
                 <th className="px-4 py-3 font-semibold">{french ? 'Éligibles / chargées' : 'Eligible / loaded'}</th>
-                <th className="px-4 py-3 font-semibold">{french ? 'Complets' : 'Complete'}</th>
-                <th className="px-4 py-3 font-semibold">{french ? 'Expérience' : 'Experience'}</th>
-                <th className="px-4 py-3 font-semibold">{french ? 'Satisfaction' : 'Satisfaction'}</th>
+                <th className="px-4 py-3 font-semibold">{french ? 'Entretiens complets' : 'Complete interviews'}</th>
                 <th className="px-4 py-3 font-semibold">{french ? 'Rechoisirait' : 'Choose again'}</th>
                 <th className="px-4 py-3 font-semibold">{french ? 'Rang min. médian' : 'Median minimum rank'}</th>
                 <th className="px-4 py-3 font-semibold">{french ? 'Top 3 incl. / cons.' : 'Top 3 incl. / cons.'}</th>
@@ -225,8 +221,6 @@ export default function CalibrationAnalysis({
                   <td className="px-5 py-3 font-medium text-ink-900">{translateSpecialtyName(item.specialty, lang)}</td>
                   <td className={`px-4 py-3 tabular-nums ${item.eligibleCount > 0 && item.eligibleCount < 10 ? 'font-semibold text-amber-700' : ''}`}>{item.eligibleCount}/{item.count}</td>
                   <td className="px-4 py-3 tabular-nums">{item.completeCount}/{item.eligibleCount}</td>
-                  <td className="px-4 py-3 tabular-nums">{withN(formatNumber(item.averageExperience), item.experienceCount)}</td>
-                  <td className="px-4 py-3 tabular-nums">{withN(formatNumber(item.averageSatisfaction), item.satisfactionCount)}</td>
                   <td className="px-4 py-3 tabular-nums">{withN(formatPercent(item.chooseAgainRate), item.chooseAgainCount)}</td>
                   <td className="px-4 py-3 tabular-nums">{withN(formatNumber(item.medianActualRank), item.rankableCount)}</td>
                   <td className="px-4 py-3 tabular-nums">{ratePair(item.top3Rate, item.top3ConservativeRate, item.rankableCount)}</td>
@@ -243,8 +237,8 @@ export default function CalibrationAnalysis({
             <h3 className="font-semibold text-ink-900">{french ? 'Profil de traits observé' : 'Observed trait profile'}</h3>
             <p className="mt-1 text-xs leading-relaxed text-ink-500">
               {french
-                ? 'Base = notes uniquement. Ajusté = notes + bonus des valeurs. Un écart n’est affiché que si le trait est mesuré pour toute la cohorte éligible; « non mesuré » signale une cible sans source actuelle.'
-                : 'Base uses ratings only. Adjusted adds value bonuses. A gap is shown only when the trait is measured for the full eligible cohort; “unmeasured” flags a target with no current source.'}
+                ? 'Base = profil issu des 81 notes. Avec valeurs = mêmes mesures, complétées uniquement par les signaux de valeurs sans question directe. Les valeurs augmentent aussi l’importance des traits correspondants dans le classement, sans gonfler une mesure existante. Un écart n’est affiché que si le trait est mesuré pour toute la cohorte éligible.'
+                : 'Base is the profile derived from the 81 ratings. With values keeps those measures and only fills value signals that have no direct question. Values also increase the matching importance of corresponding traits without inflating an existing measurement. A gap is shown only when the trait is measured for the full eligible cohort.'}
             </p>
           </div>
           <div className="max-h-[620px] overflow-auto">
@@ -254,9 +248,9 @@ export default function CalibrationAnalysis({
                   <th className="px-5 py-3 font-semibold">Trait</th>
                   <th className="px-4 py-3 font-semibold">{french ? 'Source' : 'Source'}</th>
                   <th className="px-4 py-3 font-semibold">n base</th>
-                  <th className="px-4 py-3 font-semibold">n {french ? 'ajusté' : 'adjusted'}</th>
+                  <th className="px-4 py-3 font-semibold">n {french ? 'avec valeurs' : 'with values'}</th>
                   <th className="px-4 py-3 font-semibold">Base</th>
-                  <th className="px-4 py-3 font-semibold">{french ? 'Ajusté' : 'Adjusted'}</th>
+                  <th className="px-4 py-3 font-semibold">{french ? 'Avec valeurs' : 'With values'}</th>
                   <th className="px-4 py-3 font-semibold">{french ? 'Cible' : 'Target'}</th>
                   <th className="px-4 py-3 font-semibold">{french ? 'Écart' : 'Gap'}</th>
                   <th className="px-4 py-3 font-semibold">{french ? 'Poids' : 'Weight'}</th>

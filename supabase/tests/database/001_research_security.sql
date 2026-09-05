@@ -2,7 +2,7 @@ BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
 
-SELECT extensions.plan(84);
+SELECT extensions.plan(104);
 
 SELECT extensions.has_schema('private', 'private schema exists');
 SELECT extensions.has_table('public', 'student_responses', 'student table exists');
@@ -28,6 +28,26 @@ SELECT extensions.has_column(
   'public', 'specialist_responses', 'specialty_config_revision',
   'specialist rows store specialty catalog revisions'
 );
+SELECT extensions.has_column(
+  'public', 'specialist_responses', 'current_specialty_view',
+  'specialist rows store the current specialty view'
+);
+SELECT extensions.has_column(
+  'public', 'specialist_responses', 'specialty_changes_over_years',
+  'specialist rows store changes observed over the years'
+);
+SELECT extensions.has_column(
+  'public', 'specialist_responses', 'most_important_specialty_quality',
+  'specialist rows store the most important required quality'
+);
+SELECT extensions.has_column(
+  'public', 'specialist_responses', 'would_not_choose_again_reason',
+  'specialist rows store the conditional no explanation'
+);
+SELECT extensions.has_column(
+  'public', 'specialist_responses', 'student_self_question',
+  'specialist rows store the proposed student self-question'
+);
 
 SELECT extensions.is(
   (SELECT count(*) FROM private.specialty_catalog_versions WHERE status = 'active'),
@@ -48,6 +68,42 @@ SELECT extensions.is(
   (SELECT count(*) FROM private.trait_catalog),
   96::bigint,
   'the trait metadata seed contains all 96 traits'
+);
+SELECT extensions.ok(
+  NOT EXISTS (
+    WITH required_profile_traits(specialty_name, trait_code) AS (
+      VALUES
+        ('Diabetes, Nutrition and Metabolic Diseases', 'communication'),
+        ('Endocrinology', 'precision'),
+        ('Pediatric Gastroenterology', 'detail_orientation'),
+        ('Pediatric Gastroenterology', 'long_term_orientation'),
+        ('Medical Genetics', 'cognitive_empathy'),
+        ('Geriatrics and Gerontology', 'care_coordination'),
+        ('Nephrology', 'teamwork'),
+        ('Pediatric Neurology', 'patience'),
+        ('Pulmonology', 'technology_interest'),
+        ('Pediatric Pulmonology', 'detail_orientation'),
+        ('Otorhinolaryngology (ENT)', 'social_energy'),
+        ('Pathology', 'independence'),
+        ('Epidemiology', 'independence'),
+        ('Hygiene', 'independence'),
+        ('Laboratory Medicine', 'lifestyle_priority'),
+        ('Forensic Medicine', 'independence'),
+        ('Medical Microbiology', 'independence'),
+        ('Radiology and Medical Imaging', 'independence')
+    )
+    SELECT 1
+    FROM required_profile_traits AS required
+    LEFT JOIN private.specialty_catalog_entries AS entry
+      ON entry.name = required.specialty_name
+      AND entry.version_id = (
+        SELECT version.id
+        FROM private.specialty_catalog_versions AS version
+        WHERE version.status = 'active'
+      )
+    WHERE entry.name IS NULL OR NOT entry.profile ? required.trait_code
+  ),
+  'all measured specialty metadata traits exist in the active scoring profiles'
 );
 SELECT extensions.is(
   (SELECT measurement_source FROM private.trait_catalog WHERE code = 'manual_orientation'),
@@ -127,6 +183,35 @@ SELECT extensions.ok(
   'anon can execute the versioned specialist submission RPC'
 );
 SELECT extensions.ok(
+  has_function_privilege(
+    'anon',
+    'public.submit_student_response_v3(uuid,integer,text,jsonb,jsonb,jsonb,text,text,text,text,text,text,uuid)',
+    'EXECUTE'
+  ),
+  'anon can execute the schema-2 student submission RPC'
+);
+SELECT extensions.ok(
+  has_function_privilege(
+    'anon',
+    'public.submit_specialist_response_v3(uuid,text,jsonb,jsonb,text,text,text,text,text,text,text,text,text,text,text,text,uuid)',
+    'EXECUTE'
+  ),
+  'anon can execute the qualitative specialist submission RPC'
+);
+SELECT extensions.ok(
+  NOT has_function_privilege(
+    'anon',
+    'private.submit_student_response_v3(uuid,integer,text,jsonb,jsonb,jsonb,text,text,text,text,text,text,uuid)',
+    'EXECUTE'
+  )
+  AND NOT has_function_privilege(
+    'authenticated',
+    'private.submit_specialist_response_v3(uuid,text,jsonb,jsonb,text,text,text,text,text,text,text,text,text,text,text,text,uuid)',
+    'EXECUTE'
+  ),
+  'clients cannot execute schema-2 private submission workers'
+);
+SELECT extensions.ok(
   NOT has_table_privilege('anon', 'private.specialty_catalog_versions', 'SELECT')
   AND NOT has_table_privilege('authenticated', 'private.specialty_catalog_entries', 'SELECT')
   AND NOT has_table_privilege('authenticated', 'private.specialty_catalog_audit', 'INSERT'),
@@ -140,6 +225,20 @@ SELECT extensions.ok(
     WHERE procedure.oid = 'public.get_active_specialty_catalog()'::regprocedure
   ),
   'active catalog RPC is security definer with an empty search path'
+);
+SELECT extensions.ok(
+  (
+    SELECT bool_and(
+      procedure.prosecdef
+      AND 'search_path=""' = ANY(coalesce(procedure.proconfig, ARRAY[]::text[]))
+    )
+    FROM pg_catalog.pg_proc AS procedure
+    WHERE procedure.oid IN (
+      'public.submit_student_response_v3(uuid,integer,text,jsonb,jsonb,jsonb,text,text,text,text,text,text,uuid)'::regprocedure,
+      'public.submit_specialist_response_v3(uuid,text,jsonb,jsonb,text,text,text,text,text,text,text,text,text,text,text,text,uuid)'::regprocedure
+    )
+  ),
+  'schema-2 public submission wrappers are security definer with empty search paths'
 );
 SELECT extensions.ok(
   (
@@ -802,6 +901,224 @@ SELECT extensions.is(
   ),
   2::bigint,
   'both v2 response kinds retain matching UUID and revision provenance'
+);
+SELECT extensions.is(
+  public.submit_student_response_v3(
+    '10000000-0000-4000-8000-000000000004'::uuid,
+    6,
+    'Cardiology',
+    current_setting('q_project_test.valid_ratings')::jsonb,
+    '["Prestige"]'::jsonb,
+    current_setting('q_project_test.valid_scores')::jsonb,
+    'en',
+    'q81-v1',
+    'career-values-v1',
+    'medical-specialties-v1',
+    'client-scoring-v2',
+    'research-consent-2026-09-04',
+    (public.get_active_specialty_catalog() -> 'version' ->> 'id')::uuid
+  ),
+  '10000000-0000-4000-8000-000000000004'::uuid,
+  'student v3 stores a schema-2 submission with current scoring provenance'
+);
+SELECT extensions.is(
+  public.submit_student_response_v3(
+    '10000000-0000-4000-8000-000000000004'::uuid,
+    6,
+    'Cardiology',
+    current_setting('q_project_test.valid_ratings')::jsonb,
+    '["Prestige"]'::jsonb,
+    current_setting('q_project_test.valid_scores')::jsonb,
+    'en',
+    'q81-v1',
+    'career-values-v1',
+    'medical-specialties-v1',
+    'client-scoring-v2',
+    'research-consent-2026-09-04',
+    (public.get_active_specialty_catalog() -> 'version' ->> 'id')::uuid
+  ),
+  '10000000-0000-4000-8000-000000000004'::uuid,
+  'replaying an identical student v3 payload is idempotent'
+);
+SELECT extensions.is(
+  public.submit_specialist_response_v3(
+    '20000000-0000-4000-8000-000000000004'::uuid,
+    'Cardiology',
+    current_setting('q_project_test.valid_ratings')::jsonb,
+    '["Prestige"]'::jsonb,
+    'en',
+    'The specialty now combines longitudinal care with increasingly complex technology.',
+    'Multidisciplinary decisions and digital monitoring have become more important.',
+    'Sound clinical judgment under uncertainty.',
+    'yes',
+    NULL,
+    'Would I enjoy the daily work and not only the idea of this specialty?',
+    'q81-v1',
+    'career-values-v1',
+    'medical-specialties-v1',
+    'calibration-v2-qualitative',
+    'research-consent-2026-09-04',
+    (public.get_active_specialty_catalog() -> 'version' ->> 'id')::uuid
+  ),
+  '20000000-0000-4000-8000-000000000004'::uuid,
+  'specialist v3 stores the five post-questionnaire qualitative answers'
+);
+SELECT extensions.ok(
+  (
+    SELECT
+      response.submission_schema_version = 2
+      AND response.years_of_experience IS NULL
+      AND response.career_satisfaction IS NULL
+      AND response.intention_to_change_code IS NULL
+      AND response.voluntary_choice_code IS NULL
+      AND response.current_specialty_view =
+        'The specialty now combines longitudinal care with increasingly complex technology.'
+      AND response.specialty_changes_over_years =
+        'Multidisciplinary decisions and digital monitoring have become more important.'
+      AND response.most_important_specialty_quality =
+        'Sound clinical judgment under uncertainty.'
+      AND response.would_choose_again_code = 'yes'
+      AND response.would_not_choose_again_reason IS NULL
+      AND response.student_self_question =
+        'Would I enjoy the daily work and not only the idea of this specialty?'
+    FROM public.specialist_responses AS response
+    WHERE response.id = '20000000-0000-4000-8000-000000000004'::uuid
+  ),
+  'schema-2 yes rows preserve qualitative answers and leave retired fields null'
+);
+SELECT extensions.is(
+  public.submit_specialist_response_v3(
+    '20000000-0000-4000-8000-000000000005'::uuid,
+    'Cardiology',
+    current_setting('q_project_test.valid_ratings')::jsonb,
+    '["Prestige"]'::jsonb,
+    'fr',
+    'La spécialité reste intellectuellement stimulante mais très exigeante.',
+    'La charge administrative et les outils numériques ont fortement augmenté.',
+    'Le jugement clinique et la capacité à prioriser.',
+    'no',
+    'Je choisirais une activité avec un rythme plus soutenable à long terme.',
+    'Est-ce que le quotidien réel de cette spécialité correspond à mes priorités ?',
+    'q81-v1',
+    'career-values-v1',
+    'medical-specialties-v1',
+    'calibration-v2-qualitative',
+    'research-consent-2026-09-04',
+    (public.get_active_specialty_catalog() -> 'version' ->> 'id')::uuid
+  ),
+  '20000000-0000-4000-8000-000000000005'::uuid,
+  'specialist v3 accepts a no answer when its explanation is present'
+);
+SELECT extensions.ok(
+  (
+    SELECT response.would_choose_again_code = 'no'
+      AND response.would_not_choose_again_reason =
+        'Je choisirais une activité avec un rythme plus soutenable à long terme.'
+    FROM public.specialist_responses AS response
+    WHERE response.id = '20000000-0000-4000-8000-000000000005'::uuid
+  ),
+  'schema-2 no rows retain the required conditional explanation'
+);
+SELECT extensions.throws_ok(
+  $$
+    SELECT public.submit_specialist_response_v3(
+      '20000000-0000-4000-8000-000000000006'::uuid,
+      'Cardiology',
+      current_setting('q_project_test.valid_ratings')::jsonb,
+      '["Prestige"]'::jsonb,
+      'en',
+      'A valid current view.',
+      'A valid description of change.',
+      'A valid required quality.',
+      'yes',
+      'This must be null for a yes response.',
+      'A valid student self-question?',
+      'q81-v1',
+      'career-values-v1',
+      'medical-specialties-v1',
+      'calibration-v2-qualitative',
+      'research-consent-2026-09-04',
+      (public.get_active_specialty_catalog() -> 'version' ->> 'id')::uuid
+    )
+  $$,
+  '22023',
+  'Invalid specialist research submission',
+  'specialist v3 rejects a reason attached to a yes response'
+);
+SELECT extensions.throws_ok(
+  $$
+    SELECT public.submit_specialist_response_v3(
+      '20000000-0000-4000-8000-000000000007'::uuid,
+      'Cardiology',
+      current_setting('q_project_test.valid_ratings')::jsonb,
+      '["Prestige"]'::jsonb,
+      'en',
+      'A valid current view.',
+      'A valid description of change.',
+      'A valid required quality.',
+      'no',
+      NULL,
+      'A valid student self-question?',
+      'q81-v1',
+      'career-values-v1',
+      'medical-specialties-v1',
+      'calibration-v2-qualitative',
+      'research-consent-2026-09-04',
+      (public.get_active_specialty_catalog() -> 'version' ->> 'id')::uuid
+    )
+  $$,
+  '22023',
+  'Invalid specialist research submission',
+  'specialist v3 requires an explanation for a no response'
+);
+SELECT extensions.is(
+  public.submit_specialist_response_v3(
+    '20000000-0000-4000-8000-000000000004'::uuid,
+    'Cardiology',
+    current_setting('q_project_test.valid_ratings')::jsonb,
+    '["Prestige"]'::jsonb,
+    'en',
+    'The specialty now combines longitudinal care with increasingly complex technology.',
+    'Multidisciplinary decisions and digital monitoring have become more important.',
+    'Sound clinical judgment under uncertainty.',
+    'yes',
+    NULL,
+    'Would I enjoy the daily work and not only the idea of this specialty?',
+    'q81-v1',
+    'career-values-v1',
+    'medical-specialties-v1',
+    'calibration-v2-qualitative',
+    'research-consent-2026-09-04',
+    (public.get_active_specialty_catalog() -> 'version' ->> 'id')::uuid
+  ),
+  '20000000-0000-4000-8000-000000000004'::uuid,
+  'replaying an identical specialist v3 payload is idempotent'
+);
+SELECT extensions.throws_ok(
+  $$
+    SELECT public.submit_specialist_response_v3(
+      '20000000-0000-4000-8000-000000000004'::uuid,
+      'Cardiology',
+      current_setting('q_project_test.valid_ratings')::jsonb,
+      '["Prestige"]'::jsonb,
+      'en',
+      'A different current specialty view.',
+      'Multidisciplinary decisions and digital monitoring have become more important.',
+      'Sound clinical judgment under uncertainty.',
+      'yes',
+      NULL,
+      'Would I enjoy the daily work and not only the idea of this specialty?',
+      'q81-v1',
+      'career-values-v1',
+      'medical-specialties-v1',
+      'calibration-v2-qualitative',
+      'research-consent-2026-09-04',
+      (public.get_active_specialty_catalog() -> 'version' ->> 'id')::uuid
+    )
+  $$,
+  '23505',
+  'Submission id already exists with a different payload',
+  'a specialist v3 id cannot be replayed with changed qualitative text'
 );
 SELECT extensions.ok(
   (

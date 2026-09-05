@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import { ALL_QUESTION_IDS } from '../src/data/questions';
 import { SPECIALTIES } from '../src/data/specialties';
-import { VALUE_OPTIONS } from '../src/data/traits';
+import { SPECIALTY_METADATA } from '../src/data/specialtyMetadata';
+import { QUESTION_TRAITS, VALUE_MAPPING, VALUE_OPTIONS } from '../src/data/traits';
 import {
   DASHBOARD_MODEL_CHECKSUM,
   analyzeSpecialistResponse,
@@ -9,6 +10,7 @@ import {
   assessSpecialistEligibility,
   assignTieAwareRanks,
   buildCalibrationSummary,
+  isSpecialistCalibrationComplete,
   specialistAnalyticCsv,
   specialistLongCsv,
   specialistRawCsv,
@@ -19,7 +21,12 @@ import {
   type StudentResponseRow,
 } from '../src/lib/researchDashboard';
 import { DASHBOARD_ANALYSIS_VERSION, DATA_VERSIONS } from '../src/lib/researchVersions';
-import { calculateTraits, SCORING_ENGINE_REVISION } from '../src/lib/scoring';
+import {
+  calculateTraits,
+  rankSpecialties,
+  SCORING_ENGINE_REVISION,
+  SELECTED_VALUE_ONLY_SCORE,
+} from '../src/lib/scoring';
 
 function parseCsv(csv: string): string[][] {
   const input = csv.charCodeAt(0) === 0xfeff ? csv.slice(1) : csv;
@@ -62,24 +69,113 @@ const maximumTraits = calculateTraits(
 assert.ok(Object.values(maximumTraits).every((score) => score >= 0 && score <= 100));
 assert.equal(maximumTraits.communication, 100);
 
+// A selected value is evidence about importance, not permission to rewrite a
+// level that the 81-item questionnaire measured. Value-only traits receive a
+// strong, explicit level instead of the old paradoxical 50 + small bonus.
+const traitsWithoutValues = calculateTraits(ratings, []);
+const traitsWithCaring = calculateTraits(ratings, ['Caring for people']);
+assert.equal(
+  traitsWithCaring.care_motivation,
+  traitsWithoutValues.care_motivation,
+  'A career value must not inflate a trait already measured by the questionnaire',
+);
+const traitsWithManualValue = calculateTraits(ratings, ['Manual/hands-on activity']);
+assert.equal(SELECTED_VALUE_ONLY_SCORE, 90);
+assert.equal(
+  traitsWithManualValue.manual_orientation,
+  90,
+  'Manual/hands-on activity must create strong value-only evidence',
+);
+
+const manualOnlyCatalog = [
+  {
+    name: 'Manual A',
+    category: 'Surgical' as const,
+    profile: { manual_orientation: [90, 3] as [number, number] },
+    blurb: 'Regression fixture',
+  },
+  {
+    name: 'Manual B',
+    category: 'Surgical' as const,
+    profile: { manual_orientation: [90, 3] as [number, number] },
+    blurb: 'Regression fixture',
+  },
+] as const;
+const manualOnlyRanking = rankSpecialties({
+  ratings,
+  selectedValues: ['Manual/hands-on activity'],
+  preferredSpecialty: null,
+}, undefined, [...manualOnlyCatalog].reverse());
+const manualOnlyRankingWithoutValue = rankSpecialties({
+  ratings,
+  selectedValues: [],
+  preferredSpecialty: null,
+}, undefined, manualOnlyCatalog);
+assert.equal(manualOnlyRanking[0].score, 100);
+assert.ok(
+  manualOnlyRanking[0].score > manualOnlyRankingWithoutValue[0].score,
+  'Selecting manual work must not penalize a specialty whose manual target is 90',
+);
+assert.deepEqual(
+  manualOnlyRanking.map(({ specialty }) => specialty.name),
+  ['Manual A', 'Manual B'],
+  'Exact score ties must be ordered deterministically by specialty name',
+);
+assert.equal(
+  manualOnlyRanking[0].subScores.find(({ dimension }) => dimension === 'technical')?.score,
+  100,
+);
+assert.equal(
+  manualOnlyRanking[0].subScores.find(({ dimension }) => dimension === 'thinking')?.score,
+  null,
+  'A dimension without evidence must be unavailable rather than a false zero',
+);
+
+const measuredTraits = new Set([
+  ...Object.values(QUESTION_TRAITS).flatMap((mappings) => mappings.map(({ trait }) => trait)),
+  ...Object.values(VALUE_MAPPING).flatMap((mappings) => mappings.map(({ trait }) => trait)),
+]);
+const documentedUnmeasuredMetadataTraits = new Set(['prevention_orientation']);
+for (const specialty of SPECIALTIES) {
+  const metadata = SPECIALTY_METADATA[specialty.name];
+  assert.ok(metadata, `Missing display metadata for ${specialty.name}`);
+  for (const trait of metadata.keyTraits) {
+    if (specialty.profile[trait]) continue;
+    assert.equal(
+      measuredTraits.has(trait),
+      false,
+      `${specialty.name} metadata references measured trait ${trait}, which is absent from its scoring profile`,
+    );
+    assert.ok(
+      documentedUnmeasuredMetadataTraits.has(trait),
+      `${specialty.name} has undocumented unmeasured metadata trait ${trait}`,
+    );
+  }
+}
+
 const specialist: SpecialistResponseRow = {
   id: '00000000-0000-4000-8000-000000000001',
   created_at: '2026-08-28T12:00:00.000Z',
   actual_specialty: SPECIALTIES[0].name,
-  years_of_experience: 10,
-  career_satisfaction: 5,
+  years_of_experience: null,
+  career_satisfaction: null,
   would_choose_again: null,
   intention_to_change: null,
   voluntary_choice: null,
   would_choose_again_code: 'yes',
-  intention_to_change_code: 'definitely_not',
-  voluntary_choice_code: 'fully_voluntary',
+  intention_to_change_code: null,
+  voluntary_choice_code: null,
+  current_specialty_view: 'A demanding specialty with meaningful longitudinal patient care.',
+  specialty_changes_over_years: 'Clinical decisions increasingly rely on multidisciplinary teamwork.',
+  most_important_specialty_quality: 'Sound judgment under uncertainty.',
+  would_not_choose_again_reason: null,
+  student_self_question: 'Do I enjoy the daily work, including its difficult and repetitive parts?',
   language: 'fr',
   ratings,
   selected_values: [VALUE_OPTIONS[0]],
   specialty_config_version_id: '50000000-0000-4000-8000-000000000001',
   specialty_config_revision: 1,
-  submission_schema_version: 1,
+  submission_schema_version: DATA_VERSIONS.submissionSchema,
   questionnaire_version: DATA_VERSIONS.questionnaire,
   value_catalog_version: DATA_VERSIONS.valueCatalog,
   specialty_catalog_version: DATA_VERSIONS.specialtyCatalog,
@@ -98,7 +194,7 @@ const student: StudentResponseRow = {
   client_scores: SPECIALTIES.map(({ name }, index) => ({ specialty: name, score: 100 - index })),
   specialty_config_version_id: '50000000-0000-4000-8000-000000000001',
   specialty_config_revision: 1,
-  submission_schema_version: 1,
+  submission_schema_version: DATA_VERSIONS.submissionSchema,
   questionnaire_version: DATA_VERSIONS.questionnaire,
   value_catalog_version: DATA_VERSIONS.valueCatalog,
   specialty_catalog_version: DATA_VERSIONS.specialtyCatalog,
@@ -132,10 +228,32 @@ assert.deepEqual({
   engineRevision: SCORING_ENGINE_REVISION,
   modelChecksum: DASHBOARD_MODEL_CHECKSUM,
 }, {
-  analysisVersion: 'dashboard-canonical-default-v1',
-  engineRevision: 'scoring-engine-v1',
-  modelChecksum: 'fnv1a64-511dad2480fc6eba',
+  analysisVersion: 'dashboard-canonical-default-v2',
+  engineRevision: 'scoring-engine-v2',
+  modelChecksum: 'fnv1a64-abdce4ee5b50c668',
 });
+
+assert.equal(isSpecialistCalibrationComplete(specialist), true);
+assert.equal(
+  isSpecialistCalibrationComplete({ ...specialist, current_specialty_view: null }),
+  false,
+);
+assert.equal(
+  isSpecialistCalibrationComplete({
+    ...specialist,
+    would_choose_again_code: 'no',
+    would_not_choose_again_reason: null,
+  }),
+  false,
+);
+assert.equal(
+  isSpecialistCalibrationComplete({
+    ...specialist,
+    would_choose_again_code: 'no',
+    would_not_choose_again_reason: 'The working conditions no longer fit my priorities.',
+  }),
+  true,
+);
 
 const invalidCases: SpecialistResponseRow[] = [
   { ...specialist, ratings: Object.fromEntries(ALL_QUESTION_IDS.slice(1).map((id) => [id, 5])) },
@@ -186,6 +304,11 @@ const legacy: SpecialistResponseRow = {
   would_choose_again: '=2+2',
   intention_to_change: '+SUM(1,1)',
   voluntary_choice: '@legacy',
+  current_specialty_view: null,
+  specialty_changes_over_years: null,
+  most_important_specialty_quality: null,
+  would_not_choose_again_reason: null,
+  student_self_question: null,
   submission_schema_version: 0,
   questionnaire_version: 'legacy-unknown',
   value_catalog_version: 'legacy-unknown',
@@ -205,18 +328,24 @@ assert.ok((summary.top3ConservativeRate ?? 0) <= (summary.top3Rate ?? 0));
 assert.ok((summary.top5ConservativeRate ?? 0) <= (summary.top5Rate ?? 0));
 
 const denominatorRows = [
-  { ...specialist, id: '00000000-0000-4000-8000-000000000010', years_of_experience: 0, career_satisfaction: 1, would_choose_again_code: 'yes' },
-  { ...specialist, id: '00000000-0000-4000-8000-000000000011', years_of_experience: 10, career_satisfaction: 5, would_choose_again_code: 'no' },
-  { ...specialist, id: '00000000-0000-4000-8000-000000000012', years_of_experience: null, career_satisfaction: null, would_choose_again_code: 'unsure' },
-  { ...specialist, id: '00000000-0000-4000-8000-000000000013', years_of_experience: null, career_satisfaction: null, would_choose_again_code: null },
+  { ...specialist, id: '00000000-0000-4000-8000-000000000010', would_choose_again_code: 'yes' },
+  {
+    ...specialist,
+    id: '00000000-0000-4000-8000-000000000011',
+    would_choose_again_code: 'no',
+    would_not_choose_again_reason: 'The current workload is no longer sustainable for me.',
+  },
+  {
+    ...specialist,
+    id: '00000000-0000-4000-8000-000000000012',
+    would_choose_again_code: null,
+    current_specialty_view: null,
+  },
 ];
 const denominatorSummary = buildCalibrationSummary(denominatorRows, specialist.actual_specialty);
-assert.equal(denominatorSummary.experienceCount, 2);
-assert.equal(denominatorSummary.averageExperience, 5);
-assert.equal(denominatorSummary.satisfactionCount, 2);
-assert.equal(denominatorSummary.averageSatisfaction, 3);
-assert.equal(denominatorSummary.chooseAgainCount, 3);
-assert.ok(Math.abs((denominatorSummary.chooseAgainRate ?? 0) - (100 / 3)) < 1e-10);
+assert.equal(denominatorSummary.chooseAgainCount, 2);
+assert.equal(denominatorSummary.chooseAgainRate, 50);
+assert.equal(denominatorSummary.completeCount, 2);
 
 const manualTrait = denominatorSummary.traitAggregates.find(({ trait }) => trait === 'manual_orientation');
 const preventionTrait = denominatorSummary.traitAggregates.find(({ trait }) => trait === 'prevention_orientation');
@@ -247,6 +376,27 @@ assert.equal(rawValues[rawHeaders.indexOf('voluntary_choice')], "'@legacy");
 assert.equal(rawValues[rawHeaders.indexOf('years_of_experience')], '-1');
 assert.equal(rawHeaders.includes('specialty_config_version_id'), true);
 assert.equal(rawHeaders.includes('specialty_config_revision'), true);
+for (const column of [
+  'current_specialty_view',
+  'specialty_changes_over_years',
+  'most_important_specialty_quality',
+  'would_not_choose_again_reason',
+  'student_self_question',
+]) {
+  assert.equal(rawHeaders.includes(column), true, `Specialist export is missing ${column}`);
+}
+
+const qualitativeFormula = parseCsv(specialistRawCsv([{
+  ...specialist,
+  current_specialty_view: '=HYPERLINK("https://example.invalid")',
+  specialty_changes_over_years: '+SUM(1,1)',
+  most_important_specialty_quality: '-1+1',
+  student_self_question: '@unsafe',
+}]))[1];
+assert.equal(qualitativeFormula[rawHeaders.indexOf('current_specialty_view')], "'=HYPERLINK(\"https://example.invalid\")");
+assert.equal(qualitativeFormula[rawHeaders.indexOf('specialty_changes_over_years')], "'+SUM(1,1)");
+assert.equal(qualitativeFormula[rawHeaders.indexOf('most_important_specialty_quality')], "'-1+1");
+assert.equal(qualitativeFormula[rawHeaders.indexOf('student_self_question')], "'@unsafe");
 
 const analyticLegacy = parseCsv(specialistAnalyticCsv([legacy]));
 const analyticHeaders = analyticLegacy[0];
@@ -260,6 +410,10 @@ assert.ok(analyticValues[analyticHeaders.indexOf('analysis_generated_at')]);
 
 console.log(JSON.stringify({
   eligibility: true,
+  valueOnlyManualEvidence: true,
+  measuredTraitNotInflatedByValues: true,
+  unavailableDimensionsAreNull: true,
+  specialtyMetadataMatchesProfiles: true,
   noTargetLeakage: true,
   tieAwareRanks: true,
   explicitDenominators: true,

@@ -99,12 +99,8 @@ export interface SpecialtyAggregate {
   eligibleCount: number;
   excludedCount: number;
   completeCount: number;
-  experienceCount: number;
-  satisfactionCount: number;
   chooseAgainCount: number;
   rankableCount: number;
-  averageExperience: number | null;
-  averageSatisfaction: number | null;
   chooseAgainRate: number | null;
   medianActualRank: number | null;
   top3Rate: number | null;
@@ -117,11 +113,7 @@ export interface CalibrationSummary {
   excludedCount: number;
   rankableCount: number;
   completeCount: number;
-  experienceCount: number;
-  satisfactionCount: number;
   chooseAgainCount: number;
-  averageExperience: number | null;
-  averageSatisfaction: number | null;
   chooseAgainRate: number | null;
   top1Rate: number | null;
   top3Rate: number | null;
@@ -271,7 +263,7 @@ function assessSharedVersions(row: Pick<
   | 'selected_values'
 >): EligibilityReason[] {
   const reasons = assessPayload(row.ratings, row.selected_values);
-  if (row.submission_schema_version !== 1) reasons.push('schema_version');
+  if (row.submission_schema_version !== DATA_VERSIONS.submissionSchema) reasons.push('schema_version');
   if (row.questionnaire_version !== DATA_VERSIONS.questionnaire) reasons.push('questionnaire_version');
   if (row.value_catalog_version !== DATA_VERSIONS.valueCatalog) reasons.push('value_catalog_version');
   if (row.specialty_catalog_version !== DATA_VERSIONS.specialtyCatalog) reasons.push('specialty_catalog_version');
@@ -300,17 +292,37 @@ export function assessStudentEligibility(row: StudentResponseRow): EligibilityAs
 
 export function isSpecialistCalibrationComplete(row: Pick<
   SpecialistResponseRow,
+  | 'submission_schema_version'
+  | 'current_specialty_view'
+  | 'specialty_changes_over_years'
+  | 'most_important_specialty_quality'
+  | 'would_choose_again_code'
+  | 'would_not_choose_again_reason'
+  | 'student_self_question'
   | 'years_of_experience'
   | 'career_satisfaction'
-  | 'would_choose_again_code'
   | 'intention_to_change_code'
   | 'voluntary_choice_code'
 >): boolean {
-  return row.years_of_experience !== null
-    && row.career_satisfaction !== null
-    && row.would_choose_again_code !== null
-    && row.intention_to_change_code !== null
-    && row.voluntary_choice_code !== null;
+  if (row.submission_schema_version < DATA_VERSIONS.submissionSchema) {
+    return row.years_of_experience !== null
+      && row.career_satisfaction !== null
+      && row.would_choose_again_code !== null
+      && row.intention_to_change_code !== null
+      && row.voluntary_choice_code !== null;
+  }
+
+  const hasText = (value: string | null) => typeof value === 'string' && value.trim().length >= 3;
+  const choiceIsValid = row.would_choose_again_code === 'yes' || row.would_choose_again_code === 'no';
+  const conditionalReasonIsComplete = row.would_choose_again_code === 'yes'
+    || (row.would_choose_again_code === 'no' && hasText(row.would_not_choose_again_reason));
+
+  return hasText(row.current_specialty_view)
+    && hasText(row.specialty_changes_over_years)
+    && hasText(row.most_important_specialty_quality)
+    && choiceIsValid
+    && conditionalReasonIsComplete
+    && hasText(row.student_self_question);
 }
 
 export function assignTieAwareRanks(ranking: Array<{ name: string; score: number }>): RankedSpecialty[] {
@@ -478,13 +490,9 @@ export function buildCalibrationSummary(
   const eligibleRows = eligible.map(({ row }) => row);
   const rankable = eligible.filter(({ analysis }) => analysis.actualRankMin !== null);
   const actualRanks = rankable.map(({ analysis }) => analysis.actualRankMin as number);
-  const experienceValues = eligibleRows.flatMap(({ years_of_experience }) => (
-    years_of_experience === null ? [] : [years_of_experience]
+  const chooseAgainAnswers = eligibleRows.filter(({ would_choose_again_code }) => (
+    would_choose_again_code === 'yes' || would_choose_again_code === 'no'
   ));
-  const satisfactionValues = eligibleRows.flatMap(({ career_satisfaction }) => (
-    career_satisfaction === null ? [] : [career_satisfaction]
-  ));
-  const chooseAgainAnswers = eligibleRows.filter(({ would_choose_again_code }) => would_choose_again_code !== null);
   const targetProfile = targetSpecialty
     ? catalog.find(({ name }) => name === targetSpecialty)?.profile
     : undefined;
@@ -566,21 +574,17 @@ export function buildCalibrationSummary(
     const groupRows = groupEligible.map(({ row }) => row);
     const groupRankable = groupEligible.filter(({ analysis }) => analysis.actualRankMin !== null);
     const groupRanks = groupRankable.map(({ analysis }) => analysis.actualRankMin as number);
-    const groupExperience = groupRows.flatMap(({ years_of_experience }) => years_of_experience === null ? [] : [years_of_experience]);
-    const groupSatisfaction = groupRows.flatMap(({ career_satisfaction }) => career_satisfaction === null ? [] : [career_satisfaction]);
-    const groupChooseAgain = groupRows.filter(({ would_choose_again_code }) => would_choose_again_code !== null);
+    const groupChooseAgain = groupRows.filter(({ would_choose_again_code }) => (
+      would_choose_again_code === 'yes' || would_choose_again_code === 'no'
+    ));
     return {
       specialty,
       count: group.length,
       eligibleCount: groupEligible.length,
       excludedCount: group.length - groupEligible.length,
       completeCount: groupRows.filter(isSpecialistCalibrationComplete).length,
-      experienceCount: groupExperience.length,
-      satisfactionCount: groupSatisfaction.length,
       chooseAgainCount: groupChooseAgain.length,
       rankableCount: groupRankable.length,
-      averageExperience: average(groupExperience),
-      averageSatisfaction: average(groupSatisfaction),
       chooseAgainRate: percentage(
         groupChooseAgain.filter(({ would_choose_again_code }) => would_choose_again_code === 'yes').length,
         groupChooseAgain.length,
@@ -603,11 +607,7 @@ export function buildCalibrationSummary(
     excludedCount: rows.length - eligible.length,
     rankableCount: rankable.length,
     completeCount: eligibleRows.filter(isSpecialistCalibrationComplete).length,
-    experienceCount: experienceValues.length,
-    satisfactionCount: satisfactionValues.length,
     chooseAgainCount: chooseAgainAnswers.length,
-    averageExperience: average(experienceValues),
-    averageSatisfaction: average(satisfactionValues),
     chooseAgainRate: percentage(
       chooseAgainAnswers.filter(({ would_choose_again_code }) => would_choose_again_code === 'yes').length,
       chooseAgainAnswers.length,
@@ -646,8 +646,11 @@ function makeCsv(headers: string[], rows: unknown[][]): string {
 }
 
 const SPECIALIST_METADATA_COLUMNS = [
-  'id', 'created_at', 'actual_specialty', 'years_of_experience', 'career_satisfaction',
-  'would_choose_again_code', 'intention_to_change_code', 'voluntary_choice_code',
+  'id', 'created_at', 'actual_specialty',
+  'current_specialty_view', 'specialty_changes_over_years',
+  'most_important_specialty_quality', 'would_choose_again_code',
+  'would_not_choose_again_reason', 'student_self_question',
+  'years_of_experience', 'career_satisfaction', 'intention_to_change_code', 'voluntary_choice_code',
   'would_choose_again', 'intention_to_change', 'voluntary_choice', 'language',
   'submission_schema_version', 'questionnaire_version', 'value_catalog_version',
   'specialty_catalog_version', 'specialty_config_version_id', 'specialty_config_revision',

@@ -51,6 +51,12 @@ type SpecialistListRow = Pick<
   Database['public']['Tables']['specialist_responses']['Row'],
   | 'id'
   | 'actual_specialty'
+  | 'submission_schema_version'
+  | 'current_specialty_view'
+  | 'specialty_changes_over_years'
+  | 'most_important_specialty_quality'
+  | 'would_not_choose_again_reason'
+  | 'student_self_question'
   | 'years_of_experience'
   | 'career_satisfaction'
   | 'would_choose_again_code'
@@ -163,11 +169,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
   const [studentSpecialtyFilter, setStudentSpecialtyFilter] = useState('all');
   const [specialtyFilter, setSpecialtyFilter] = useState('all');
   const [completenessFilter, setCompletenessFilter] = useState<CompletenessFilter>('all');
-  const [minimumExperience, setMinimumExperience] = useState('all');
-  const [minimumSatisfaction, setMinimumSatisfaction] = useState('all');
   const [chooseAgainFilter, setChooseAgainFilter] = useState('all');
-  const [intentionFilter, setIntentionFilter] = useState('all');
-  const [voluntaryFilter, setVoluntaryFilter] = useState('all');
   const [languageFilter, setLanguageFilter] = useState('all');
   const [dataVersionFilter, setDataVersionFilter] = useState<DataVersionFilter>('current');
   const [dateFrom, setDateFrom] = useState('');
@@ -223,48 +225,64 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
       supabase.from('specialist_responses').select('id', { count: 'exact', head: true }),
       supabase.from('student_responses').select('id', { count: 'exact', head: true }).not('study_year', 'is', null),
       supabase.from('specialist_responses').select('id', { count: 'exact', head: true })
-        .not('years_of_experience', 'is', null)
-        .not('career_satisfaction', 'is', null)
+        .eq('submission_schema_version', DATA_VERSIONS.submissionSchema)
+        .not('current_specialty_view', 'is', null)
+        .not('specialty_changes_over_years', 'is', null)
+        .not('most_important_specialty_quality', 'is', null)
         .not('would_choose_again_code', 'is', null)
-        .not('intention_to_change_code', 'is', null)
-        .not('voluntary_choice_code', 'is', null),
+        .not('student_self_question', 'is', null)
+        .or('would_choose_again_code.eq.yes,and(would_choose_again_code.eq.no,would_not_choose_again_reason.not.is.null)'),
     ]);
 
     try {
       if (view === 'specialists') {
         let query = supabase
           .from('specialist_responses')
-          .select('id, actual_specialty, years_of_experience, career_satisfaction, would_choose_again_code, intention_to_change_code, voluntary_choice_code, language, created_at', { count: 'exact' })
+          .select('id, actual_specialty, submission_schema_version, current_specialty_view, specialty_changes_over_years, most_important_specialty_quality, would_choose_again_code, would_not_choose_again_reason, student_self_question, years_of_experience, career_satisfaction, intention_to_change_code, voluntary_choice_code, language, created_at', { count: 'exact' })
           .order('created_at', { ascending: false })
           .order('id', { ascending: false })
           .range(rangeStart, rangeEnd);
         if (specialtyFilter !== 'all') query = query.eq('actual_specialty', specialtyFilter);
-        if (minimumExperience !== 'all') query = query.gte('years_of_experience', Number(minimumExperience));
-        if (minimumSatisfaction !== 'all') query = query.gte('career_satisfaction', Number(minimumSatisfaction));
         if (chooseAgainFilter !== 'all') query = query.eq('would_choose_again_code', chooseAgainFilter);
-        if (intentionFilter !== 'all') query = query.eq('intention_to_change_code', intentionFilter);
-        if (voluntaryFilter !== 'all') query = query.eq('voluntary_choice_code', voluntaryFilter);
         if (languageFilter !== 'all') query = query.eq('language', languageFilter);
         if (dataVersionFilter === 'current') {
           query = query
-            .eq('submission_schema_version', 1)
+            .eq('submission_schema_version', DATA_VERSIONS.submissionSchema)
             .eq('questionnaire_version', DATA_VERSIONS.questionnaire)
             .eq('value_catalog_version', DATA_VERSIONS.valueCatalog)
             .eq('specialty_catalog_version', DATA_VERSIONS.specialtyCatalog)
             .eq('calibration_version', DATA_VERSIONS.calibration)
             .eq('consent_version', DATA_VERSIONS.consent);
         } else if (dataVersionFilter === 'legacy') {
-          query = query.eq('submission_schema_version', 0);
+          query = query.lt('submission_schema_version', DATA_VERSIONS.submissionSchema);
         }
         if (completenessFilter === 'complete') {
-          query = query
-            .not('years_of_experience', 'is', null)
-            .not('career_satisfaction', 'is', null)
-            .not('would_choose_again_code', 'is', null)
-            .not('intention_to_change_code', 'is', null)
-            .not('voluntary_choice_code', 'is', null);
+          if (dataVersionFilter === 'legacy') {
+            query = query
+              .not('years_of_experience', 'is', null)
+              .not('career_satisfaction', 'is', null)
+              .not('would_choose_again_code', 'is', null)
+              .not('intention_to_change_code', 'is', null)
+              .not('voluntary_choice_code', 'is', null);
+          } else if (dataVersionFilter === 'current') {
+            query = query
+              .not('current_specialty_view', 'is', null)
+              .not('specialty_changes_over_years', 'is', null)
+              .not('most_important_specialty_quality', 'is', null)
+              .not('would_choose_again_code', 'is', null)
+              .not('student_self_question', 'is', null)
+              .or('would_choose_again_code.eq.yes,and(would_choose_again_code.eq.no,would_not_choose_again_reason.not.is.null)');
+          } else {
+            query = query.or(`and(submission_schema_version.lt.${DATA_VERSIONS.submissionSchema},years_of_experience.not.is.null,career_satisfaction.not.is.null,would_choose_again_code.not.is.null,intention_to_change_code.not.is.null,voluntary_choice_code.not.is.null),and(submission_schema_version.gte.${DATA_VERSIONS.submissionSchema},current_specialty_view.not.is.null,specialty_changes_over_years.not.is.null,most_important_specialty_quality.not.is.null,would_choose_again_code.not.is.null,student_self_question.not.is.null,or(would_choose_again_code.eq.yes,and(would_choose_again_code.eq.no,would_not_choose_again_reason.not.is.null)))`);
+          }
         } else if (completenessFilter === 'partial') {
-          query = query.or('years_of_experience.is.null,career_satisfaction.is.null,would_choose_again_code.is.null,intention_to_change_code.is.null,voluntary_choice_code.is.null');
+          if (dataVersionFilter === 'legacy') {
+            query = query.or('years_of_experience.is.null,career_satisfaction.is.null,would_choose_again_code.is.null,intention_to_change_code.is.null,voluntary_choice_code.is.null');
+          } else if (dataVersionFilter === 'current') {
+            query = query.or('current_specialty_view.is.null,specialty_changes_over_years.is.null,most_important_specialty_quality.is.null,would_choose_again_code.is.null,student_self_question.is.null,and(would_choose_again_code.eq.no,would_not_choose_again_reason.is.null)');
+          } else {
+            query = query.or(`and(submission_schema_version.lt.${DATA_VERSIONS.submissionSchema},or(years_of_experience.is.null,career_satisfaction.is.null,would_choose_again_code.is.null,intention_to_change_code.is.null,voluntary_choice_code.is.null)),and(submission_schema_version.gte.${DATA_VERSIONS.submissionSchema},or(current_specialty_view.is.null,specialty_changes_over_years.is.null,most_important_specialty_quality.is.null,would_choose_again_code.is.null,student_self_question.is.null,and(would_choose_again_code.eq.no,would_not_choose_again_reason.is.null)))`);
+          }
         }
         query = applyDateFilters(query, dateFrom, dateTo);
 
@@ -295,14 +313,14 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
         if (languageFilter !== 'all') query = query.eq('language', languageFilter);
         if (dataVersionFilter === 'current') {
           query = query
-            .eq('submission_schema_version', 1)
+            .eq('submission_schema_version', DATA_VERSIONS.submissionSchema)
             .eq('questionnaire_version', DATA_VERSIONS.questionnaire)
             .eq('value_catalog_version', DATA_VERSIONS.valueCatalog)
             .eq('specialty_catalog_version', DATA_VERSIONS.specialtyCatalog)
             .eq('scoring_version', DATA_VERSIONS.scoring)
             .eq('consent_version', DATA_VERSIONS.consent);
         } else if (dataVersionFilter === 'legacy') {
-          query = query.eq('submission_schema_version', 0);
+          query = query.lt('submission_schema_version', DATA_VERSIONS.submissionSchema);
         }
         query = applyDateFilters(query, dateFrom, dateTo);
 
@@ -333,11 +351,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
     page,
     view,
     specialtyFilter,
-    minimumExperience,
-    minimumSatisfaction,
     chooseAgainFilter,
-    intentionFilter,
-    voluntaryFilter,
     completenessFilter,
     yearFilter,
     studentSpecialtyFilter,
@@ -461,32 +475,46 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
         query = query.or(`created_at.lt.${cursor.createdAt},and(created_at.eq.${cursor.createdAt},id.lt.${cursor.id})`);
       }
       if (specialtyFilter !== 'all') query = query.eq('actual_specialty', specialtyFilter);
-      if (minimumExperience !== 'all') query = query.gte('years_of_experience', Number(minimumExperience));
-      if (minimumSatisfaction !== 'all') query = query.gte('career_satisfaction', Number(minimumSatisfaction));
       if (chooseAgainFilter !== 'all') query = query.eq('would_choose_again_code', chooseAgainFilter);
-      if (intentionFilter !== 'all') query = query.eq('intention_to_change_code', intentionFilter);
-      if (voluntaryFilter !== 'all') query = query.eq('voluntary_choice_code', voluntaryFilter);
       if (languageFilter !== 'all') query = query.eq('language', languageFilter);
       if (dataVersionFilter === 'current') {
         query = query
-          .eq('submission_schema_version', 1)
+          .eq('submission_schema_version', DATA_VERSIONS.submissionSchema)
           .eq('questionnaire_version', DATA_VERSIONS.questionnaire)
           .eq('value_catalog_version', DATA_VERSIONS.valueCatalog)
           .eq('specialty_catalog_version', DATA_VERSIONS.specialtyCatalog)
           .eq('calibration_version', DATA_VERSIONS.calibration)
           .eq('consent_version', DATA_VERSIONS.consent);
       } else if (dataVersionFilter === 'legacy') {
-        query = query.eq('submission_schema_version', 0);
+        query = query.lt('submission_schema_version', DATA_VERSIONS.submissionSchema);
       }
       if (completenessFilter === 'complete') {
-        query = query
-          .not('years_of_experience', 'is', null)
-          .not('career_satisfaction', 'is', null)
-          .not('would_choose_again_code', 'is', null)
-          .not('intention_to_change_code', 'is', null)
-          .not('voluntary_choice_code', 'is', null);
+        if (dataVersionFilter === 'legacy') {
+          query = query
+            .not('years_of_experience', 'is', null)
+            .not('career_satisfaction', 'is', null)
+            .not('would_choose_again_code', 'is', null)
+            .not('intention_to_change_code', 'is', null)
+            .not('voluntary_choice_code', 'is', null);
+        } else if (dataVersionFilter === 'current') {
+          query = query
+            .not('current_specialty_view', 'is', null)
+            .not('specialty_changes_over_years', 'is', null)
+            .not('most_important_specialty_quality', 'is', null)
+            .not('would_choose_again_code', 'is', null)
+            .not('student_self_question', 'is', null)
+            .or('would_choose_again_code.eq.yes,and(would_choose_again_code.eq.no,would_not_choose_again_reason.not.is.null)');
+        } else {
+          query = query.or(`and(submission_schema_version.lt.${DATA_VERSIONS.submissionSchema},years_of_experience.not.is.null,career_satisfaction.not.is.null,would_choose_again_code.not.is.null,intention_to_change_code.not.is.null,voluntary_choice_code.not.is.null),and(submission_schema_version.gte.${DATA_VERSIONS.submissionSchema},current_specialty_view.not.is.null,specialty_changes_over_years.not.is.null,most_important_specialty_quality.not.is.null,would_choose_again_code.not.is.null,student_self_question.not.is.null,or(would_choose_again_code.eq.yes,and(would_choose_again_code.eq.no,would_not_choose_again_reason.not.is.null)))`);
+        }
       } else if (completenessFilter === 'partial') {
-        query = query.or('years_of_experience.is.null,career_satisfaction.is.null,would_choose_again_code.is.null,intention_to_change_code.is.null,voluntary_choice_code.is.null');
+        if (dataVersionFilter === 'legacy') {
+          query = query.or('years_of_experience.is.null,career_satisfaction.is.null,would_choose_again_code.is.null,intention_to_change_code.is.null,voluntary_choice_code.is.null');
+        } else if (dataVersionFilter === 'current') {
+          query = query.or('current_specialty_view.is.null,specialty_changes_over_years.is.null,most_important_specialty_quality.is.null,would_choose_again_code.is.null,student_self_question.is.null,and(would_choose_again_code.eq.no,would_not_choose_again_reason.is.null)');
+        } else {
+          query = query.or(`and(submission_schema_version.lt.${DATA_VERSIONS.submissionSchema},or(years_of_experience.is.null,career_satisfaction.is.null,would_choose_again_code.is.null,intention_to_change_code.is.null,voluntary_choice_code.is.null)),and(submission_schema_version.gte.${DATA_VERSIONS.submissionSchema},or(current_specialty_view.is.null,specialty_changes_over_years.is.null,most_important_specialty_quality.is.null,would_choose_again_code.is.null,student_self_question.is.null,and(would_choose_again_code.eq.no,would_not_choose_again_reason.is.null)))`);
+        }
       }
       query = applyDateFilters(query, dateFrom, dateTo);
       const { data, error: queryError } = await query;
@@ -500,11 +528,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
     return allRows;
   }, [
     specialtyFilter,
-    minimumExperience,
-    minimumSatisfaction,
     chooseAgainFilter,
-    intentionFilter,
-    voluntaryFilter,
     completenessFilter,
     languageFilter,
     dataVersionFilter,
@@ -531,14 +555,14 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
       if (languageFilter !== 'all') query = query.eq('language', languageFilter);
       if (dataVersionFilter === 'current') {
         query = query
-          .eq('submission_schema_version', 1)
+          .eq('submission_schema_version', DATA_VERSIONS.submissionSchema)
           .eq('questionnaire_version', DATA_VERSIONS.questionnaire)
           .eq('value_catalog_version', DATA_VERSIONS.valueCatalog)
           .eq('specialty_catalog_version', DATA_VERSIONS.specialtyCatalog)
           .eq('scoring_version', DATA_VERSIONS.scoring)
           .eq('consent_version', DATA_VERSIONS.consent);
       } else if (dataVersionFilter === 'legacy') {
-        query = query.eq('submission_schema_version', 0);
+        query = query.lt('submission_schema_version', DATA_VERSIONS.submissionSchema);
       }
       query = applyDateFilters(query, dateFrom, dateTo);
       const { data, error: queryError } = await query;
@@ -643,11 +667,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
       && studentSpecialtyFilter === 'all'
       && specialtyFilter === 'all'
       && completenessFilter === 'all'
-      && minimumExperience === 'all'
-      && minimumSatisfaction === 'all'
       && chooseAgainFilter === 'all'
-      && intentionFilter === 'all'
-      && voluntaryFilter === 'all'
       && languageFilter === 'all'
       && dataVersionFilter === 'current'
       && dateFrom === ''
@@ -658,11 +678,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
     setStudentSpecialtyFilter('all');
     setSpecialtyFilter('all');
     setCompletenessFilter('all');
-    setMinimumExperience('all');
-    setMinimumSatisfaction('all');
     setChooseAgainFilter('all');
-    setIntentionFilter('all');
-    setVoluntaryFilter('all');
     setLanguageFilter('all');
     setDataVersionFilter('current');
     setDateFrom('');
@@ -761,7 +777,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
 
         <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
           <Stat label={french ? 'Spécialistes' : 'Specialists'} value={counts.specialists} icon={<Stethoscope className="h-5 w-5" />} />
-          <Stat label={french ? 'Spécialistes complets' : 'Complete specialists'} value={counts.specialistsComplete} icon={<CheckCircle2 className="h-5 w-5" />} />
+          <Stat label={french ? 'Entretiens actuels complets' : 'Complete current interviews'} value={counts.specialistsComplete} icon={<CheckCircle2 className="h-5 w-5" />} />
           <Stat label={french ? 'Étudiants' : 'Students'} value={counts.students} icon={<Users className="h-5 w-5" />} />
           <Stat label={french ? 'Étudiants avec année' : 'Students with study year'} value={counts.studentsWithYear} icon={<GraduationCap className="h-5 w-5" />} />
         </div>
@@ -794,35 +810,13 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
                 </FilterSelect>
                 <FilterSelect label={french ? 'Complétude' : 'Completeness'} value={completenessFilter} onChange={(value) => { setCompletenessFilter(value as CompletenessFilter); resetPageAndAnalysis(); }}>
                   <option value="all">{french ? 'Tous les dossiers' : 'All records'}</option>
-                  <option value="complete">{french ? 'Métadonnées complètes' : 'Complete metadata'}</option>
-                  <option value="partial">{french ? 'Au moins une donnée absente' : 'At least one value missing'}</option>
-                </FilterSelect>
-                <FilterSelect label={french ? 'Expérience minimum' : 'Minimum experience'} value={minimumExperience} onChange={(value) => { setMinimumExperience(value); resetPageAndAnalysis(); }}>
-                  <option value="all">{french ? 'Toute expérience' : 'Any experience'}</option>
-                  {[1, 3, 5, 10, 15, 20].map((years) => <option key={years} value={years}>{years}+ {french ? 'ans' : 'years'}</option>)}
-                </FilterSelect>
-                <FilterSelect label={french ? 'Satisfaction minimum' : 'Minimum satisfaction'} value={minimumSatisfaction} onChange={(value) => { setMinimumSatisfaction(value); resetPageAndAnalysis(); }}>
-                  <option value="all">{french ? 'Toute satisfaction' : 'Any satisfaction'}</option>
-                  {[3, 4, 5].map((score) => <option key={score} value={score}>{score}+/5</option>)}
+                  <option value="complete">{french ? 'Entretien qualitatif complet' : 'Complete qualitative interview'}</option>
+                  <option value="partial">{french ? 'Au moins une réponse absente' : 'At least one answer missing'}</option>
                 </FilterSelect>
                 <FilterSelect label={french ? 'Rechoisirait' : 'Would choose again'} value={chooseAgainFilter} onChange={(value) => { setChooseAgainFilter(value); resetPageAndAnalysis(); }}>
                   <option value="all">{french ? 'Toutes les réponses' : 'All answers'}</option>
                   <option value="yes">{french ? 'Oui' : 'Yes'}</option>
                   <option value="no">{french ? 'Non' : 'No'}</option>
-                  <option value="unsure">{french ? 'Incertain' : 'Unsure'}</option>
-                </FilterSelect>
-                <FilterSelect label={french ? 'Intention de changer' : 'Intention to change'} value={intentionFilter} onChange={(value) => { setIntentionFilter(value); resetPageAndAnalysis(); }}>
-                  <option value="all">{french ? 'Toutes les intentions' : 'All intentions'}</option>
-                  <option value="definitely">{french ? 'Certainement' : 'Definitely'}</option>
-                  <option value="probably">{french ? 'Probablement' : 'Probably'}</option>
-                  <option value="probably_not">{french ? 'Probablement pas' : 'Probably not'}</option>
-                  <option value="definitely_not">{french ? 'Certainement pas' : 'Definitely not'}</option>
-                </FilterSelect>
-                <FilterSelect label={french ? 'Choix volontaire' : 'Voluntary choice'} value={voluntaryFilter} onChange={(value) => { setVoluntaryFilter(value); resetPageAndAnalysis(); }}>
-                  <option value="all">{french ? 'Tous les choix' : 'All choices'}</option>
-                  <option value="fully_voluntary">{french ? 'Entièrement volontaire' : 'Fully voluntary'}</option>
-                  <option value="somewhat_voluntary">{french ? 'Partiellement volontaire' : 'Somewhat voluntary'}</option>
-                  <option value="not_voluntary">{french ? 'Non volontaire' : 'Not voluntary'}</option>
                 </FilterSelect>
               </>
             ) : (
@@ -917,15 +911,17 @@ function SpecialistTable({
   onOpen: (id: string) => void;
 }) {
   return (
-    <table className="w-full min-w-[1120px] text-left text-sm">
+    <table className="w-full min-w-[2100px] text-left text-sm">
       <thead className="bg-ink-50 text-xs text-ink-500"><tr>
         <th className="px-5 py-3 font-semibold">{french ? 'Spécialité réelle' : 'Actual specialty'}</th>
-        <th className="px-4 py-3 font-semibold">{french ? 'Expérience' : 'Experience'}</th>
-        <th className="px-4 py-3 font-semibold">{french ? 'Satisfaction' : 'Satisfaction'}</th>
+        <th className="px-4 py-3 font-semibold">{french ? 'Vision actuelle' : 'Current view'}</th>
+        <th className="px-4 py-3 font-semibold">{french ? 'Évolution au fil des ans' : 'Changes over the years'}</th>
+        <th className="px-4 py-3 font-semibold">{french ? 'Qualité essentielle' : 'Most important quality'}</th>
         <th className="px-4 py-3 font-semibold">{french ? 'Rechoisirait' : 'Choose again'}</th>
-        <th className="px-4 py-3 font-semibold">{french ? 'Changerait' : 'Would change'}</th>
-        <th className="px-4 py-3 font-semibold">{french ? 'Choix volontaire' : 'Voluntary choice'}</th>
+        <th className="px-4 py-3 font-semibold">{french ? 'Pourquoi non' : 'Why not'}</th>
+        <th className="px-4 py-3 font-semibold">{french ? 'Question à se poser' : 'Question for students'}</th>
         <th className="px-4 py-3 font-semibold">{french ? 'Complétude' : 'Completeness'}</th>
+        <th className="px-4 py-3 font-semibold">{french ? 'Schéma' : 'Schema'}</th>
         <th className="px-4 py-3 font-semibold">{french ? 'Langue' : 'Language'}</th>
         <th className="px-4 py-3 font-semibold">{french ? 'Date' : 'Date'}</th>
         <th className="px-4 py-3"><span className="sr-only">{french ? 'Détails' : 'Details'}</span></th>
@@ -933,12 +929,14 @@ function SpecialistTable({
       <tbody>{rows.map((row) => (
         <tr key={row.id} className="border-t border-ink-100 hover:bg-ink-50/60">
           <td className="px-5 py-3 font-medium text-ink-900">{translateSpecialtyName(row.actual_specialty, lang)}</td>
-          <td className="px-4 py-3 tabular-nums">{row.years_of_experience === null ? '—' : `${row.years_of_experience} ${french ? 'ans' : 'years'}`}</td>
-          <td className="px-4 py-3 tabular-nums">{row.career_satisfaction === null ? '—' : `${row.career_satisfaction}/5`}</td>
+          <td className="px-4 py-3"><AnswerPreview value={row.current_specialty_view} /></td>
+          <td className="px-4 py-3"><AnswerPreview value={row.specialty_changes_over_years} /></td>
+          <td className="px-4 py-3"><AnswerPreview value={row.most_important_specialty_quality} /></td>
           <td className="px-4 py-3">{choiceLabel(row.would_choose_again_code, french)}</td>
-          <td className="px-4 py-3">{choiceLabel(row.intention_to_change_code, french)}</td>
-          <td className="px-4 py-3">{choiceLabel(row.voluntary_choice_code, french)}</td>
-          <td className="px-4 py-3">{isSpecialistCalibrationComplete(row) ? <Badge tone="green">{french ? 'Complet' : 'Complete'}</Badge> : <Badge tone="amber">{french ? 'Partiel' : 'Partial'}</Badge>}</td>
+          <td className="px-4 py-3"><AnswerPreview value={row.would_not_choose_again_reason} /></td>
+          <td className="px-4 py-3"><AnswerPreview value={row.student_self_question} /></td>
+          <td className="px-4 py-3">{isSpecialistCalibrationComplete(row) ? <Badge tone="green">{row.submission_schema_version < DATA_VERSIONS.submissionSchema ? (french ? 'Legacy complet' : 'Complete legacy') : (french ? 'Complet' : 'Complete')}</Badge> : <Badge tone="amber">{row.submission_schema_version < DATA_VERSIONS.submissionSchema ? 'Legacy' : (french ? 'Partiel' : 'Partial')}</Badge>}</td>
+          <td className="px-4 py-3 font-mono text-xs">v{row.submission_schema_version}</td>
           <td className="px-4 py-3 uppercase">{row.language}</td>
           <td className="px-4 py-3 text-ink-500">{new Date(row.created_at).toLocaleDateString(locale)}</td>
           <td className="px-4 py-3"><DetailButton french={french} loading={loadingId === row.id} onClick={() => onOpen(row.id)} /></td>
@@ -946,6 +944,13 @@ function SpecialistTable({
       ))}</tbody>
     </table>
   );
+}
+
+function AnswerPreview({ value }: { value: string | null }) {
+  const answer = value?.trim();
+  return answer
+    ? <span className="block max-w-[280px] truncate text-ink-700" title={answer}>{answer}</span>
+    : <span className="text-ink-400">—</span>;
 }
 
 function StudentTable({

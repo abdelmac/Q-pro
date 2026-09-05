@@ -181,6 +181,7 @@ export default function Results({
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
             {topSubScores.map((sub) => {
               const labelKey = DIMENSION_LABELS[sub.dimension] as keyof typeof t;
+              const circumference = 2 * Math.PI * 34;
               return (
                 <div key={sub.dimension} className="text-center">
                   <div className="relative w-20 h-20 mx-auto mb-2">
@@ -189,8 +190,10 @@ export default function Results({
                       <circle
                         cx="40" cy="40" r="34" fill="none"
                         stroke="url(#subGrad)" strokeWidth="6" strokeLinecap="round"
-                        strokeDasharray={2 * Math.PI * 34}
-                        strokeDashoffset={2 * Math.PI * 34 - (sub.score / 100) * 2 * Math.PI * 34}
+                        strokeDasharray={circumference}
+                        strokeDashoffset={sub.score === null
+                          ? circumference
+                          : circumference - (sub.score / 100) * circumference}
                         className="transition-all duration-1000 ease-out"
                       />
                       <defs>
@@ -201,7 +204,7 @@ export default function Results({
                       </defs>
                     </svg>
                     <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-ink-700 tabular-nums">
-                      {Math.round(sub.score)}
+                      {sub.score === null ? '—' : Math.round(sub.score)}
                     </span>
                   </div>
                   <span className="text-xs font-medium text-ink-500 leading-tight block">{String(t[labelKey])}</span>
@@ -274,7 +277,7 @@ export default function Results({
                     {!isOpen && <p className="text-sm text-ink-500 mt-0.5 line-clamp-1">{blurb}</p>}
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
-                    <span className="font-display text-xl font-semibold text-brand-600 tabular-nums">{Math.round(s.score)}%</span>
+                    <span className="font-display text-xl font-semibold text-brand-600 tabular-nums">{Math.round(s.score)}/100</span>
                     <ChevronDown className={`w-5 h-5 text-ink-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
                   </div>
                 </button>
@@ -290,7 +293,9 @@ export default function Results({
                         const labelKey = DIMENSION_LABELS[sub.dimension] as keyof typeof t;
                         return (
                           <div key={sub.dimension} className="px-3 py-2 rounded-lg bg-ink-50 text-center min-w-[90px]">
-                            <div className="text-sm font-bold text-ink-700 tabular-nums">{Math.round(sub.score)}</div>
+                            <div className="text-sm font-bold text-ink-700 tabular-nums">
+                              {sub.score === null ? '—' : Math.round(sub.score)}
+                            </div>
                             <div className="text-[10px] font-medium text-ink-400 leading-tight">{String(t[labelKey])}</div>
                           </div>
                         );
@@ -313,7 +318,7 @@ export default function Results({
                             <div className="flex-1 h-1.5 rounded-full bg-ink-100 overflow-hidden">
                               <div className="h-full rounded-full bg-brand-400 origin-left animate-grow-bar" style={{ width: `${Math.min(100, pct)}%` }} />
                             </div>
-                            <span className="text-xs text-ink-400 tabular-nums w-8 text-right">{pct}%</span>
+                            <span className="text-xs text-ink-400 tabular-nums w-12 text-right">{pct}/100</span>
                           </div>
                         );
                       })}
@@ -340,7 +345,7 @@ export default function Results({
                   className="p-4 rounded-2xl bg-white border border-ink-100 hover:border-ink-200 hover:shadow-soft transition-all text-left group"
                 >
                   <h3 className="text-sm font-semibold text-ink-800 leading-snug mb-1">{translateSpecialtyName(s.specialty.name, lang)}</h3>
-                  <span className="text-xs text-ink-400 tabular-nums">{Math.round(s.score)}%</span>
+                  <span className="text-xs text-ink-400 tabular-nums">{Math.round(s.score)}/100</span>
                   <span className="block mt-2 text-xs text-brand-600 font-medium group-hover:text-brand-700">{t.oppositeFitExplore}</span>
                 </button>
               ))}
@@ -370,7 +375,7 @@ export default function Results({
                         <span className={`font-medium ${s.specialty.name === top.specialty.name ? 'text-brand-800' : 'text-ink-700'}`}>
                           {translateSpecialtyName(s.specialty.name, lang)}
                         </span>
-                        <span className="text-ink-400 tabular-nums text-xs font-medium">{Math.round(s.score)}%</span>
+                        <span className="text-ink-400 tabular-nums text-xs font-medium">{Math.round(s.score)}/100</span>
                       </div>
                     ))}
                   </div>
@@ -394,7 +399,7 @@ export default function Results({
             <div className="flex items-start justify-between mb-4">
               <div>
                 <h3 className="font-display text-xl font-semibold text-ink-900">{translateSpecialtyName(oppositeFitSpecialty.specialty.name, lang)}</h3>
-                <span className="text-sm text-ink-400 tabular-nums">{Math.round(oppositeFitSpecialty.score)}% {t.matchPercent}</span>
+                <span className="text-sm text-ink-400 tabular-nums">{Math.round(oppositeFitSpecialty.score)}/100 {t.matchPercent}</span>
               </div>
               <button onClick={() => setOppositeFitSpecialty(null)} className="text-ink-400 hover:text-ink-600 transition-colors">
                 <X className="w-5 h-5" />

@@ -75,6 +75,39 @@ for (const specialty of catalog.specialties) {
   }
 }
 
+// These traits are named in the specialty detail metadata and are measured by
+// either q81-v1 or career-values-v1. Keeping them in the published profiles is
+// essential: a local-only profile fix would otherwise be ignored at runtime.
+const requiredProfileTraits = {
+  'Diabetes, Nutrition and Metabolic Diseases': ['communication'],
+  Endocrinology: ['precision'],
+  'Pediatric Gastroenterology': ['detail_orientation', 'long_term_orientation'],
+  'Medical Genetics': ['cognitive_empathy'],
+  'Geriatrics and Gerontology': ['care_coordination'],
+  Nephrology: ['teamwork'],
+  'Pediatric Neurology': ['patience'],
+  Pulmonology: ['technology_interest'],
+  'Pediatric Pulmonology': ['detail_orientation'],
+  'Otorhinolaryngology (ENT)': ['social_energy'],
+  Pathology: ['independence'],
+  Epidemiology: ['independence'],
+  Hygiene: ['independence'],
+  'Laboratory Medicine': ['lifestyle_priority'],
+  'Forensic Medicine': ['independence'],
+  'Medical Microbiology': ['independence'],
+  'Radiology and Medical Imaging': ['independence'],
+};
+for (const [specialtyName, traits] of Object.entries(requiredProfileTraits)) {
+  const specialty = catalog.specialties.find(({ name }) => name === specialtyName);
+  assert(specialty, `Required specialty is absent from the runtime catalog: ${specialtyName}.`);
+  for (const trait of traits) {
+    assert(
+      Array.isArray(specialty.profile[trait]),
+      `Runtime profile ${specialtyName} is missing measured metadata trait ${trait}.`,
+    );
+  }
+}
+
 const cardiology = catalog.specialties.find(({ name }) => name === 'Cardiology');
 assert(cardiology?.descriptions?.fr?.includes('Cœur'), 'The French catalog text is not UTF-8 clean.');
 const pediatricCardiology = catalog.specialties.find(({ name }) => name === 'Pediatric Cardiology');
@@ -90,12 +123,60 @@ const anonymousEditorResponse = await fetch(`${supabaseUrl}/rest/v1/rpc/get_spec
 });
 assert([401, 403].includes(anonymousEditorResponse.status), `Anonymous editor access was not rejected (HTTP ${anonymousEditorResponse.status}).`);
 
+async function assertVersion3Rpc(name, body) {
+  const response = await fetch(`${supabaseUrl}/rest/v1/rpc/${name}`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(body),
+  });
+  const payload = await response.json().catch(() => null);
+  assert(response.status === 400, `${name} did not resolve to its validation error (HTTP ${response.status}).`);
+  assert(payload?.code === '22023', `${name} did not reject the deliberately invalid ratings with SQLSTATE 22023.`);
+}
+
+const invalidSubmissionId = '00000000-0000-4000-8000-000000000099';
+const version3Provenance = {
+  p_questionnaire_version: 'q81-v1',
+  p_value_catalog_version: 'career-values-v1',
+  p_specialty_catalog_version: 'medical-specialties-v1',
+  p_consent_version: 'research-consent-2026-09-04',
+  p_specialty_config_version_id: catalog.version.id,
+};
+await assertVersion3Rpc('submit_student_response_v3', {
+  p_submission_id: invalidSubmissionId,
+  p_study_year: 6,
+  p_preferred_specialty: null,
+  p_ratings: {},
+  p_selected_values: ['Prestige'],
+  p_client_scores: [],
+  p_language: 'en',
+  p_scoring_version: 'client-scoring-v2',
+  ...version3Provenance,
+});
+await assertVersion3Rpc('submit_specialist_response_v3', {
+  p_submission_id: invalidSubmissionId,
+  p_actual_specialty: 'Cardiology',
+  p_ratings: {},
+  p_selected_values: ['Prestige'],
+  p_language: 'en',
+  p_current_specialty_view: 'A valid qualitative answer.',
+  p_specialty_changes_over_years: 'A valid qualitative answer.',
+  p_most_important_specialty_quality: 'A valid qualitative answer.',
+  p_would_choose_again_code: 'yes',
+  p_would_not_choose_again_reason: null,
+  p_student_self_question: 'A valid qualitative question?',
+  p_calibration_version: 'calibration-v2-qualitative',
+  ...version3Provenance,
+});
+
 console.log(JSON.stringify({
   catalogRpc: true,
   revision: catalog.version.revision,
   specialties: catalog.specialties.length,
   uniqueSpecialties: names.size,
   profileTraitAssignments,
+  measuredMetadataTraitsPublished: true,
+  schema2SubmissionRpcs: true,
   multilingualEncoding: true,
   anonymousDirectTableAccessRejected: true,
   anonymousEditorAccessRejected: true,

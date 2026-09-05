@@ -13,7 +13,14 @@ import { translateTrait } from '@/data/specialtyDisplayI18n';
 
 // Bump this value whenever the scoring equations or ranking semantics change.
 // Research exports combine it with checksums of profiles and mappings.
-export const SCORING_ENGINE_REVISION = 'scoring-engine-v1';
+export const SCORING_ENGINE_REVISION = 'scoring-engine-v2';
+
+// A value chosen among the participant's four most important priorities is
+// strong evidence, not a neutral (50) observation. Previously, value-only
+// traits started at 50 and received a small bonus, so selecting
+// "Manual/hands-on activity" produced 62 against surgical targets around 90
+// and could lower surgical rankings compared with not selecting it at all.
+export const SELECTED_VALUE_ONLY_SCORE = 90;
 
 export interface QuizAnswers {
   ratings: Record<string, number>;
@@ -28,13 +35,14 @@ export interface TraitContribution {
   student: number;
   target: number;
   importance: number;
+  effectiveImportance: number;
   similarity: number;
   contribution: number;
 }
 
 export interface DimensionSubScore {
   dimension: Dimension;
-  score: number;
+  score: number | null;
   contributions: TraitContribution[];
 }
 
@@ -97,9 +105,10 @@ export function calculateTraits(
     const mapping = VALUE_MAPPING[selected];
     if (!mapping) continue;
 
-    for (const { trait, bonus } of mapping) {
-      const current = traits[trait] ?? 50;
-      traits[trait] = Math.min(100, current + bonus);
+    for (const { trait } of mapping) {
+      // A selected priority must not rewrite a trait already measured by the
+      // 81 answers. It changes that trait's importance during matching below.
+      if (traits[trait] === undefined) traits[trait] = SELECTED_VALUE_ONLY_SCORE;
     }
   }
 
@@ -122,6 +131,19 @@ function priorityMultiplier(weight: number): number {
   return 0.5 + (weight / 100);
 }
 
+function selectedValueMultipliers(selectedValues: string[]): Map<Trait, number> {
+  const multipliers = new Map<Trait, number>();
+  for (const selected of selectedValues) {
+    for (const { trait, bonus } of VALUE_MAPPING[selected] ?? []) {
+      // Preserve the original relative value strengths (5, 8, 10, 12), but
+      // apply them as importance rather than inflating a measured trait level.
+      const multiplier = 1 + bonus / 24;
+      multipliers.set(trait, Math.max(multipliers.get(trait) ?? 1, multiplier));
+    }
+  }
+  return multipliers;
+}
+
 // --------------------------------------------------------
 // Calculate a single specialty's compatibility score
 // with optional priority weights.
@@ -129,7 +151,8 @@ function priorityMultiplier(weight: number): number {
 function calculateSpecialtyScore(
   studentTraits: Record<string, number>,
   specialtyProfile: TraitProfile,
-  priorities?: PriorityWeights
+  priorities: PriorityWeights | undefined,
+  valueMultipliers: ReadonlyMap<Trait, number>,
 ): { score: number; details: TraitContribution[]; subScores: DimensionSubScore[]; tradeOffs: TradeOff[] } {
   let weightedTotal = 0;
   let totalWeight = 0;
@@ -143,8 +166,9 @@ function calculateSpecialtyScore(
 
     // Apply priority weight multiplier based on the trait's dimension
     const dim = dimensionForTrait(trait);
-    const mult = priorities ? priorityMultiplier(priorities[dim]) : 1;
-    const effectiveImportance = importance * mult;
+    const dimensionMultiplier = priorities ? priorityMultiplier(priorities[dim]) : 1;
+    const valueMultiplier = valueMultipliers.get(trait) ?? 1;
+    const effectiveImportance = importance * dimensionMultiplier * valueMultiplier;
 
     const contribution = similarity * effectiveImportance;
 
@@ -156,6 +180,7 @@ function calculateSpecialtyScore(
       student: studentValue,
       target,
       importance,
+      effectiveImportance,
       similarity,
       contribution,
     });
@@ -171,12 +196,14 @@ function calculateSpecialtyScore(
     let dimTotal = 0;
     let dimWeight = 0;
     for (const c of dimContributions) {
-      dimTotal += c.similarity * c.importance;
-      dimWeight += c.importance;
+      dimTotal += c.similarity * c.effectiveImportance;
+      dimWeight += c.effectiveImportance;
     }
     return {
       dimension: dim.key,
-      score: dimWeight > 0 ? dimTotal / dimWeight : 0,
+      // No evidence is not a 0% fit. Keep it explicitly unavailable so the
+      // result screen cannot present an unmeasured dimension as a mismatch.
+      score: dimWeight > 0 ? dimTotal / dimWeight : null,
       contributions: dimContributions,
     };
   });
@@ -188,7 +215,7 @@ function calculateSpecialtyScore(
       student: c.student,
       target: c.target,
       gap: Math.abs(c.student - c.target),
-      importance: c.importance,
+      importance: c.effectiveImportance,
     }))
     .filter((t) => t.gap >= 20 && t.importance >= 2)
     .sort((a, b) => b.gap * b.importance - a.gap * a.importance)
@@ -206,17 +233,19 @@ export function rankSpecialties(
   catalog: SpecialtyCatalog = SPECIALTIES,
 ): SpecialtyScore[] {
   const studentTraits = calculateTraits(answers.ratings, answers.selectedValues);
+  const valueMultipliers = selectedValueMultipliers(answers.selectedValues);
 
   const results: SpecialtyScore[] = catalog.map((specialty) => {
     const { score, details, subScores, tradeOffs } = calculateSpecialtyScore(
       studentTraits,
       specialty.profile,
-      priorities
+      priorities,
+      valueMultipliers,
     );
     return { specialty, score, details, subScores, tradeOffs };
   });
 
-  results.sort((a, b) => b.score - a.score);
+  results.sort((a, b) => b.score - a.score || a.specialty.name.localeCompare(b.specialty.name));
   return results;
 }
 
@@ -236,7 +265,7 @@ export function reRankWithPriorities(
 // --------------------------------------------------------
 export function strongestMatches(result: SpecialtyScore, number = 4): TraitContribution[] {
   return [...result.details]
-    .sort((a, b) => b.similarity * b.importance - a.similarity * a.importance)
+    .sort((a, b) => b.similarity * b.effectiveImportance - a.similarity * a.effectiveImportance)
     .slice(0, number);
 }
 
@@ -245,7 +274,10 @@ export function strongestMatches(result: SpecialtyScore, number = 4): TraitContr
 // --------------------------------------------------------
 export function weakestMatches(result: SpecialtyScore, number = 4): TraitContribution[] {
   return [...result.details]
-    .sort((a, b) => a.similarity * a.importance - b.similarity * b.importance)
+    .sort((a, b) => (
+      (100 - b.similarity) * b.effectiveImportance
+      - (100 - a.similarity) * a.effectiveImportance
+    ))
     .slice(0, number);
 }
 

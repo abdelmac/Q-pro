@@ -14,7 +14,7 @@ export type SpecialtyCategory =
   | 'Diagnostic & Support'
   | 'Public & Preventive';
 
-export type TraitProfile = Record<Trait, [number, number]>;
+export type TraitProfile = Partial<Record<Trait, [number, number]>>;
 
 function mergeProfiles(...profiles: Partial<TraitProfile>[]): TraitProfile {
   const result = {} as TraitProfile;
@@ -192,6 +192,7 @@ export const SPECIALTIES: Specialty[] = [
     category: 'Medical',
     profile: mergeProfiles(LONGITUDINAL, COGNITIVE_CLINICAL, {
       care_motivation: [85, 2],
+      communication: [85, 2],
     }),
     blurb: 'Chronic metabolic care — relational, educational, and longitudinal.',
   },
@@ -201,6 +202,7 @@ export const SPECIALTIES: Specialty[] = [
     profile: mergeProfiles(COGNITIVE_CLINICAL, LONGITUDINAL, {
       logical_reasoning: [95, 3],
       basic_science_interest: [90, 3],
+      precision: [90, 2],
     }),
     blurb: 'Hormone and gland disorders — analytical, intellectual, and methodical.',
   },
@@ -243,6 +245,8 @@ export const SPECIALTIES: Specialty[] = [
     category: 'Pediatric',
     profile: mergeProfiles(COGNITIVE_CLINICAL, PEDIATRIC, {
       technical_orientation: [75, 2],
+      detail_orientation: [90, 3],
+      long_term_orientation: [90, 2],
     }),
     blurb: 'Digestive and liver care for children — compassionate, detailed, and longitudinal.',
   },
@@ -252,6 +256,7 @@ export const SPECIALTIES: Specialty[] = [
     profile: mergeProfiles(LABORATORY, COGNITIVE_CLINICAL, {
       precision: [95, 3],
       academic_orientation: [90, 2],
+      cognitive_empathy: [80, 2],
     }),
     blurb: 'Inherited and congenital disease — deeply intellectual, precise, and counseling-oriented.',
   },
@@ -262,6 +267,7 @@ export const SPECIALTIES: Specialty[] = [
       affective_empathy: [95, 3],
       tolerance_of_others: [95, 3],
       incremental_progress_tolerance: [95, 3],
+      care_coordination: [90, 3],
     }),
     blurb: 'Care of older adults — holistic, relational, and team-coordinated.',
   },
@@ -343,6 +349,7 @@ export const SPECIALTIES: Specialty[] = [
     profile: mergeProfiles(COGNITIVE_CLINICAL, LONGITUDINAL, {
       quantitative_reasoning: [90, 3],
       basic_science_interest: [90, 2],
+      teamwork: [85, 2],
     }),
     blurb: 'Kidney and dialysis care — analytical, longitudinal, and team-based.',
   },
@@ -375,7 +382,9 @@ export const SPECIALTIES: Specialty[] = [
   {
     name: 'Pediatric Neurology',
     category: 'Pediatric',
-    profile: mergeProfiles(COGNITIVE_CLINICAL, DIAGNOSTIC, PEDIATRIC),
+    profile: mergeProfiles(COGNITIVE_CLINICAL, DIAGNOSTIC, PEDIATRIC, {
+      patience: [85, 2],
+    }),
     blurb: 'Neurological care of children — meticulous, compassionate, and longitudinal.',
   },
   {
@@ -409,13 +418,16 @@ export const SPECIALTIES: Specialty[] = [
     profile: mergeProfiles(COGNITIVE_CLINICAL, {
       adaptability: [80, 2],
       technical_orientation: [70, 1],
+      technology_interest: [90, 3],
     }),
     blurb: 'Lung and airway disease — cognitive with procedural variety.',
   },
   {
     name: 'Pediatric Pulmonology',
     category: 'Pediatric',
-    profile: mergeProfiles(COGNITIVE_CLINICAL, PEDIATRIC, LONGITUDINAL),
+    profile: mergeProfiles(COGNITIVE_CLINICAL, PEDIATRIC, LONGITUDINAL, {
+      detail_orientation: [90, 3],
+    }),
     blurb: 'Respiratory care for children — compassionate, detailed, and longitudinal.',
   },
   {
@@ -581,6 +593,7 @@ export const SPECIALTIES: Specialty[] = [
     profile: mergeProfiles(SURGICAL, DIAGNOSTIC, {
       visual_reasoning: [90, 2],
       technical_orientation: [85, 2],
+      social_energy: [80, 2],
     }),
     blurb: 'Surgical and medical care of the ear, nose and throat — varied and people-facing.',
   },
@@ -601,6 +614,7 @@ export const SPECIALTIES: Specialty[] = [
     profile: mergeProfiles(LABORATORY, DIAGNOSTIC, {
       visual_reasoning: [95, 3],
       patient_involvement: [20, 2],
+      independence: [85, 2],
     }),
     blurb: 'Diagnosis through tissue and cells — autonomous, precise, and quietly intellectual.',
   },
@@ -610,6 +624,7 @@ export const SPECIALTIES: Specialty[] = [
     profile: mergeProfiles(POPULATION, {
       research_interest: [95, 3],
       quantitative_reasoning: [95, 3],
+      independence: [85, 2],
     }),
     blurb: 'Patterns of disease in populations — data-driven, analytical, and independent.',
   },
@@ -619,6 +634,7 @@ export const SPECIALTIES: Specialty[] = [
     profile: mergeProfiles(POPULATION, {
       organization: [90, 3],
       structure_preference: [85, 2],
+      independence: [85, 2],
     }),
     blurb: 'Prevention and public health standards — structured, autonomous, and balanced.',
   },
@@ -627,6 +643,7 @@ export const SPECIALTIES: Specialty[] = [
     category: 'Diagnostic & Support',
     profile: mergeProfiles(LABORATORY, {
       technology_interest: [85, 2],
+      lifestyle_priority: [75, 1],
     }),
     blurb: 'Diagnostic testing and lab science — precise, tech-enabled, and lifestyle-friendly.',
   },
@@ -638,6 +655,7 @@ export const SPECIALTIES: Specialty[] = [
       mortality_tolerance: [95, 3],
       emotional_resilience: [90, 3],
       precision: [95, 3],
+      independence: [85, 2],
     }),
     blurb: 'Medical-legal investigation — exacting, composed, and independent-minded.',
   },
@@ -656,6 +674,7 @@ export const SPECIALTIES: Specialty[] = [
     profile: mergeProfiles(LABORATORY, {
       scientific_curiosity: [95, 3],
       research_interest: [90, 2],
+      independence: [85, 2],
     }),
     blurb: 'Identification of microbes and infection — rigorous, independent, and lab-based.',
   },
@@ -666,6 +685,7 @@ export const SPECIALTIES: Specialty[] = [
       visual_reasoning: [100, 3],
       spatial_orientation: [95, 3],
       patient_involvement: [40, 1],
+      independence: [85, 2],
     }),
     blurb: 'Diagnosis through imaging — tech-forward, autonomous, and lifestyle-friendly.',
   },

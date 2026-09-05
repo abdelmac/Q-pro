@@ -4,9 +4,7 @@ import { CATEGORY_ORDER, type Specialty } from '@/data/specialties';
 import { translateSpecialtyName, translateCategory } from '@/data/i18n';
 import {
   submitSpecialistResponse,
-  type IntentionToChangeCode,
   type SupportedLanguage,
-  type VoluntaryChoiceCode,
   type WouldChooseAgainCode,
 } from '@/lib/supabase';
 import { Check, Search, Loader2, AlertCircle, PartyPopper, Pencil } from 'lucide-react';
@@ -32,15 +30,26 @@ export default function SpecialistPrompt({
   const [actualSpecialty, setActualSpecialty] = useState<string | null>(initialSpecialty);
   const [editingSpecialty, setEditingSpecialty] = useState(!initialSpecialty);
   const [query, setQuery] = useState('');
-  const [yearsExperience, setYearsExperience] = useState<string>('');
-  const [careerSatisfaction, setCareerSatisfaction] = useState<number | null>(null);
+  const [currentSpecialtyView, setCurrentSpecialtyView] = useState('');
+  const [specialtyChangesOverYears, setSpecialtyChangesOverYears] = useState('');
+  const [mostImportantSpecialtyQuality, setMostImportantSpecialtyQuality] = useState('');
   const [wouldChooseAgain, setWouldChooseAgain] = useState<WouldChooseAgainCode | null>(null);
-  const [intentionToChange, setIntentionToChange] = useState<IntentionToChangeCode | null>(null);
-  const [voluntaryChoice, setVoluntaryChoice] = useState<VoluntaryChoiceCode | null>(null);
+  const [wouldNotChooseAgainReason, setWouldNotChooseAgainReason] = useState('');
+  const [studentSelfQuestion, setStudentSelfQuestion] = useState('');
   const [submissionId] = useState(() => crypto.randomUUID());
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+
+  const hasRequiredText = [
+    currentSpecialtyView,
+    specialtyChangesOverYears,
+    mostImportantSpecialtyQuality,
+    studentSelfQuestion,
+  ].every((answer) => answer.trim().length >= 3);
+  const hasValidChooseAgainAnswer = wouldChooseAgain === 'yes'
+    || (wouldChooseAgain === 'no' && wouldNotChooseAgainReason.trim().length >= 3);
+  const canSubmit = Boolean(actualSpecialty && hasRequiredText && hasValidChooseAgainAnswer);
 
   const grouped: Record<string, Specialty[]> = {};
   for (const cat of CATEGORY_ORDER) grouped[cat] = [];
@@ -52,7 +61,7 @@ export default function SpecialistPrompt({
   }
 
   const handleSubmit = async () => {
-    if (!actualSpecialty) return;
+    if (!actualSpecialty || !canSubmit || wouldChooseAgain === null) return;
     setSubmitting(true);
     setError(null);
     const result = await submitSpecialistResponse({
@@ -61,11 +70,14 @@ export default function SpecialistPrompt({
       ratings,
       selected_values: selectedValues,
       language,
-      years_of_experience: yearsExperience ? Number(yearsExperience) : null,
-      career_satisfaction: careerSatisfaction,
+      current_specialty_view: currentSpecialtyView.trim(),
+      specialty_changes_over_years: specialtyChangesOverYears.trim(),
+      most_important_specialty_quality: mostImportantSpecialtyQuality.trim(),
       would_choose_again_code: wouldChooseAgain,
-      intention_to_change_code: intentionToChange,
-      voluntary_choice_code: voluntaryChoice,
+      would_not_choose_again_reason: wouldChooseAgain === 'no'
+        ? wouldNotChooseAgainReason.trim()
+        : null,
+      student_self_question: studentSelfQuestion.trim(),
       specialty_config_version_id: source === 'remote' ? version.id : null,
     });
     setSubmitting(false);
@@ -89,12 +101,7 @@ export default function SpecialistPrompt({
           {t.specialistThankYouDesc}
         </p>
         <button
-          onClick={() => {
-            setSuccess(false);
-            setActualSpecialty(null);
-            setEditingSpecialty(true);
-            onDone();
-          }}
+          onClick={onDone}
           className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-ink-900 text-white font-semibold text-sm shadow-lift hover:bg-ink-800 transition-all hover:scale-[1.03] active:scale-[0.98]"
         >
           {t.specialistAnother}
@@ -192,44 +199,33 @@ export default function SpecialistPrompt({
         )}
       </div>
 
-      {/* Calibration fields */}
+      {/* Qualitative calibration fields */}
       {actualSpecialty && (
         <fieldset disabled={submitting} className="space-y-6 mb-8 p-5 rounded-2xl bg-ink-50 border border-ink-100 animate-fade-in disabled:opacity-70">
-          {/* Years of experience */}
-          <div>
-            <label className="text-sm font-semibold text-ink-700 mb-2 block">
-              {t.specialistYearsExperience}
-            </label>
-            <input
-              type="number"
-              min={0}
-              max={60}
-              value={yearsExperience}
-              onChange={(e) => setYearsExperience(e.target.value)}
-              placeholder={t.specialistYearsPlaceholder}
-              className="w-full px-4 py-2.5 rounded-xl bg-white border border-ink-200 text-sm text-ink-900 placeholder:text-ink-400 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 transition-all"
-            />
-          </div>
+          <p className="text-xs leading-relaxed text-amber-800 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3">
+            {t.specialistFreeTextPrivacy}
+          </p>
 
-          {/* Career satisfaction */}
-          <div>
-            <label className="text-sm font-semibold text-ink-700 mb-2 block">
-              {t.specialistCareerSatisfaction}
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {[
-                { val: 5, label: t.specialistVerySatisfied },
-                { val: 4, label: t.specialistSatisfied },
-                { val: 3, label: t.specialistNeutral },
-                { val: 2, label: t.specialistDissatisfied },
-                { val: 1, label: t.specialistVeryDissatisfied },
-              ].map((opt) => (
-                <ChipButton key={opt.val} active={careerSatisfaction === opt.val} onClick={() => setCareerSatisfaction(opt.val)}>
-                  {opt.label}
-                </ChipButton>
-              ))}
-            </div>
-          </div>
+          <QualitativeTextarea
+            label={t.specialistCurrentView}
+            placeholder={t.specialistCurrentViewPlaceholder}
+            value={currentSpecialtyView}
+            onChange={setCurrentSpecialtyView}
+          />
+
+          <QualitativeTextarea
+            label={t.specialistChangesOverYears}
+            placeholder={t.specialistChangesOverYearsPlaceholder}
+            value={specialtyChangesOverYears}
+            onChange={setSpecialtyChangesOverYears}
+          />
+
+          <QualitativeTextarea
+            label={t.specialistMostImportantQuality}
+            placeholder={t.specialistMostImportantQualityPlaceholder}
+            value={mostImportantSpecialtyQuality}
+            onChange={setMostImportantSpecialtyQuality}
+          />
 
           {/* Would choose again */}
           <div>
@@ -240,51 +236,38 @@ export default function SpecialistPrompt({
               {([
                 { code: 'yes', label: t.specialistYes },
                 { code: 'no', label: t.specialistNo },
-                { code: 'unsure', label: t.specialistNotSure },
               ] as const).map((option) => (
-                <ChipButton key={option.code} active={wouldChooseAgain === option.code} onClick={() => setWouldChooseAgain(option.code)}>
+                <ChipButton
+                  key={option.code}
+                  active={wouldChooseAgain === option.code}
+                  onClick={() => {
+                    setWouldChooseAgain(option.code);
+                    if (option.code === 'yes') setWouldNotChooseAgainReason('');
+                  }}
+                >
                   {option.label}
                 </ChipButton>
               ))}
             </div>
           </div>
 
-          {/* Intention to change */}
-          <div>
-            <label className="text-sm font-semibold text-ink-700 mb-2 block">
-              {t.specialistIntentionToChange}
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {([
-                { code: 'definitely', label: t.specialistDefinitely },
-                { code: 'probably', label: t.specialistProbably },
-                { code: 'probably_not', label: t.specialistProbablyNot },
-                { code: 'definitely_not', label: t.specialistDefinitelyNot },
-              ] as const).map((option) => (
-                <ChipButton key={option.code} active={intentionToChange === option.code} onClick={() => setIntentionToChange(option.code)}>
-                  {option.label}
-                </ChipButton>
-              ))}
-            </div>
-          </div>
+          {wouldChooseAgain === 'no' && (
+            <QualitativeTextarea
+              label={t.specialistWhyNotChooseAgain}
+              placeholder={t.specialistWhyNotChooseAgainPlaceholder}
+              value={wouldNotChooseAgainReason}
+              onChange={setWouldNotChooseAgainReason}
+              maxLength={2000}
+            />
+          )}
 
-          {/* Voluntary choice */}
-          <div>
-            <label className="text-sm font-semibold text-ink-700 mb-2 block">
-              {t.specialistVoluntaryChoice}
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {([
-                { code: 'fully_voluntary', label: t.specialistFullyVoluntary },
-                { code: 'somewhat_voluntary', label: t.specialistSomewhatVoluntary },
-                { code: 'not_voluntary', label: t.specialistNotVoluntary },
-              ] as const).map((option) => (
-                <ChipButton key={option.code} active={voluntaryChoice === option.code} onClick={() => setVoluntaryChoice(option.code)}>
-                  {option.label}
-                </ChipButton>
-              ))}
-            </div>
-          </div>
+          <QualitativeTextarea
+            label={t.specialistStudentSelfQuestion}
+            placeholder={t.specialistStudentSelfQuestionPlaceholder}
+            value={studentSelfQuestion}
+            onChange={setStudentSelfQuestion}
+            maxLength={1000}
+          />
         </fieldset>
       )}
 
@@ -297,7 +280,7 @@ export default function SpecialistPrompt({
 
       <button
         onClick={handleSubmit}
-        disabled={!actualSpecialty || submitting}
+        disabled={!canSubmit || submitting}
         className="w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full bg-ink-900 text-white font-semibold text-sm shadow-lift hover:bg-ink-800 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
       >
         {submitting ? (
@@ -309,6 +292,41 @@ export default function SpecialistPrompt({
           t.specialistSubmit
         )}
       </button>
+    </div>
+  );
+}
+
+function QualitativeTextarea({
+  label,
+  placeholder,
+  value,
+  onChange,
+  maxLength = 2000,
+}: {
+  label: string;
+  placeholder: string;
+  value: string;
+  onChange: (value: string) => void;
+  maxLength?: number;
+}) {
+  return (
+    <div>
+      <label className="text-sm font-semibold text-ink-700 mb-2 block">
+        {label} <span className="text-red-500" aria-hidden="true">*</span>
+      </label>
+      <textarea
+        rows={4}
+        required
+        minLength={3}
+        maxLength={maxLength}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        className="w-full resize-y px-4 py-3 rounded-xl bg-white border border-ink-200 text-sm text-ink-900 placeholder:text-ink-400 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 transition-all"
+      />
+      <p className="mt-1 text-right text-[11px] tabular-nums text-ink-400">
+        {value.length}/{maxLength}
+      </p>
     </div>
   );
 }

@@ -13,7 +13,7 @@ const supabaseBrowserKey = supabasePublishableKey || supabaseLegacyAnonKey;
 export { DATA_VERSIONS } from '@/lib/researchVersions';
 
 export type SupportedLanguage = 'en' | 'ro' | 'fr';
-export type WouldChooseAgainCode = 'yes' | 'no' | 'unsure';
+export type WouldChooseAgainCode = 'yes' | 'no';
 export type IntentionToChangeCode =
   | 'definitely'
   | 'probably'
@@ -75,6 +75,8 @@ export function formatSupabaseError(error: SupabaseErrorLike): string {
     || message.includes('submit_specialist_response_v1')
     || message.includes('submit_student_response_v2')
     || message.includes('submit_specialist_response_v2')
+    || message.includes('submit_student_response_v3')
+    || message.includes('submit_specialist_response_v3')
   ) {
     return 'La base Supabase n’est pas à jour. Déployez toutes les migrations du dossier supabase/migrations.';
   }
@@ -96,11 +98,12 @@ export interface SpecialistResponse {
   ratings: Record<string, number>;
   selected_values: string[];
   language: SupportedLanguage;
-  years_of_experience?: number | null;
-  career_satisfaction?: number | null;
-  would_choose_again_code?: WouldChooseAgainCode | null;
-  intention_to_change_code?: IntentionToChangeCode | null;
-  voluntary_choice_code?: VoluntaryChoiceCode | null;
+  current_specialty_view: string;
+  specialty_changes_over_years: string;
+  most_important_specialty_quality: string;
+  would_choose_again_code: WouldChooseAgainCode;
+  would_not_choose_again_reason?: string | null;
+  student_self_question: string;
   specialty_config_version_id?: string | null;
 }
 
@@ -168,18 +171,27 @@ function validateSpecialistResponse(data: SpecialistResponse): string | null {
   const sharedError = validateSharedResponse(data.ratings, data.selected_values, data.language);
   if (sharedError) return sharedError;
   if (!specialtyNames.has(data.actual_specialty)) return 'La spécialité sélectionnée est invalide.';
-  if (
-    data.years_of_experience != null
-    && (!Number.isInteger(data.years_of_experience) || data.years_of_experience < 0 || data.years_of_experience > 60)
-  ) {
-    return 'Le nombre d’années d’expérience doit être compris entre 0 et 60.';
+  const validText = (value: string, maximum: number) => {
+    const length = value.trim().length;
+    return length >= 3 && length <= maximum;
+  };
+  if (!validText(data.current_specialty_view, 2000)
+      || !validText(data.specialty_changes_over_years, 2000)
+      || !validText(data.most_important_specialty_quality, 2000)
+      || !validText(data.student_self_question, 1000)) {
+    return 'Toutes les réponses qualitatives sont obligatoires et doivent respecter la longueur maximale.';
   }
-  if (
-    data.career_satisfaction != null
-    && (!Number.isInteger(data.career_satisfaction) || data.career_satisfaction < 1 || data.career_satisfaction > 5)
-  ) {
-    return 'La satisfaction professionnelle doit être comprise entre 1 et 5.';
+  if (data.would_choose_again_code !== 'yes' && data.would_choose_again_code !== 'no') {
+    return 'Indiquez si vous choisiriez à nouveau cette spécialité.';
   }
+  if (data.would_choose_again_code === 'no') {
+    if (!data.would_not_choose_again_reason || !validText(data.would_not_choose_again_reason, 2000)) {
+      return 'Expliquez pourquoi vous ne choisiriez pas à nouveau cette spécialité.';
+    }
+  } else if (data.would_not_choose_again_reason != null) {
+    return 'La raison doit être vide lorsque la réponse est oui.';
+  }
+  if (!data.specialty_config_version_id) return 'La version publiée du catalogue est obligatoire.';
   return null;
 }
 
@@ -208,6 +220,7 @@ function validateStudentResponse(data: StudentResponse): string | null {
   ) {
     return 'Le classement des spécialités est incomplet ou invalide.';
   }
+  if (!data.specialty_config_version_id) return 'La version publiée du catalogue est obligatoire.';
   return null;
 }
 
@@ -226,29 +239,27 @@ export async function submitSpecialistResponse(data: SpecialistResponse): Promis
     p_ratings: data.ratings as Json,
     p_selected_values: data.selected_values as Json,
     p_language: data.language,
-    p_years_of_experience: data.years_of_experience ?? null,
-    p_career_satisfaction: data.career_satisfaction ?? null,
-    p_would_choose_again_code: data.would_choose_again_code ?? null,
-    p_intention_to_change_code: data.intention_to_change_code ?? null,
-    p_voluntary_choice_code: data.voluntary_choice_code ?? null,
+    p_current_specialty_view: data.current_specialty_view.trim(),
+    p_specialty_changes_over_years: data.specialty_changes_over_years.trim(),
+    p_most_important_specialty_quality: data.most_important_specialty_quality.trim(),
+    p_would_choose_again_code: data.would_choose_again_code,
+    p_would_not_choose_again_reason: data.would_choose_again_code === 'no'
+      ? data.would_not_choose_again_reason?.trim() ?? null
+      : null,
+    p_student_self_question: data.student_self_question.trim(),
     p_questionnaire_version: DATA_VERSIONS.questionnaire,
     p_value_catalog_version: DATA_VERSIONS.valueCatalog,
     p_specialty_catalog_version: DATA_VERSIONS.specialtyCatalog,
     p_calibration_version: DATA_VERSIONS.calibration,
     p_consent_version: DATA_VERSIONS.consent,
   };
-  const { data: responseId, error } = data.specialty_config_version_id
-    ? await supabase.rpc(
-        'submit_specialist_response_v2',
-        asPostgresRoutineArgs<Database['public']['Functions']['submit_specialist_response_v2']['Args']>({
-          ...rpcArguments,
-          p_specialty_config_version_id: data.specialty_config_version_id,
-        }),
-      )
-    : await supabase.rpc(
-        'submit_specialist_response_v1',
-        asPostgresRoutineArgs<Database['public']['Functions']['submit_specialist_response_v1']['Args']>(rpcArguments),
-      );
+  const { data: responseId, error } = await supabase.rpc(
+    'submit_specialist_response_v3',
+    asPostgresRoutineArgs<Database['public']['Functions']['submit_specialist_response_v3']['Args']>({
+      ...rpcArguments,
+      p_specialty_config_version_id: data.specialty_config_version_id,
+    }),
+  );
 
   return error
     ? { success: false, error: formatSupabaseError(error) }
@@ -278,18 +289,13 @@ export async function submitStudentResponse(data: StudentResponse): Promise<Subm
     p_scoring_version: DATA_VERSIONS.scoring,
     p_consent_version: DATA_VERSIONS.consent,
   };
-  const { data: responseId, error } = data.specialty_config_version_id
-    ? await supabase.rpc(
-        'submit_student_response_v2',
-        asPostgresRoutineArgs<Database['public']['Functions']['submit_student_response_v2']['Args']>({
-          ...rpcArguments,
-          p_specialty_config_version_id: data.specialty_config_version_id,
-        }),
-      )
-    : await supabase.rpc(
-        'submit_student_response_v1',
-        asPostgresRoutineArgs<Database['public']['Functions']['submit_student_response_v1']['Args']>(rpcArguments),
-      );
+  const { data: responseId, error } = await supabase.rpc(
+    'submit_student_response_v3',
+    asPostgresRoutineArgs<Database['public']['Functions']['submit_student_response_v3']['Args']>({
+      ...rpcArguments,
+      p_specialty_config_version_id: data.specialty_config_version_id,
+    }),
+  );
 
   return error
     ? { success: false, error: formatSupabaseError(error) }

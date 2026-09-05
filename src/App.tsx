@@ -30,8 +30,6 @@ const Dashboard = lazy(() => import('@/components/Dashboard'));
 
 type Phase = 'intro' | 'quiz' | 'qprofile' | 'student' | 'results' | 'specialist' | 'dashboard' | 'explorer' | 'detail' | 'methodology' | 'comparison';
 
-const TOTAL_QUESTIONS = ALL_QUESTION_IDS.length + 2;
-
 const QUIZ_STEPS = [
   { type: 'specialty' as const, label: 'Specialty', sectionId: undefined as string | undefined },
   { type: 'values' as const, label: 'Values', sectionId: undefined as string | undefined },
@@ -52,6 +50,16 @@ function AppContent() {
   const [priorities, setPriorities] = useState<PriorityWeights>(DEFAULT_PRIORITY_WEIGHTS);
   const [explorerSpecialty, setExplorerSpecialty] = useState<string | null>(null);
   const [catalogGateMessage, setCatalogGateMessage] = useState<string | null>(null);
+
+  // Ask specialists for their actual specialty only after the 81 ratings.
+  // This keeps the ground-truth label from priming their questionnaire answers.
+  const quizSteps = useMemo(
+    () => isSpecialist ? QUIZ_STEPS.filter((step) => step.type !== 'specialty') : QUIZ_STEPS,
+    [isSpecialist],
+  );
+  // Count every visible input: career values, 81 ratings, then (for a
+  // specialist) their actual specialty plus five qualitative questions.
+  const totalQuestions = ALL_QUESTION_IDS.length + (isSpecialist ? 7 : 2);
 
   const studentTraits = useMemo(
     () => calculateTraits(ratings, selectedValues),
@@ -109,8 +117,8 @@ function AppContent() {
     setPhase('intro');
   };
 
-  const currentStep = QUIZ_STEPS[stepIndex];
-  const isLastStep = stepIndex === QUIZ_STEPS.length - 1;
+  const currentStep = quizSteps[stepIndex];
+  const isLastStep = stepIndex === quizSteps.length - 1;
 
   const canProceed = useMemo(() => {
     if (currentStep.type === 'specialty') return !isSpecialist || actualSpecialty !== null;
@@ -154,7 +162,7 @@ function AppContent() {
   if (phase === 'intro') {
     return (
       <>
-        <Intro onStart={startQuiz} totalQuestions={TOTAL_QUESTIONS} isSpecialist={isSpecialist} onSpecialistToggle={setIsSpecialist} onOpenExplorer={() => setPhase('explorer')} onOpenMethodology={() => setPhase('methodology')} onOpenDashboard={() => setPhase('dashboard')} />
+        <Intro onStart={startQuiz} totalQuestions={totalQuestions} isSpecialist={isSpecialist} onSpecialistToggle={setIsSpecialist} onOpenExplorer={() => setPhase('explorer')} onOpenMethodology={() => setPhase('methodology')} onOpenDashboard={() => setPhase('dashboard')} />
         {(catalogGateMessage || (catalogError && catalogSource !== 'remote')) && (
           <div role="alert" className="fixed bottom-5 left-1/2 z-50 w-[min(92vw,680px)] -translate-x-1/2 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 shadow-lift">
             <p className="font-semibold">{catalogGateMessage ?? (lang === 'fr' ? 'Catalogue publié indisponible.' : 'Published catalog unavailable.')}</p>
@@ -290,7 +298,7 @@ function AppContent() {
 
   // Quiz phase
   const progressCurrent = stepIndex + 1;
-  const progressTotal = QUIZ_STEPS.length;
+  const progressTotal = quizSteps.length;
 
   return (
     <div className="min-h-screen flex flex-col bg-ink-50">
