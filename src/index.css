@@ -33,6 +33,48 @@
   }
 }
 
+@layer components {
+  .rating-range {
+    appearance: none;
+    -webkit-appearance: none;
+    background: transparent;
+  }
+
+  .rating-range::-webkit-slider-runnable-track {
+    height: 8px;
+    border: 0;
+    background: transparent;
+  }
+
+  .rating-range::-webkit-slider-thumb {
+    width: 40px;
+    height: 40px;
+    margin-top: -16px;
+    appearance: none;
+    -webkit-appearance: none;
+    border: 0;
+    background: transparent;
+  }
+
+  .rating-range::-moz-range-track {
+    height: 8px;
+    border: 0;
+    background: transparent;
+  }
+
+  .rating-range::-moz-range-progress {
+    height: 8px;
+    background: transparent;
+  }
+
+  .rating-range::-moz-range-thumb {
+    width: 40px;
+    height: 40px;
+    border: 0;
+    background: transparent;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

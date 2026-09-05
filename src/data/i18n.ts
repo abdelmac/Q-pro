@@ -52,6 +52,7 @@ export interface UIStrings {
   answeredCount: (answered: number, total: number) => string;
   sliderRarely: string;
   sliderStrongly: string;
+  sliderNoSelection: string;
 
   // Results
   resultsRetake: string;
@@ -312,6 +313,7 @@ const en: UIStrings = {
   answeredCount: (answered: number, total: number) => `${answered}/${total}`,
   sliderRarely: 'Not at all like me',
   sliderStrongly: 'Very much like me',
+  sliderNoSelection: 'No rating selected',
 
   resultsRetake: 'Retake',
   topMatch: 'Highest fit index',
@@ -562,6 +564,7 @@ const ro: UIStrings = {
   answeredCount: (answered: number, total: number) => `${answered}/${total}`,
   sliderRarely: 'Deloc ca mine',
   sliderStrongly: 'Foarte mult ca mine',
+  sliderNoSelection: 'Nicio evaluare selectată',
 
   resultsRetake: 'Reia',
   topMatch: 'Cel mai mare indice de potrivire',
@@ -812,6 +815,7 @@ const fr: UIStrings = {
   answeredCount: (answered: number, total: number) => `${answered}/${total}`,
   sliderRarely: 'Pas du tout moi',
   sliderStrongly: 'Tout à fait moi',
+  sliderNoSelection: 'Aucune note sélectionnée',
 
   resultsRetake: 'Recommencer',
   topMatch: 'Indice d’adéquation le plus élevé',

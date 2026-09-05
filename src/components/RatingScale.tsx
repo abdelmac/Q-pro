@@ -1,26 +1,5 @@
+import type { ChangeEvent, KeyboardEvent, PointerEvent } from 'react';
 import { RATING_VALUES } from '@/lib/ratingScale';
-
-export function SmileyThumb() {
-  return (
-    <svg
-      viewBox="0 0 32 32"
-      className="pointer-events-none h-6 w-6"
-      fill="none"
-      aria-hidden="true"
-      focusable="false"
-    >
-      <circle cx="16" cy="16" r="12" stroke="currentColor" strokeWidth="1.8" />
-      <circle cx="11.5" cy="13.5" r="1.35" fill="currentColor" />
-      <circle cx="20.5" cy="13.5" r="1.35" fill="currentColor" />
-      <path
-        d="M10.5 19c1.45 2.25 3.3 3.4 5.5 3.4s4.05-1.15 5.5-3.4"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
 
 interface RatingScaleProps {
   value: number | null;
@@ -28,7 +7,13 @@ interface RatingScaleProps {
   questionId: string;
   questionText: string;
   labels: { low: string; high: string };
+  unansweredLabel: string;
 }
+
+const MIN_RATING = RATING_VALUES[0];
+const MAX_RATING = RATING_VALUES[RATING_VALUES.length - 1];
+const RANGE_STEPS = MAX_RATING - MIN_RATING;
+const THUMB_RADIUS_PX = 20;
 
 export default function RatingScale({
   value,
@@ -36,100 +21,132 @@ export default function RatingScale({
   questionId,
   questionText,
   labels,
+  unansweredLabel,
 }: RatingScaleProps) {
   const helpTextId = `${questionId}-rating-scale-help`;
   const selectedValue = RATING_VALUES.find((rating) => rating === value) ?? null;
-  const desktopProgress = selectedValue === null ? 0 : ((selectedValue - 1) / 9) * 100;
-  const firstMobileRowProgress = selectedValue === null
+  const progress = selectedValue === null
     ? 0
-    : selectedValue <= 5
-      ? ((selectedValue - 1) / 4) * 100
-      : 100;
-  const secondMobileRowProgress = selectedValue === null || selectedValue <= 5
-    ? 0
-    : ((selectedValue - 6) / 4) * 100;
+    : ((selectedValue - MIN_RATING) / RANGE_STEPS) * 100;
+
+  const commitRating = (candidate: number) => {
+    const exactRating = RATING_VALUES.find((rating) => rating === candidate);
+    if (exactRating !== undefined) onChange(exactRating);
+  };
+
+  const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
+    commitRating(Number(event.currentTarget.value));
+  };
+
+  const handlePointerUp = (event: PointerEvent<HTMLInputElement>) => {
+    if (!event.isPrimary || event.button !== 0) return;
+
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const usableWidth = Math.max(bounds.width - (THUMB_RADIUS_PX * 2), 1);
+    const position = Math.min(
+      1,
+      Math.max(0, (event.clientX - bounds.left - THUMB_RADIUS_PX) / usableWidth),
+    );
+    commitRating(Math.round(position * RANGE_STEPS) + MIN_RATING);
+  };
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (selectedValue !== null) return;
+
+    const initialKeyboardRatings: Partial<Record<string, number>> = {
+      ArrowDown: MIN_RATING,
+      ArrowLeft: MIN_RATING,
+      ArrowRight: MIN_RATING + 1,
+      ArrowUp: MIN_RATING + 1,
+      End: MAX_RATING,
+      Enter: MIN_RATING,
+      Home: MIN_RATING,
+      PageDown: MIN_RATING,
+      PageUp: MIN_RATING + 1,
+      ' ': MIN_RATING,
+    };
+    const initialRating = initialKeyboardRatings[event.key];
+    if (initialRating === undefined) return;
+
+    event.preventDefault();
+    commitRating(initialRating);
+  };
 
   return (
     <fieldset className="min-w-0" aria-describedby={helpTextId}>
       <legend className="sr-only">{questionText}</legend>
 
-      <div className="relative">
+      <div className="relative h-[72px] select-none">
+        <input
+          type="range"
+          min={MIN_RATING}
+          max={MAX_RATING}
+          step={1}
+          value={selectedValue ?? MIN_RATING}
+          onChange={handleChange}
+          onPointerUp={handlePointerUp}
+          onKeyDown={handleKeyDown}
+          aria-label={questionText}
+          aria-describedby={helpTextId}
+          aria-valuetext={selectedValue === null ? unansweredLabel : undefined}
+          className="rating-range peer absolute inset-x-0 top-0 z-20 m-0 h-14 w-full cursor-pointer touch-pan-y opacity-0 focus:outline-none"
+        />
+
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute left-[10%] right-[10%] top-[22px] h-1 overflow-hidden rounded-full bg-ink-200 sm:left-[5%] sm:right-[5%]"
+          className="pointer-events-none absolute inset-x-5 top-0 h-14 rounded-xl peer-focus-visible:ring-2 peer-focus-visible:ring-brand-500 peer-focus-visible:ring-offset-2"
         >
-          <span
-            className="block h-full rounded-full bg-brand-400 transition-[width] duration-200 ease-out sm:hidden"
-            style={{ width: `${firstMobileRowProgress}%` }}
-          />
-          <span
-            className="hidden h-full rounded-full bg-brand-400 transition-[width] duration-200 ease-out sm:block"
-            style={{ width: `${desktopProgress}%` }}
-          />
-        </div>
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute left-[10%] right-[10%] top-[76px] h-1 overflow-hidden rounded-full bg-ink-200 sm:hidden"
-        >
-          <span
-            className="block h-full rounded-full bg-brand-400 transition-[width] duration-200 ease-out"
-            style={{ width: `${secondMobileRowProgress}%` }}
-          />
+          <div className="absolute inset-x-0 top-[26px] h-1 overflow-hidden rounded-full bg-ink-200">
+            <span
+              data-rating-progress
+              className="block h-full rounded-full bg-brand-500"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+
+          {RATING_VALUES.map((rating) => (
+            <span
+              key={rating}
+              data-rating-tick={rating}
+              className={`absolute top-[23px] h-2.5 w-0.5 -translate-x-1/2 rounded-full ${
+                selectedValue !== null && rating <= selectedValue ? 'bg-brand-600' : 'bg-ink-300'
+              }`}
+              style={{ left: `${((rating - MIN_RATING) / RANGE_STEPS) * 100}%` }}
+            />
+          ))}
+
+          {selectedValue !== null && (
+            <span
+              data-rating-thumb={selectedValue}
+              className="absolute top-2 flex h-10 w-10 -translate-x-1/2 items-center justify-center rounded-full border-2 border-white bg-brand-600 text-sm font-bold tabular-nums text-white shadow-lift ring-2 ring-brand-200"
+              style={{ left: `${progress}%` }}
+            >
+              {selectedValue}
+            </span>
+          )}
         </div>
 
-        <div className="relative grid grid-cols-5 gap-1.5 sm:grid-cols-10 sm:gap-2">
-          {RATING_VALUES.map((rating) => {
-            const optionLabel = rating === 1
-              ? `${rating}: ${labels.low}`
-              : rating === 10
-                ? `${rating}: ${labels.high}`
-                : String(rating);
-
-            return (
-              <label
-                key={rating}
-                className="relative z-[1] flex min-h-12 cursor-pointer touch-manipulation select-none items-center justify-center"
-              >
-                <input
-                  type="radio"
-                  name={`rating-${questionId}`}
-                  value={rating}
-                  checked={selectedValue === rating}
-                  onChange={() => onChange(rating)}
-                  aria-label={optionLabel}
-                  className="peer sr-only"
-                />
-                <span
-                  aria-hidden="true"
-                  className="relative flex h-9 w-9 items-center justify-center rounded-full border-2 border-ink-200 bg-white text-xs font-semibold tabular-nums text-ink-600 shadow-sm transition-all duration-200 ease-out hover:border-brand-300 hover:bg-brand-50 peer-checked:h-11 peer-checked:w-11 peer-checked:-translate-y-0.5 peer-checked:border-brand-600 peer-checked:bg-brand-600 peer-checked:text-white peer-checked:shadow-lift peer-checked:ring-2 peer-checked:ring-brand-200 peer-checked:ring-offset-1 peer-focus-visible:ring-2 peer-focus-visible:ring-brand-500 peer-focus-visible:ring-offset-2"
-                >
-                  {selectedValue === rating ? (
-                    <>
-                      <SmileyThumb />
-                      <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-white bg-brand-100 px-1 text-[10px] font-bold leading-none text-brand-800 shadow-sm">
-                        {rating}
-                      </span>
-                    </>
-                  ) : rating}
-                </span>
-              </label>
-            );
-          })}
+        <div aria-hidden="true" className="pointer-events-none absolute inset-x-5 top-[52px] h-5">
+          {RATING_VALUES.map((rating) => (
+            <span
+              key={rating}
+              className={`absolute -translate-x-1/2 text-xs font-semibold tabular-nums ${
+                selectedValue === rating ? 'text-brand-700' : 'text-ink-600'
+              }`}
+              style={{ left: `${((rating - MIN_RATING) / RANGE_STEPS) * 100}%` }}
+            >
+              {rating}
+            </span>
+          ))}
         </div>
       </div>
 
       <div
         id={helpTextId}
-        className="mt-2 flex items-start justify-between gap-4 text-[11px] leading-tight text-ink-500"
+        className="mt-1 flex items-start justify-between gap-4 text-[11px] leading-tight text-ink-500"
       >
-        <span className="flex max-w-[45%] items-start gap-1">
-          <span className="font-semibold text-ink-600">1</span>
-          <span>{labels.low}</span>
-        </span>
-        <span className="flex max-w-[45%] items-start gap-1 text-right">
-          <span>{labels.high}</span>
-          <span className="font-semibold text-ink-600">10</span>
-        </span>
+        <span className="max-w-[48%]">{labels.low}</span>
+        <span className="max-w-[48%] text-right">{labels.high}</span>
       </div>
     </fieldset>
   );

@@ -49,6 +49,7 @@ export default function RatingStep({ section, ratings, onChange }: RatingStepPro
                 questionId={q.id}
                 questionText={translateQuestion(q.id, lang)}
                 labels={{ low: t.sliderRarely, high: t.sliderStrongly }}
+                unansweredLabel={t.sliderNoSelection}
               />
             </div>
           </div>
