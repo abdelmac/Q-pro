@@ -3,14 +3,11 @@ import {
   type SpecialtyScore,
   strongestMatches,
   weakestMatches,
-  generateExplanation,
-  generateTradeOffExplanation,
-  generateOppositeFitExplanation,
   type Dimension,
 } from '@/lib/scoring';
 import { CATEGORY_ORDER } from '@/data/specialties';
 import { SPECIALTY_METADATA } from '@/data/specialtyMetadata';
-import { getSpecialtyNarrative } from '@/data/specialtyNarratives';
+import { getSpecialtyNarrative, hasSpecialistAuthoredNarrative } from '@/data/specialtyNarratives';
 import {
   translateCareType,
   translatePatientContact,
@@ -108,43 +105,98 @@ interface SpecialtyFactsProps {
   specialtyName: string;
   blurb: string;
   clinicalSummary: string;
-  showOverview?: boolean;
+  nested?: boolean;
 }
 
 function SpecialtyFacts({
   specialtyName,
   blurb,
   clinicalSummary,
-  showOverview = true,
+  nested = false,
 }: SpecialtyFactsProps) {
   const { lang, t } = useLanguage();
   const meta = SPECIALTY_METADATA[specialtyName];
-  const suppliedReferences = getSpecialtyNarrative(specialtyName)?.sourceReferences ?? [];
-  const references = Array.from(new Set([...(meta?.references ?? []), ...suppliedReferences]));
-  const SectionHeading = showOverview ? 'h4' : 'h2';
+  const hasSuppliedNarrative = hasSpecialistAuthoredNarrative(specialtyName);
+  const suppliedNarrative = getSpecialtyNarrative(specialtyName);
+  const narrativeMatchesSource = Boolean(
+    hasSuppliedNarrative
+      && suppliedNarrative
+      && suppliedNarrative.overview[lang] === blurb
+      && suppliedNarrative.fitProfile[lang] === clinicalSummary,
+  );
+  const suppliedReferences = hasSuppliedNarrative
+    ? suppliedNarrative?.sourceReferences ?? []
+    : [];
+  const metadataReferences = meta?.references ?? [];
+  const GroupHeading = nested ? 'h4' : 'h2';
+  const DetailHeading = nested ? 'h5' : 'h3';
 
   return (
     <div className="space-y-5">
-      {showOverview && (
-        <section>
-          <SectionHeading className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-400">
-            {t.resultsSpecialtyOverview}
-          </SectionHeading>
-          <p className="whitespace-pre-line text-sm leading-relaxed text-ink-600">{blurb}</p>
-        </section>
-      )}
+      <section className="rounded-2xl border border-brand-100 bg-brand-50/40 p-5 sm:p-6">
+        <header className="mb-5 border-b border-brand-100 pb-4">
+          <GroupHeading className="font-display text-lg font-semibold text-brand-900">
+            {t.resultsSpecialistNarrativeTitle}
+          </GroupHeading>
+          <p className="mt-1.5 text-xs leading-relaxed text-brand-800">
+            {hasSuppliedNarrative
+              ? narrativeMatchesSource
+                ? t.resultsNarrativeProvenance
+                : t.resultsEditedNarrativeProvenance
+              : t.resultsNoSpecialistNarrative}
+          </p>
+        </header>
 
-      {clinicalSummary && clinicalSummary !== blurb && (
-        <section className="rounded-xl border border-brand-100 bg-brand-50/50 p-4">
-          <SectionHeading className="mb-2 text-xs font-semibold uppercase tracking-wider text-brand-700">
-            {t.resultsProfessionalProfile}
-          </SectionHeading>
-          <p className="whitespace-pre-line text-sm leading-relaxed text-ink-700">{clinicalSummary}</p>
-        </section>
-      )}
+        {hasSuppliedNarrative && (
+          <div className="space-y-5">
+            <section>
+              <DetailHeading className="mb-2 text-xs font-semibold uppercase tracking-wider text-brand-700">
+                {t.resultsSpecialtyOverview}
+              </DetailHeading>
+              <p className="whitespace-pre-line text-sm leading-relaxed text-ink-700">{blurb}</p>
+            </section>
+
+            {clinicalSummary && (
+              <section className="rounded-xl border border-brand-100 bg-white/70 p-4">
+                <DetailHeading className="mb-2 text-xs font-semibold uppercase tracking-wider text-brand-700">
+                  {t.resultsProfessionalProfile}
+                </DetailHeading>
+                <p className="whitespace-pre-line text-sm leading-relaxed text-ink-700">{clinicalSummary}</p>
+              </section>
+            )}
+
+            <section>
+              <DetailHeading className="mb-2 text-xs font-semibold uppercase tracking-wider text-brand-700">
+                {t.resultsSourceReferences}
+              </DetailHeading>
+              {suppliedReferences.length > 0 ? (
+                <>
+                  <ul className="space-y-1.5">
+                    {suppliedReferences.map((reference) => (
+                      <li key={reference} className="break-words text-xs leading-relaxed text-ink-600">
+                        {reference}
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="mt-2 text-[11px] leading-relaxed text-ink-500">{t.resultsReferencesDisclaimer}</p>
+                </>
+              ) : (
+                <p className="text-xs leading-relaxed text-ink-500">{t.resultsNoSourceReferences}</p>
+              )}
+            </section>
+          </div>
+        )}
+      </section>
 
       {meta && (
-        <>
+        <section className="rounded-2xl border border-ink-100 bg-white p-5 shadow-soft sm:p-6">
+          <header className="mb-5 border-b border-ink-100 pb-4">
+            <GroupHeading className="font-display text-lg font-semibold text-ink-900">
+              {t.resultsQProMetadataTitle}
+            </GroupHeading>
+            <p className="mt-1.5 text-xs leading-relaxed text-ink-500">{t.resultsQProMetadataNote}</p>
+          </header>
+
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <SpecialtyInfoCard label={t.explorerWorkStyle} value={translateWorkStyle(meta.workStyle, lang)} />
             <SpecialtyInfoCard label={t.explorerPatientContact} value={translatePatientContact(meta.patientContact, lang)} />
@@ -153,9 +205,9 @@ function SpecialtyFacts({
           </div>
 
           <section>
-            <SectionHeading className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-400">
+            <DetailHeading className="mb-2 mt-5 text-xs font-semibold uppercase tracking-wider text-ink-400">
               {t.explorerKeyTraits}
-            </SectionHeading>
+            </DetailHeading>
             <div className="flex flex-wrap gap-2">
               {meta.keyTraits.map((trait) => (
                 <span key={trait} className="inline-flex rounded-full border border-brand-100 bg-brand-50 px-3 py-1.5 text-xs font-medium text-brand-700">
@@ -165,13 +217,13 @@ function SpecialtyFacts({
             </div>
           </section>
 
-          {references.length > 0 && (
+          {metadataReferences.length > 0 && (
             <section>
-              <SectionHeading className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-400">
-                {t.explorerReferences}
-              </SectionHeading>
+              <DetailHeading className="mb-2 mt-5 text-xs font-semibold uppercase tracking-wider text-ink-400">
+                {t.resultsQProMetadataReferences}
+              </DetailHeading>
               <ul className="space-y-1.5">
-                {references.map((reference) => (
+                {metadataReferences.map((reference) => (
                   <li key={reference} className="break-words text-xs leading-relaxed text-ink-500">
                     {reference}
                   </li>
@@ -180,8 +232,52 @@ function SpecialtyFacts({
               <p className="mt-2 text-[11px] leading-relaxed text-ink-400">{t.resultsReferencesDisclaimer}</p>
             </section>
           )}
-        </>
+        </section>
       )}
+    </div>
+  );
+}
+
+interface ComparedTrait {
+  trait: SpecialtyScore['details'][number]['trait'];
+  student: number;
+  target: number;
+  gap?: number;
+}
+
+function TraitComparisonList({ items }: { items: readonly ComparedTrait[] }) {
+  const { lang, t } = useLanguage();
+
+  return (
+    <div>
+      <p className="mb-3 text-xs font-medium text-ink-500">{t.oppositeFitLegend}</p>
+      <ul className="space-y-3">
+        {items.map((item) => {
+          const student = Math.round(item.student);
+          const target = Math.round(item.target);
+          const gap = Math.round(item.gap ?? Math.abs(item.student - item.target));
+          return (
+            <li key={item.trait} className="rounded-lg border border-ink-100 bg-white/70 p-3">
+              <div className="grid gap-2 sm:grid-cols-[minmax(0,10rem)_1fr] sm:items-center sm:gap-3">
+                <span className="text-xs font-semibold text-ink-600">{translateTrait(item.trait, lang)}</span>
+                <div>
+                  <div className="grid grid-cols-2 gap-2" aria-hidden="true">
+                    <div className="h-1.5 overflow-hidden rounded-full bg-ink-100">
+                      <div className="h-full rounded-full bg-ink-400" style={{ width: `${Math.min(100, Math.max(0, student))}%` }} />
+                    </div>
+                    <div className="h-1.5 overflow-hidden rounded-full bg-ink-100">
+                      <div className="h-full rounded-full bg-brand-400" style={{ width: `${Math.min(100, Math.max(0, target))}%` }} />
+                    </div>
+                  </div>
+                  <p className="mt-1.5 text-[11px] leading-relaxed text-ink-500">
+                    {t.oppositeFitValues(student, target, gap)}
+                  </p>
+                </div>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }
@@ -297,85 +393,87 @@ export default function Results({
           {t.resultsInformationDisclaimer}
         </div>
 
-        {/* Top match: score + sub-scores + explanation */}
-        <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-8 sm:gap-12 items-center mb-10 p-6 sm:p-10 rounded-3xl bg-white border border-ink-100 shadow-soft animate-fade-up" style={{ animationDelay: '80ms' }}>
-          <div className="flex justify-center">
-            <MatchRing percent={topMatchPercent} label={t.matchPercent} />
-          </div>
-          <div>
-            <p className="text-base sm:text-lg text-ink-600 leading-relaxed mb-5">{topBlurb}</p>
+        <div className="mb-10">
+          <SpecialtyFacts
+            specialtyName={top.specialty.name}
+            blurb={topBlurb}
+            clinicalSummary={topClinicalSummary}
+          />
+        </div>
+
+        <section className="mb-10" aria-labelledby="top-calculated-analysis-title">
+          <header className="mb-5">
+            <h2 id="top-calculated-analysis-title" className="font-display text-xl font-semibold text-ink-900">
+              {t.resultsCalculatedAnalysisTitle}
+            </h2>
+            <p className="mt-1.5 text-xs leading-relaxed text-ink-500">{t.resultsCalculatedAnalysisNote}</p>
+          </header>
+
+          <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-8 sm:gap-12 items-center mb-6 p-6 sm:p-10 rounded-3xl bg-white border border-ink-100 shadow-soft animate-fade-up" style={{ animationDelay: '80ms' }}>
+            <div className="flex justify-center">
+              <MatchRing percent={topMatchPercent} label={t.matchPercent} />
+            </div>
             <div>
-              <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-400 mb-3">{t.whyItFits}</h2>
-              <p className="text-sm text-ink-600 leading-relaxed mb-4">{generateExplanation(top, lang)}</p>
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-400 mb-3">{t.whyItFits}</h3>
               <div className="flex flex-wrap gap-2">
-                {topStrongest.map((d) => (
-                  <span key={d.trait} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-brand-50 border border-brand-100 text-brand-700 text-xs font-medium">
-                    {translateTrait(d.trait, lang)}
+                {topStrongest.map((detail) => (
+                  <span key={detail.trait} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-brand-50 border border-brand-100 text-brand-700 text-xs font-medium">
+                    {translateTrait(detail.trait, lang)}
+                    <span className="tabular-nums text-brand-600">{Math.round(detail.similarity)}/100</span>
                   </span>
                 ))}
               </div>
             </div>
           </div>
-        </div>
 
-        <div className="mb-10 rounded-2xl border border-ink-100 bg-white p-5 shadow-soft sm:p-6">
-          <SpecialtyFacts
-            specialtyName={top.specialty.name}
-            blurb={topBlurb}
-            clinicalSummary={topClinicalSummary}
-            showOverview={false}
-          />
-        </div>
-
-        {/* Sub-scores */}
-        <div className="mb-10 p-6 rounded-2xl bg-white border border-ink-100 shadow-soft animate-fade-up" style={{ animationDelay: '100ms' }}>
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-400 mb-4">{t.subScoresTitle}</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
-            {topSubScores.map((sub) => {
-              const labelKey = DIMENSION_LABELS[sub.dimension] as keyof typeof t;
-              const circumference = 2 * Math.PI * 34;
-              return (
-                <div key={sub.dimension} className="text-center">
-                  <div className="relative w-20 h-20 mx-auto mb-2">
-                    <svg width="80" height="80" className="-rotate-90" aria-hidden="true">
-                      <circle cx="40" cy="40" r="34" fill="none" stroke="currentColor" strokeWidth="6" className="text-ink-100" />
-                      <circle
-                        cx="40" cy="40" r="34" fill="none"
-                        stroke="url(#subGrad)" strokeWidth="6" strokeLinecap="round"
-                        strokeDasharray={circumference}
-                        strokeDashoffset={sub.score === null
-                          ? circumference
-                          : circumference - (sub.score / 100) * circumference}
-                        className="transition-all duration-1000 ease-out"
-                      />
-                      <defs>
-                        <linearGradient id="subGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                          <stop offset="0%" stopColor="#43ab97" />
-                          <stop offset="100%" stopColor="#1f7264" />
-                        </linearGradient>
-                      </defs>
-                    </svg>
-                    <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-ink-700 tabular-nums">
-                      {sub.score === null ? '—' : Math.round(sub.score)}
-                    </span>
+          <div className="mb-6 p-6 rounded-2xl bg-white border border-ink-100 shadow-soft animate-fade-up" style={{ animationDelay: '100ms' }}>
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-400 mb-4">{t.subScoresTitle}</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+              {topSubScores.map((sub) => {
+                const labelKey = DIMENSION_LABELS[sub.dimension] as keyof typeof t;
+                const circumference = 2 * Math.PI * 34;
+                return (
+                  <div key={sub.dimension} className="text-center">
+                    <div className="relative w-20 h-20 mx-auto mb-2">
+                      <svg width="80" height="80" className="-rotate-90" aria-hidden="true">
+                        <circle cx="40" cy="40" r="34" fill="none" stroke="currentColor" strokeWidth="6" className="text-ink-100" />
+                        <circle
+                          cx="40" cy="40" r="34" fill="none"
+                          stroke="url(#subGrad)" strokeWidth="6" strokeLinecap="round"
+                          strokeDasharray={circumference}
+                          strokeDashoffset={sub.score === null
+                            ? circumference
+                            : circumference - (sub.score / 100) * circumference}
+                          className="transition-all duration-1000 ease-out"
+                        />
+                        <defs>
+                          <linearGradient id="subGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stopColor="#43ab97" />
+                            <stop offset="100%" stopColor="#1f7264" />
+                          </linearGradient>
+                        </defs>
+                      </svg>
+                      <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-ink-700 tabular-nums">
+                        {sub.score === null ? '—' : Math.round(sub.score)}
+                      </span>
+                    </div>
+                    <span className="text-xs font-medium text-ink-500 leading-tight block">{String(t[labelKey])}</span>
                   </div>
-                  <span className="text-xs font-medium text-ink-500 leading-tight block">{String(t[labelKey])}</span>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-        </div>
 
-        {/* Trade-offs for top match */}
-        {topTradeOffs.length > 0 && (
-          <div className="mb-10 p-5 rounded-2xl bg-amber-50 border border-amber-200 animate-fade-up" style={{ animationDelay: '120ms' }}>
-            <h2 className="text-sm font-semibold text-amber-800 mb-2 flex items-center gap-2">
-              <AlertCircle className="w-4 h-4" /> {t.tradeOffsTitle}
-            </h2>
-            <p className="text-sm text-amber-700 leading-relaxed mb-3">{t.tradeOffsDesc}</p>
-            <p className="text-sm text-ink-600 leading-relaxed">{generateTradeOffExplanation(top, lang)}</p>
-          </div>
-        )}
+          {topTradeOffs.length > 0 && (
+            <div className="p-5 rounded-2xl bg-amber-50 border border-amber-200 animate-fade-up" style={{ animationDelay: '120ms' }}>
+              <h3 className="text-sm font-semibold text-amber-800 mb-2 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4" /> {t.tradeOffsTitle}
+              </h3>
+              <p className="text-sm text-amber-700 leading-relaxed mb-4">{t.tradeOffsDesc}</p>
+              <TraitComparisonList items={topTradeOffs} />
+            </div>
+          )}
+        </section>
 
         {/* Preferred specialty callout */}
         {preferredRank && preferredRank.rank > 1 && (
@@ -450,47 +548,58 @@ export default function Results({
                     specialtyName={s.specialty.name}
                     blurb={blurb}
                     clinicalSummary={clinicalSummary}
+                    nested
                   />
 
-                  <div className="mt-6 border-t border-ink-100 pt-5">
-                    <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-400">{t.whyItFits}</h4>
-                    <p className="text-sm leading-relaxed text-ink-600">{generateExplanation(s, lang)}</p>
-                  </div>
+                  <section className="mt-6 border-t border-ink-100 pt-5" aria-labelledby={`${headingId}-analysis`}>
+                    <h4 id={`${headingId}-analysis`} className="font-display text-base font-semibold text-ink-900">
+                      {t.resultsCalculatedAnalysisTitle}
+                    </h4>
+                    <p className="mt-1.5 text-xs leading-relaxed text-ink-500">{t.resultsCalculatedAnalysisNote}</p>
 
-                  <div className="my-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-                    {s.subScores.map((sub) => {
-                      const labelKey = DIMENSION_LABELS[sub.dimension] as keyof typeof t;
-                      return (
-                        <div key={sub.dimension} className="rounded-lg bg-ink-50 px-3 py-2 text-center">
-                          <div className="text-sm font-bold tabular-nums text-ink-700">
-                            {sub.score === null ? '—' : Math.round(sub.score)}
-                          </div>
-                          <div className="text-[10px] font-medium leading-tight text-ink-400">{String(t[labelKey])}</div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                    <section className="mt-5">
+                      <h5 className="mb-3 text-xs font-semibold uppercase tracking-wider text-ink-400">{t.whyItFits}</h5>
+                      <div className="space-y-3">
+                        {strongest.map((detail) => {
+                          const percent = Math.round(detail.similarity);
+                          return (
+                            <div key={detail.trait} className="grid gap-1.5 sm:grid-cols-[minmax(0,10rem)_1fr_auto] sm:items-center sm:gap-3">
+                              <span className="text-xs font-medium text-ink-500">{translateTrait(detail.trait, lang)}</span>
+                              <div className="h-1.5 overflow-hidden rounded-full bg-ink-100" aria-hidden="true">
+                                <div className="h-full origin-left animate-grow-bar rounded-full bg-brand-400" style={{ width: `${Math.min(100, percent)}%` }} />
+                              </div>
+                              <span className="text-right text-xs tabular-nums text-ink-400">{percent}/100</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </section>
 
-                  {s.tradeOffs.length > 0 && (
-                    <div className="mb-5 rounded-xl border border-amber-100 bg-amber-50 p-3">
-                      <p className="text-xs leading-relaxed text-amber-700">{generateTradeOffExplanation(s, lang)}</p>
-                    </div>
-                  )}
+                    <section className="mt-5">
+                      <h5 className="mb-3 text-xs font-semibold uppercase tracking-wider text-ink-400">{t.subScoresTitle}</h5>
+                      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+                        {s.subScores.map((sub) => {
+                          const labelKey = DIMENSION_LABELS[sub.dimension] as keyof typeof t;
+                          return (
+                            <div key={sub.dimension} className="rounded-lg bg-ink-50 px-3 py-2 text-center">
+                              <div className="text-sm font-bold tabular-nums text-ink-700">
+                                {sub.score === null ? '—' : Math.round(sub.score)}
+                              </div>
+                              <div className="text-[10px] font-medium leading-tight text-ink-400">{String(t[labelKey])}</div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </section>
 
-                  <div className="space-y-3">
-                    {strongest.map((detail) => {
-                      const percent = Math.round(detail.similarity);
-                      return (
-                        <div key={detail.trait} className="grid gap-1.5 sm:grid-cols-[minmax(0,10rem)_1fr_auto] sm:items-center sm:gap-3">
-                          <span className="text-xs font-medium text-ink-500">{translateTrait(detail.trait, lang)}</span>
-                          <div className="h-1.5 overflow-hidden rounded-full bg-ink-100" aria-hidden="true">
-                            <div className="h-full origin-left animate-grow-bar rounded-full bg-brand-400" style={{ width: `${Math.min(100, percent)}%` }} />
-                          </div>
-                          <span className="text-right text-xs tabular-nums text-ink-400">{percent}/100</span>
-                        </div>
-                      );
-                    })}
-                  </div>
+                    {s.tradeOffs.length > 0 && (
+                      <section className="mt-5 rounded-xl border border-amber-100 bg-amber-50 p-3">
+                        <h5 className="mb-2 text-xs font-semibold uppercase tracking-wider text-amber-800">{t.tradeOffsTitle}</h5>
+                        <p className="mb-3 text-xs leading-relaxed text-amber-700">{t.tradeOffsDesc}</p>
+                        <TraitComparisonList items={s.tradeOffs} />
+                      </section>
+                    )}
+                  </section>
                 </article>
               </li>
             );
@@ -583,33 +692,8 @@ export default function Results({
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <p className="text-sm text-ink-600 leading-relaxed mb-4">{generateOppositeFitExplanation(oppositeFitSpecialty, lang)}</p>
-            <div className="space-y-2.5">
-              {weakestMatches(oppositeFitSpecialty, 5).map((w) => {
-                const gap = Math.round(Math.abs(w.student - w.target));
-                return (
-                  <div key={w.trait} className="flex items-center gap-3">
-                    <span className="w-40 text-xs font-medium text-ink-500 shrink-0">{translateTrait(w.trait, lang)}</span>
-                    <div className="flex-1 flex items-center gap-1" aria-hidden="true">
-                      <div className="flex-1 h-1.5 rounded-full bg-ink-100 overflow-hidden">
-                        <div className="h-full rounded-full bg-ink-300" style={{ width: `${Math.round(w.student)}%` }} />
-                      </div>
-                      <span className="text-[10px] text-ink-400 shrink-0">vs</span>
-                      <div className="flex-1 h-1.5 rounded-full bg-ink-100 overflow-hidden">
-                        <div className="h-full rounded-full bg-brand-300" style={{ width: `${Math.round(w.target)}%` }} />
-                      </div>
-                    </div>
-                    <span aria-hidden="true" className="text-xs text-ink-400 tabular-nums w-8 text-right">{gap}</span>
-                    <span className="sr-only">
-                      {t.oppositeFitValues(Math.round(w.student), Math.round(w.target), gap)}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="mt-4 text-xs text-ink-400">
-              <span>{t.oppositeFitLegend}</span>
-            </div>
+            <p className="text-sm text-ink-600 leading-relaxed mb-4">{t.oppositeFitDesc}</p>
+            <TraitComparisonList items={weakestMatches(oppositeFitSpecialty, 5)} />
           </div>
         </div>
       )}

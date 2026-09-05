@@ -292,10 +292,11 @@ export function mergeSpecialtyCatalog(value: unknown): SpecialtyCatalogSnapshot 
       fr: remoteDescriptions?.fr || fallbackDescriptions.fr,
     });
     const remoteSummaries = remoteSpecialty?.clinicalSummaries;
+    const fallbackSummaries = FALLBACK_SPECIALTY_CATALOG.clinicalSummaries[fallback.name];
     const mergedSummaries = freezeLocalizedText({
-      en: remoteSummaries?.en || mergedDescriptions.en,
-      ro: remoteSummaries?.ro || mergedDescriptions.ro,
-      fr: remoteSummaries?.fr || mergedDescriptions.fr,
+      en: remoteSummaries?.en || fallbackSummaries.en,
+      ro: remoteSummaries?.ro || fallbackSummaries.ro,
+      fr: remoteSummaries?.fr || fallbackSummaries.fr,
     });
     const mergedProfile = (remoteSpecialty?.profile ?? fallback.profile) as TraitProfile;
 
@@ -373,7 +374,8 @@ export function SpecialtyCatalogProvider({ children }: { children: ReactNode }) 
     getClinicalSummary: (specialtyName, language) => (
       snapshot.clinicalSummaries[specialtyName]?.[language]
       ?? snapshot.clinicalSummaries[specialtyName]?.en
-      ?? snapshot.descriptions[specialtyName]?.[language]
+      ?? FALLBACK_SPECIALTY_CATALOG.clinicalSummaries[specialtyName]?.[language]
+      ?? FALLBACK_SPECIALTY_CATALOG.clinicalSummaries[specialtyName]?.en
       ?? ''
     ),
   }), [error, isLoading, refresh, snapshot]);

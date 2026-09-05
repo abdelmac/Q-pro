@@ -2,7 +2,11 @@ import assert from 'node:assert/strict';
 import { ALL_QUESTION_IDS } from '../src/data/questions';
 import { SPECIALTIES } from '../src/data/specialties';
 import { SPECIALTY_METADATA } from '../src/data/specialtyMetadata';
-import { SPECIALTY_NARRATIVES } from '../src/data/specialtyNarratives';
+import {
+  hasSpecialistAuthoredNarrative,
+  SPECIALIST_SOURCE_DOCUMENT,
+  SPECIALTY_NARRATIVES,
+} from '../src/data/specialtyNarratives';
 import { QUESTION_TRAITS, VALUE_MAPPING, VALUE_OPTIONS } from '../src/data/traits';
 import {
   DASHBOARD_MODEL_CHECKSUM,
@@ -72,6 +76,40 @@ function parseCsv(csv: string): string[][] {
 
 const ratings = Object.fromEntries(ALL_QUESTION_IDS.map((id, index) => [id, (index % 10) + 1]));
 assert.equal(RESULTS_TOP_COUNT, 10, 'The results page must expose a complete Top 10');
+assert.equal(SPECIALIST_SOURCE_DOCUMENT.numberedSections, 58);
+assert.equal(SPECIALIST_SOURCE_DOCUMENT.uniqueSpecialties, 57);
+assert.equal(
+  SPECIALIST_SOURCE_DOCUMENT.sha256,
+  '1E4C334306D56EE90CF007D57756860CC7690E301ABC83D768772F96EAB4E9E7',
+);
+assert.equal(
+  SPECIALIST_SOURCE_DOCUMENT.localizedPayloadSha256,
+  '5BAB0FAEEF926B14931708368C056184A044C17630AF1C8F76FD563C14FA0854',
+);
+assert.deepEqual(SPECIALIST_SOURCE_DOCUMENT.mergedSections.Pulmonology, [6, 55]);
+assert.deepEqual(SPECIALIST_SOURCE_DOCUMENT.missingSpecialties, ['Pathology']);
+assert.equal(hasSpecialistAuthoredNarrative('Pathology'), false);
+assert.equal(hasSpecialistAuthoredNarrative('Pulmonology'), true);
+assert.equal(
+  Object.values(SPECIALTY_NARRATIVES).reduce(
+    (total, narrative) => total + narrative.sourceReferences.length,
+    0,
+  ),
+  33,
+  'Every bibliography entry supplied by the specialist must be preserved exactly once',
+);
+for (const language of ['en', 'ro', 'fr'] as const) {
+  assert.equal(
+    SPECIALTY_NARRATIVES.Pulmonology.overview[language].split(/\n\n/u).length,
+    2,
+    `Pulmonology overview.${language} must preserve source sections 6 and 55`,
+  );
+  assert.equal(
+    SPECIALTY_NARRATIVES.Pulmonology.fitProfile[language].split(/\n\n/u).length,
+    2,
+    `Pulmonology fitProfile.${language} must preserve source sections 6 and 55`,
+  );
+}
 let requestedScroll: ScrollToOptions | undefined;
 scrollToPageTop({
   scrollTo(options) {

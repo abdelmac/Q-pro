@@ -62,8 +62,19 @@ export interface UIStrings {
   otherMatches: string;
   otherMatchesDesc: string;
   resultsRankLabel: (rank: number) => string;
+  resultsSpecialistNarrativeTitle: string;
+  resultsNarrativeProvenance: string;
+  resultsEditedNarrativeProvenance: string;
+  resultsNoSpecialistNarrative: string;
   resultsSpecialtyOverview: string;
   resultsProfessionalProfile: string;
+  resultsSourceReferences: string;
+  resultsNoSourceReferences: string;
+  resultsQProMetadataTitle: string;
+  resultsQProMetadataNote: string;
+  resultsQProMetadataReferences: string;
+  resultsCalculatedAnalysisTitle: string;
+  resultsCalculatedAnalysisNote: string;
   resultsInformationDisclaimer: string;
   resultsReferencesDisclaimer: string;
   fullRanking: string;
@@ -318,9 +329,20 @@ const en: UIStrings = {
   otherMatches: 'Your complete Top 10',
   otherMatchesDesc: 'Ranks 2–10 are shown in full below, with no additional click required.',
   resultsRankLabel: (rank: number) => `Rank ${rank}`,
+  resultsSpecialistNarrativeTitle: 'Specialist-supplied specialty narrative',
+  resultsNarrativeProvenance: 'The Romanian version reproduces the specialist-supplied text with only minor spelling, grammar, typographic, and diacritic corrections that do not change its meaning; the French and English versions are faithful translations.',
+  resultsEditedNarrativeProvenance: 'This published narrative differs from the bundled specialist source. It may have been edited in the dashboard or restored from another catalog revision.',
+  resultsNoSpecialistNarrative: 'No specialist-supplied narrative was available for this specialty.',
   resultsSpecialtyOverview: 'About the specialty',
-  resultsProfessionalProfile: 'Professional environment and useful qualities',
-  resultsInformationDisclaimer: 'These specialty portraits are orientation material, not psychological diagnoses or guarantees. Medical practice varies by country, institution, role, and individual career path.',
+  resultsProfessionalProfile: 'Full professional and compatibility perspective',
+  resultsSourceReferences: 'References supplied with the original specialist source',
+  resultsNoSourceReferences: 'No bibliography was supplied with this narrative.',
+  resultsQProMetadataTitle: 'Q-Pro descriptive metadata',
+  resultsQProMetadataNote: 'These structured labels are maintained by Q-Pro and are separate from the supplied narrative.',
+  resultsQProMetadataReferences: 'Q-Pro metadata references',
+  resultsCalculatedAnalysisTitle: 'Q-Pro calculated analysis',
+  resultsCalculatedAnalysisNote: 'These indices are calculated from the questionnaire and the active matching profile; they are not part of the specialist-supplied narrative.',
+  resultsInformationDisclaimer: 'The specialist-supplied narrative, Q-Pro metadata, and calculated indices are presented separately. They are orientation material, not psychological diagnoses or guarantees. Medical practice varies by country, institution, role, and individual career path.',
   resultsReferencesDisclaimer: 'References are shown for traceability and should be checked before academic or clinical use.',
   fullRanking: 'Full ranking',
   fullRankingDesc: (n: number) => `All ${n} specialties, grouped by field.`,
@@ -564,9 +586,20 @@ const ro: UIStrings = {
   otherMatches: 'Top 10 complet',
   otherMatchesDesc: 'Locurile 2–10 sunt afișate integral mai jos, fără să fie necesar un clic suplimentar.',
   resultsRankLabel: (rank: number) => `Locul ${rank}`,
+  resultsSpecialistNarrativeTitle: 'Prezentarea specialității furnizată de specialist',
+  resultsNarrativeProvenance: 'Versiunea în limba română reproduce textul furnizat de specialist, doar cu mici corecturi ortografice, gramaticale, tipografice și de diacritice care nu îi schimbă sensul; versiunile în franceză și engleză sunt traduceri fidele.',
+  resultsEditedNarrativeProvenance: 'Această prezentare publicată diferă de sursa specialistului inclusă în aplicație. Este posibil să fi fost modificată din dashboard sau restaurată dintr-o altă versiune a catalogului.',
+  resultsNoSpecialistNarrative: 'Pentru această specialitate nu a fost disponibilă o prezentare furnizată de specialist.',
   resultsSpecialtyOverview: 'Despre specialitate',
-  resultsProfessionalProfile: 'Mediul profesional și calitățile utile',
-  resultsInformationDisclaimer: 'Aceste portrete ale specialităților sunt materiale de orientare, nu diagnostice psihologice și nici garanții. Practica medicală variază în funcție de țară, instituție, rol și parcursul profesional individual.',
+  resultsProfessionalProfile: 'Perspectiva completă asupra mediului profesional și compatibilității',
+  resultsSourceReferences: 'Referințe furnizate cu sursa originală a specialistului',
+  resultsNoSourceReferences: 'Pentru această prezentare nu a fost furnizată nicio bibliografie.',
+  resultsQProMetadataTitle: 'Metadate descriptive Q-Pro',
+  resultsQProMetadataNote: 'Aceste etichete structurate sunt gestionate de Q-Pro și sunt separate de prezentarea furnizată.',
+  resultsQProMetadataReferences: 'Referințe pentru metadatele Q-Pro',
+  resultsCalculatedAnalysisTitle: 'Analiză calculată de Q-Pro',
+  resultsCalculatedAnalysisNote: 'Acești indici sunt calculați din chestionar și profilul activ de potrivire; ei nu fac parte din prezentarea furnizată de specialist.',
+  resultsInformationDisclaimer: 'Prezentarea furnizată de specialist, metadatele Q-Pro și indicii calculați sunt afișați separat. Acestea sunt materiale de orientare, nu diagnostice psihologice și nici garanții. Practica medicală variază în funcție de țară, instituție, rol și parcursul profesional individual.',
   resultsReferencesDisclaimer: 'Referințele sunt afișate pentru trasabilitate și trebuie verificate înainte de utilizarea academică sau clinică.',
   fullRanking: 'Clasament complet',
   fullRankingDesc: (n: number) => `Toate cele ${n} specialități, grupate pe domenii.`,
@@ -810,9 +843,20 @@ const fr: UIStrings = {
   otherMatches: 'Votre Top 10 complet',
   otherMatchesDesc: 'Les rangs 2 à 10 sont affichés intégralement ci-dessous, sans clic supplémentaire.',
   resultsRankLabel: (rank: number) => `Rang ${rank}`,
+  resultsSpecialistNarrativeTitle: 'Présentation de la spécialité fournie par le spécialiste',
+  resultsNarrativeProvenance: 'La version roumaine reproduit le texte fourni par le spécialiste, avec seulement de légères corrections orthographiques, grammaticales, typographiques et de diacritiques qui n’en changent pas le sens ; les versions française et anglaise en sont des traductions fidèles.',
+  resultsEditedNarrativeProvenance: 'Cette présentation publiée diffère de la source du spécialiste intégrée à l’application. Elle a peut-être été modifiée dans le dashboard ou restaurée depuis une autre révision du catalogue.',
+  resultsNoSpecialistNarrative: 'Aucune présentation fournie par un spécialiste n’était disponible pour cette spécialité.',
   resultsSpecialtyOverview: 'Présentation de la spécialité',
-  resultsProfessionalProfile: 'Environnement professionnel et qualités utiles',
-  resultsInformationDisclaimer: 'Ces portraits de spécialités sont des contenus d’orientation, et non des diagnostics psychologiques ou des garanties. La pratique médicale varie selon le pays, l’établissement, le poste et le parcours professionnel individuel.',
+  resultsProfessionalProfile: 'Perspective complète sur l’environnement professionnel et la compatibilité',
+  resultsSourceReferences: 'Références fournies avec la source originale du spécialiste',
+  resultsNoSourceReferences: 'Aucune bibliographie n’a été fournie avec cette présentation.',
+  resultsQProMetadataTitle: 'Métadonnées descriptives Q-Pro',
+  resultsQProMetadataNote: 'Ces libellés structurés sont maintenus par Q-Pro et sont distincts de la présentation fournie.',
+  resultsQProMetadataReferences: 'Références des métadonnées Q-Pro',
+  resultsCalculatedAnalysisTitle: 'Analyse calculée par Q-Pro',
+  resultsCalculatedAnalysisNote: 'Ces indices sont calculés à partir du questionnaire et du profil de matching actif ; ils ne font pas partie de la présentation fournie par le spécialiste.',
+  resultsInformationDisclaimer: 'La présentation fournie par le spécialiste, les métadonnées Q-Pro et les indices calculés sont affichés séparément. Il s’agit de contenus d’orientation, et non de diagnostics psychologiques ou de garanties. La pratique médicale varie selon le pays, l’établissement, le poste et le parcours professionnel individuel.',
   resultsReferencesDisclaimer: 'Les références sont affichées à des fins de traçabilité et doivent être vérifiées avant tout usage universitaire ou clinique.',
   fullRanking: 'Classement complet',
   fullRankingDesc: (n: number) => `Les ${n} spécialités, groupées par domaine.`,

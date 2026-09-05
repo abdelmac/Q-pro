@@ -1,6 +1,6 @@
 import { useLanguage } from '@/lib/LanguageContext';
 import { SPECIALTY_METADATA } from '@/data/specialtyMetadata';
-import { getSpecialtyNarrative } from '@/data/specialtyNarratives';
+import { getSpecialtyNarrative, hasSpecialistAuthoredNarrative } from '@/data/specialtyNarratives';
 import { translateSpecialtyName, translateCategory } from '@/data/i18n';
 import { useSpecialtyCatalog } from '@/lib/SpecialtyCatalogContext';
 import {
@@ -26,10 +26,18 @@ export default function SpecialtyDetail({ specialtyName, score, onBack }: Specia
   const meta = SPECIALTY_METADATA[specialtyName];
   const blurb = getDescription(specialtyName, lang) || specialty.blurb;
   const clinicalSummary = getClinicalSummary(specialtyName, lang);
-  const references = Array.from(new Set([
-    ...(meta?.references ?? []),
-    ...(getSpecialtyNarrative(specialtyName)?.sourceReferences ?? []),
-  ]));
+  const hasSuppliedNarrative = hasSpecialistAuthoredNarrative(specialtyName);
+  const suppliedNarrative = getSpecialtyNarrative(specialtyName);
+  const narrativeMatchesSource = Boolean(
+    hasSuppliedNarrative
+      && suppliedNarrative
+      && suppliedNarrative.overview[lang] === blurb
+      && suppliedNarrative.fitProfile[lang] === clinicalSummary,
+  );
+  const suppliedReferences = hasSuppliedNarrative
+    ? suppliedNarrative?.sourceReferences ?? []
+    : [];
+  const metadataReferences = meta?.references ?? [];
 
   return (
     <div className="min-h-screen">
@@ -53,20 +61,71 @@ export default function SpecialtyDetail({ specialtyName, score, onBack }: Specia
           </div>
         </div>
 
-        <p className="text-base text-ink-600 leading-relaxed mb-8">{blurb}</p>
-
-        {clinicalSummary && clinicalSummary !== blurb && (
-          <section className="mb-8 rounded-2xl border border-brand-100 bg-brand-50/60 p-5">
-            <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-brand-700">
-              {t.resultsProfessionalProfile}
+        <section className="mb-8 rounded-2xl border border-brand-100 bg-brand-50/40 p-5 sm:p-6">
+          <header className="mb-5 border-b border-brand-100 pb-4">
+            <h2 className="font-display text-lg font-semibold text-brand-900">
+              {t.resultsSpecialistNarrativeTitle}
             </h2>
-            <p className="text-sm leading-relaxed text-ink-700">{clinicalSummary}</p>
-          </section>
-        )}
+            <p className="mt-1.5 text-xs leading-relaxed text-brand-800">
+              {hasSuppliedNarrative
+                ? narrativeMatchesSource
+                  ? t.resultsNarrativeProvenance
+                  : t.resultsEditedNarrativeProvenance
+                : t.resultsNoSpecialistNarrative}
+            </p>
+          </header>
+
+          {hasSuppliedNarrative && (
+            <div className="space-y-5">
+              <section>
+                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-brand-700">
+                  {t.resultsSpecialtyOverview}
+                </h3>
+                <p className="whitespace-pre-line text-sm leading-relaxed text-ink-700">{blurb}</p>
+              </section>
+
+              {clinicalSummary && (
+                <section className="rounded-xl border border-brand-100 bg-white/70 p-4">
+                  <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-brand-700">
+                    {t.resultsProfessionalProfile}
+                  </h3>
+                  <p className="whitespace-pre-line text-sm leading-relaxed text-ink-700">{clinicalSummary}</p>
+                </section>
+              )}
+
+              <section>
+                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-brand-700">
+                  {t.resultsSourceReferences}
+                </h3>
+                {suppliedReferences.length > 0 ? (
+                  <>
+                    <ul className="space-y-1.5">
+                      {suppliedReferences.map((reference) => (
+                        <li key={reference} className="break-words text-sm leading-relaxed text-ink-600">
+                          {reference}
+                        </li>
+                      ))}
+                    </ul>
+                    <p className="mt-2 text-[11px] leading-relaxed text-ink-500">{t.resultsReferencesDisclaimer}</p>
+                  </>
+                ) : (
+                  <p className="text-sm leading-relaxed text-ink-500">{t.resultsNoSourceReferences}</p>
+                )}
+              </section>
+            </div>
+          )}
+        </section>
 
         {meta && (
-          <>
-            <div className="grid grid-cols-2 gap-4 mb-8">
+          <section className="rounded-2xl border border-ink-100 bg-white p-5 shadow-soft sm:p-6">
+            <header className="mb-5 border-b border-ink-100 pb-4">
+              <h2 className="font-display text-lg font-semibold text-ink-900">
+                {t.resultsQProMetadataTitle}
+              </h2>
+              <p className="mt-1.5 text-xs leading-relaxed text-ink-500">{t.resultsQProMetadataNote}</p>
+            </header>
+
+            <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
               <InfoCard label={t.explorerWorkStyle} value={translateWorkStyle(meta.workStyle, lang)} />
               <InfoCard label={t.explorerPatientContact} value={translatePatientContact(meta.patientContact, lang)} />
               <InfoCard label={t.explorerCareType} value={translateCareType(meta.careType, lang)} />
@@ -84,16 +143,22 @@ export default function SpecialtyDetail({ specialtyName, score, onBack }: Specia
               </div>
             </div>
 
-            <div>
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-400 mb-3">{t.explorerReferences}</h3>
-              <ul className="space-y-1.5">
-                {references.map((ref) => (
-                  <li key={ref} className="break-words text-sm text-ink-600">{ref}</li>
-                ))}
-              </ul>
-              <p className="mt-2 text-[11px] leading-relaxed text-ink-400">{t.resultsReferencesDisclaimer}</p>
-            </div>
-          </>
+            {metadataReferences.length > 0 && (
+              <div>
+                <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-ink-400">
+                  {t.resultsQProMetadataReferences}
+                </h3>
+                <ul className="space-y-1.5">
+                  {metadataReferences.map((reference) => (
+                    <li key={reference} className="break-words text-sm leading-relaxed text-ink-600">
+                      {reference}
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-2 text-[11px] leading-relaxed text-ink-400">{t.resultsReferencesDisclaimer}</p>
+              </div>
+            )}
+          </section>
         )}
       </div>
     </div>

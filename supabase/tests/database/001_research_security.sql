@@ -2,7 +2,7 @@ BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
 
-SELECT extensions.plan(111);
+SELECT extensions.plan(112);
 
 SELECT extensions.has_schema('private', 'private schema exists');
 SELECT extensions.has_table('public', 'student_responses', 'student table exists');
@@ -115,7 +115,7 @@ SELECT extensions.is(
     JOIN private.specialty_catalog_entries AS parent_entry
       ON parent_entry.version_id = narrative_version.parent_version_id
      AND parent_entry.name = narrative_entry.name
-    WHERE narrative_version.note = 'Reviewed Romanian, French, and English specialty narratives supplied for the complete Top-10 results view'
+    WHERE narrative_version.note = 'Romanian specialty narratives supplied by a medical specialist, with faithful French and English translations'
   ),
   58::bigint,
   'the multilingual publication has a complete parent snapshot for comparison'
@@ -129,7 +129,7 @@ SELECT extensions.ok(
     JOIN private.specialty_catalog_entries AS parent_entry
       ON parent_entry.version_id = narrative_version.parent_version_id
      AND parent_entry.name = narrative_entry.name
-    WHERE narrative_version.note = 'Reviewed Romanian, French, and English specialty narratives supplied for the complete Top-10 results view'
+    WHERE narrative_version.note = 'Romanian specialty narratives supplied by a medical specialist, with faithful French and English translations'
       AND narrative_entry.profile IS DISTINCT FROM parent_entry.profile
   ),
   'the multilingual editorial publication does not modify matching profiles'
@@ -138,7 +138,7 @@ SELECT extensions.ok(
   EXISTS (
     SELECT 1
     FROM private.specialty_catalog_versions AS narrative_version
-    WHERE narrative_version.note = 'Reviewed Romanian, French, and English specialty narratives supplied for the complete Top-10 results view'
+    WHERE narrative_version.note = 'Romanian specialty narratives supplied by a medical specialist, with faithful French and English translations'
       AND narrative_version.status IN ('active', 'archived')
       AND narrative_version.checksum = private.specialty_catalog_content_hash(narrative_version.id)
   ),
@@ -150,10 +150,30 @@ SELECT extensions.ok(
     FROM private.specialty_catalog_versions AS narrative_version
     JOIN private.specialty_catalog_versions AS parent_version
       ON parent_version.id = narrative_version.parent_version_id
-    WHERE narrative_version.note = 'Reviewed Romanian, French, and English specialty narratives supplied for the complete Top-10 results view'
+    WHERE narrative_version.note = 'Romanian specialty narratives supplied by a medical specialist, with faithful French and English translations'
       AND parent_version.status = 'archived'
   ),
   'the multilingual publication preserves its parent as an archived snapshot'
+);
+SELECT extensions.ok(
+  EXISTS (
+    SELECT 1
+    FROM private.specialty_catalog_versions AS narrative_version
+    JOIN private.specialty_catalog_audit AS audit
+      ON audit.version_id = narrative_version.id
+    WHERE narrative_version.note = 'Romanian specialty narratives supplied by a medical specialist, with faithful French and English translations'
+      AND narrative_version.status IN ('active', 'archived')
+      AND audit.action = 'published'
+      AND audit.after_value ->> 'specialist_source_sha256' = '1E4C334306D56EE90CF007D57756860CC7690E301ABC83D768772F96EAB4E9E7'
+      AND audit.after_value ->> 'localized_payload_sha256' = '5BAB0FAEEF926B14931708368C056184A044C17630AF1C8F76FD563C14FA0854'
+      AND (audit.after_value ->> 'specialist_source_numbered_sections')::integer = 58
+      AND (audit.after_value ->> 'specialist_source_unique_specialties')::integer = 57
+      AND (audit.after_value ->> 'specialist_authored_specialties')::integer = 57
+      AND audit.after_value -> 'application_placeholder_specialties' = '["Pathology"]'::jsonb
+      AND audit.after_value -> 'merged_source_sections' = '{"Pulmonology":[6,55]}'::jsonb
+      AND audit.after_value ->> 'content_hash' = narrative_version.checksum
+  ),
+  'the specialist-source audit distinguishes 57 authored specialties from the Pathology placeholder'
 );
 SELECT extensions.is(
   (SELECT count(*) FROM private.trait_catalog),
