@@ -1,7 +1,7 @@
 import { useLanguage } from '@/lib/LanguageContext';
 import { translateQuestion, translateSection } from '@/data/i18n';
 import { type RatingSection } from '@/data/questions';
-import RatingSlider from './RatingSlider';
+import RatingScale from './RatingScale';
 
 interface RatingStepProps {
   section: RatingSection;
@@ -28,7 +28,7 @@ export default function RatingStep({ section, ratings, onChange }: RatingStepPro
         {section.questions.map((q, idx) => (
           <div
             key={q.id}
-            className={`p-4 sm:p-5 rounded-2xl border transition-all duration-200 ${
+            className={`p-3 sm:p-5 rounded-2xl border transition-all duration-200 ${
               ratings[q.id] !== undefined
                 ? 'border-brand-200 bg-brand-50/40'
                 : 'border-ink-100 bg-white hover:border-ink-200'
@@ -42,11 +42,12 @@ export default function RatingStep({ section, ratings, onChange }: RatingStepPro
                 {translateQuestion(q.id, lang)}
               </p>
             </div>
-            <div className="pl-9">
-              <RatingSlider
+            <div className="sm:pl-9">
+              <RatingScale
                 value={ratings[q.id] ?? null}
                 onChange={(v) => onChange(q.id, v)}
                 questionId={q.id}
+                questionText={translateQuestion(q.id, lang)}
                 labels={{ low: t.sliderRarely, high: t.sliderStrongly }}
               />
             </div>

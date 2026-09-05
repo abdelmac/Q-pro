@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import RatingScale from '../src/components/RatingScale';
 import { ALL_QUESTION_IDS } from '../src/data/questions';
 import { SPECIALTIES } from '../src/data/specialties';
 import { SPECIALTY_METADATA } from '../src/data/specialtyMetadata';
@@ -40,6 +41,7 @@ import {
   SCORING_ENGINE_REVISION,
   SELECTED_VALUE_ONLY_SCORE,
 } from '../src/lib/scoring';
+import { RATING_VALUES } from '../src/lib/ratingScale';
 
 function parseCsv(csv: string): string[][] {
   const input = csv.charCodeAt(0) === 0xfeff ? csv.slice(1) : csv;
@@ -74,7 +76,74 @@ function parseCsv(csv: string): string[][] {
   return rows;
 }
 
+function elementPropsByType(node: unknown, type: string): Array<Record<string, unknown>> {
+  const matches: Array<Record<string, unknown>> = [];
+  const visit = (candidate: unknown) => {
+    if (Array.isArray(candidate)) {
+      candidate.forEach(visit);
+      return;
+    }
+    if (!candidate || typeof candidate !== 'object') return;
+
+    const element = candidate as { type?: unknown; props?: Record<string, unknown> };
+    if (!element.props) return;
+    if (element.type === type) matches.push(element.props);
+    visit(element.props.children);
+  };
+  visit(node);
+  return matches;
+}
+
 const ratings = Object.fromEntries(ALL_QUESTION_IDS.map((id, index) => [id, (index % 10) + 1]));
+assert.equal(ALL_QUESTION_IDS.length, 81, 'The questionnaire must keep all 81 rating questions');
+assert.deepEqual(
+  RATING_VALUES,
+  [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+  'The mobile rating control must preserve the exact integer scale from 1 to 10',
+);
+const emittedRatings: number[] = [];
+const unansweredRatingScale = RatingScale({
+  value: null,
+  onChange: (value) => emittedRatings.push(value),
+  questionId: 'T1',
+  questionText: 'Translated question',
+  labels: { low: 'Low', high: 'High' },
+});
+const unansweredRatingInputs = elementPropsByType(unansweredRatingScale, 'input');
+assert.equal(unansweredRatingScale.type, 'fieldset');
+assert.equal(unansweredRatingInputs.length, 10, 'The rating scale must render ten choices');
+assert.deepEqual(unansweredRatingInputs.map(({ value }) => value), RATING_VALUES);
+assert.ok(unansweredRatingInputs.every(({ type }) => type === 'radio'), 'Ratings must use discrete radio choices');
+assert.ok(unansweredRatingInputs.every(({ checked }) => checked === false), 'No rating may be preselected');
+assert.equal(new Set(unansweredRatingInputs.map(({ name }) => name)).size, 1, 'Each question must be one radio group');
+for (const index of [0, 4, 9]) {
+  (unansweredRatingInputs[index].onChange as () => void)();
+}
+assert.deepEqual(emittedRatings, [1, 5, 10], 'Selections must emit the unchanged integer');
+const selectedRatingInputs = elementPropsByType(RatingScale({
+  value: 7,
+  onChange: () => undefined,
+  questionId: 'T1',
+  questionText: 'Translated question',
+  labels: { low: 'Low', high: 'High' },
+}), 'input');
+assert.deepEqual(
+  selectedRatingInputs.filter(({ checked }) => checked).map(({ value }) => value),
+  [7],
+  'Exactly one selected value must be reflected by the radio group',
+);
+const ratingScaleClasses = elementPropsByType(unansweredRatingScale, 'div')
+  .map(({ className }) => String(className ?? ''));
+assert.ok(
+  ratingScaleClasses.some((className) => className.includes('grid-cols-5') && className.includes('sm:grid-cols-10')),
+  'Ratings must use a 5x2 mobile grid and a 10x1 wide-screen grid',
+);
+assert.equal(
+  elementPropsByType(unansweredRatingScale, 'span')
+    .filter(({ className }) => String(className ?? '').includes('min-h-11')).length,
+  10,
+  'All ten rating choices must retain a 44px minimum height',
+);
 assert.equal(RESULTS_TOP_COUNT, 10, 'The results page must expose a complete Top 10');
 assert.equal(SPECIALIST_SOURCE_DOCUMENT.numberedSections, 58);
 assert.equal(SPECIALIST_SOURCE_DOCUMENT.uniqueSpecialties, 57);
@@ -530,6 +599,7 @@ console.log(JSON.stringify({
   specialtyMetadataMatchesProfiles: true,
   multilingualSpecialtyNarratives: true,
   navigationScrollPolicy: true,
+  mobileRatingScale: true,
   noTargetLeakage: true,
   tieAwareRanks: true,
   explicitDenominators: true,
