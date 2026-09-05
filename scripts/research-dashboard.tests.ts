@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import RatingScale from '../src/components/RatingScale';
+import RatingScale, { SmileyThumb } from '../src/components/RatingScale';
 import { ALL_QUESTION_IDS } from '../src/data/questions';
 import { SPECIALTIES } from '../src/data/specialties';
 import { SPECIALTY_METADATA } from '../src/data/specialtyMetadata';
@@ -76,7 +76,7 @@ function parseCsv(csv: string): string[][] {
   return rows;
 }
 
-function elementPropsByType(node: unknown, type: string): Array<Record<string, unknown>> {
+function elementPropsByType(node: unknown, type: unknown): Array<Record<string, unknown>> {
   const matches: Array<Record<string, unknown>> = [];
   const visit = (candidate: unknown) => {
     if (Array.isArray(candidate)) {
@@ -101,32 +101,36 @@ assert.deepEqual(
   [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
   'The mobile rating control must preserve the exact integer scale from 1 to 10',
 );
-const emittedRatings: number[] = [];
-const unansweredRatingScale = RatingScale({
-  value: null,
-  onChange: (value) => emittedRatings.push(value),
+const renderRatingScaleForTest = (
+  value: number | null,
+  onChange: (rating: number) => void = () => undefined,
+) => RatingScale({
+  value,
+  onChange,
   questionId: 'T1',
   questionText: 'Translated question',
   labels: { low: 'Low', high: 'High' },
 });
+const emittedRatings: number[] = [];
+const unansweredRatingScale = renderRatingScaleForTest(null, (value) => emittedRatings.push(value));
 const unansweredRatingInputs = elementPropsByType(unansweredRatingScale, 'input');
 assert.equal(unansweredRatingScale.type, 'fieldset');
+assert.equal(unansweredRatingScale.props['aria-describedby'], 'T1-rating-scale-help');
+assert.equal(elementPropsByType(unansweredRatingScale, 'legend')[0]?.children, 'Translated question');
 assert.equal(unansweredRatingInputs.length, 10, 'The rating scale must render ten choices');
 assert.deepEqual(unansweredRatingInputs.map(({ value }) => value), RATING_VALUES);
 assert.ok(unansweredRatingInputs.every(({ type }) => type === 'radio'), 'Ratings must use discrete radio choices');
 assert.ok(unansweredRatingInputs.every(({ checked }) => checked === false), 'No rating may be preselected');
 assert.equal(new Set(unansweredRatingInputs.map(({ name }) => name)).size, 1, 'Each question must be one radio group');
+assert.equal(unansweredRatingInputs[0]['aria-label'], '1: Low');
+assert.equal(unansweredRatingInputs[9]['aria-label'], '10: High');
+assert.equal(elementPropsByType(unansweredRatingScale, 'svg').length, 0, 'No smiley thumb may imply a default answer');
 for (const index of [0, 4, 9]) {
   (unansweredRatingInputs[index].onChange as () => void)();
 }
 assert.deepEqual(emittedRatings, [1, 5, 10], 'Selections must emit the unchanged integer');
-const selectedRatingInputs = elementPropsByType(RatingScale({
-  value: 7,
-  onChange: () => undefined,
-  questionId: 'T1',
-  questionText: 'Translated question',
-  labels: { low: 'Low', high: 'High' },
-}), 'input');
+const selectedRatingScale = renderRatingScaleForTest(7);
+const selectedRatingInputs = elementPropsByType(selectedRatingScale, 'input');
 assert.deepEqual(
   selectedRatingInputs.filter(({ checked }) => checked).map(({ value }) => value),
   [7],
@@ -139,11 +143,32 @@ assert.ok(
   'Ratings must use a 5x2 mobile grid and a 10x1 wide-screen grid',
 );
 assert.equal(
-  elementPropsByType(unansweredRatingScale, 'span')
-    .filter(({ className }) => String(className ?? '').includes('min-h-11')).length,
+  elementPropsByType(unansweredRatingScale, 'label')
+    .filter(({ className }) => String(className ?? '').includes('min-h-12')).length,
   10,
-  'All ten rating choices must retain a 44px minimum height',
+  'All ten rating choices must retain a 48px minimum touch height',
 );
+const smileyThumbs = elementPropsByType(selectedRatingScale, SmileyThumb);
+assert.equal(smileyThumbs.length, 1, 'The selected value must receive one smiley thumb');
+const smileySvg = SmileyThumb();
+assert.equal(smileySvg.type, 'svg');
+assert.equal(smileySvg.props['aria-hidden'], 'true');
+assert.equal(smileySvg.props.focusable, 'false');
+assert.equal(
+  elementPropsByType(selectedRatingScale, 'span')
+    .find(({ className }) => String(className ?? '').includes('min-w-5'))?.children,
+  7,
+  'The smiley thumb must keep the selected integer visible',
+);
+const trackWidths = (value: number | null) => elementPropsByType(renderRatingScaleForTest(value), 'span')
+  .filter(({ className }) => String(className ?? '').includes('transition-[width]'))
+  .map(({ style }) => (style as { width?: string } | undefined)?.width);
+assert.deepEqual(trackWidths(null), ['0%', '0%', '0%'], 'An unanswered scale must have no active rail');
+assert.equal(trackWidths(5)[0], '100%', 'Value 5 must complete the first mobile rail');
+assert.equal(trackWidths(5)[2], '0%', 'Value 5 must not activate the second mobile rail');
+assert.equal(trackWidths(6)[0], '100%', 'Value 6 must retain the completed first mobile rail');
+assert.equal(trackWidths(6)[2], '0%', 'Value 6 must begin at the start of the second mobile rail');
+assert.deepEqual(trackWidths(10), ['100%', '100%', '100%'], 'Value 10 must complete every rail');
 assert.equal(RESULTS_TOP_COUNT, 10, 'The results page must expose a complete Top 10');
 assert.equal(SPECIALIST_SOURCE_DOCUMENT.numberedSections, 58);
 assert.equal(SPECIALIST_SOURCE_DOCUMENT.uniqueSpecialties, 57);
