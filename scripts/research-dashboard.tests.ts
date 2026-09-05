@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import RatingScale from '../src/components/RatingScale';
+import SpecialtyBibliography from '../src/components/SpecialtyBibliography';
 import { ALL_QUESTION_IDS } from '../src/data/questions';
 import { SPECIALTIES } from '../src/data/specialties';
 import { SPECIALTY_METADATA } from '../src/data/specialtyMetadata';
@@ -266,6 +267,50 @@ assert.ok(
   'The progress rail must place value 5 at its exact tenth-scale position',
 );
 assert.equal(trackWidth(10), '100%', 'Value 10 must complete the rail');
+
+assert.equal(
+  SpecialtyBibliography({ references: [], title: 'Bibliography' }),
+  null,
+  'A specialty without supplied references must not render an empty bibliography section',
+);
+const singleReference = 'Specialist reference — preserved verbatim.';
+const singleBibliography = SpecialtyBibliography({
+  references: [singleReference],
+  title: 'Bibliography',
+});
+assert.equal(elementPropsByType(singleBibliography, 'h3').length, 1);
+assert.equal(
+  elementPropsByType(singleBibliography, 'h3')[0]?.children,
+  'Bibliography',
+  'The standalone bibliography must use its supplied h3 title',
+);
+assert.deepEqual(
+  elementPropsByType(singleBibliography, 'li').map(({ children }) => children),
+  [singleReference],
+  'A single bibliography entry must be rendered verbatim',
+);
+const multipleReferences = [
+  'First specialist reference, including punctuation.',
+  'Second specialist reference — kept in source order.',
+] as const;
+const nestedBibliography = SpecialtyBibliography({
+  references: multipleReferences,
+  title: 'Bibliografie',
+  headingLevel: 'h5',
+});
+assert.equal(elementPropsByType(nestedBibliography, 'h3').length, 0);
+assert.equal(elementPropsByType(nestedBibliography, 'h5').length, 1);
+assert.equal(
+  elementPropsByType(nestedBibliography, 'h5')[0]?.children,
+  'Bibliografie',
+  'A bibliography nested in a result card must use its supplied h5 title',
+);
+assert.deepEqual(
+  elementPropsByType(nestedBibliography, 'li').map(({ children }) => children),
+  multipleReferences,
+  'Multiple bibliography entries must remain verbatim and in their supplied order',
+);
+
 assert.equal(RESULTS_TOP_COUNT, 10, 'The results page must expose a complete Top 10');
 assert.equal(SPECIALIST_SOURCE_DOCUMENT.numberedSections, 58);
 assert.equal(SPECIALIST_SOURCE_DOCUMENT.uniqueSpecialties, 57);
@@ -281,6 +326,18 @@ assert.deepEqual(SPECIALIST_SOURCE_DOCUMENT.mergedSections.Pulmonology, [6, 55])
 assert.deepEqual(SPECIALIST_SOURCE_DOCUMENT.missingSpecialties, ['Pathology']);
 assert.equal(hasSpecialistAuthoredNarrative('Pathology'), false);
 assert.equal(hasSpecialistAuthoredNarrative('Pulmonology'), true);
+assert.deepEqual(
+  SPECIALTY_NARRATIVES.Pathology.sourceReferences,
+  [],
+  'Pathology must continue to render no bibliography when no specialist source exists',
+);
+assert.deepEqual(
+  SPECIALTY_NARRATIVES['Otorhinolaryngology (ENT)'].sourceReferences,
+  [
+    'Loh C, et al. Personality traits of otorhinolaryngologists: associations with career satisfaction. Eur Arch Otorhinolaryngol. 2022;279(4):1807–1815.',
+  ],
+  'The exact specialist-supplied Otorhinolaryngology bibliography must be retained',
+);
 assert.equal(
   Object.values(SPECIALTY_NARRATIVES).reduce(
     (total, narrative) => total + narrative.sourceReferences.length,

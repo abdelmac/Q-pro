@@ -3,6 +3,7 @@ import { getSpecialtyNarrative, hasSpecialistAuthoredNarrative } from '@/data/sp
 import { translateSpecialtyName, translateCategory } from '@/data/i18n';
 import { useSpecialtyCatalog } from '@/lib/SpecialtyCatalogContext';
 import { ArrowLeft } from 'lucide-react';
+import SpecialtyBibliography from './SpecialtyBibliography';
 
 interface SpecialtyDetailProps {
   specialtyName: string;
@@ -79,6 +80,11 @@ export default function SpecialtyDetail({ specialtyName, score, onBack }: Specia
                   <p className="whitespace-pre-line text-sm leading-relaxed text-ink-700">{clinicalSummary}</p>
                 </section>
               )}
+
+              <SpecialtyBibliography
+                references={suppliedNarrative?.sourceReferences ?? []}
+                title={t.specialtyBibliographyTitle}
+              />
 
             </div>
           )}

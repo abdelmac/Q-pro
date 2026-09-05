@@ -68,6 +68,7 @@ export interface UIStrings {
   resultsNoSpecialistNarrative: string;
   resultsSpecialtyOverview: string;
   resultsProfessionalProfile: string;
+  specialtyBibliographyTitle: string;
   resultsInformationDisclaimer: string;
   fullRanking: string;
   fullRankingDesc: (n: number) => string;
@@ -327,6 +328,7 @@ const en: UIStrings = {
   resultsNoSpecialistNarrative: 'No specialist-supplied narrative was available for this specialty.',
   resultsSpecialtyOverview: 'About the specialty',
   resultsProfessionalProfile: 'Full professional and compatibility perspective',
+  specialtyBibliographyTitle: 'Bibliography',
   resultsInformationDisclaimer: 'The specialist-supplied narratives and ranking results are orientation material, not psychological diagnoses or guarantees. Medical practice varies by country, institution, role, and individual career path.',
   fullRanking: 'Full ranking',
   fullRankingDesc: (n: number) => `All ${n} specialties, grouped by field.`,
@@ -576,6 +578,7 @@ const ro: UIStrings = {
   resultsNoSpecialistNarrative: 'Pentru această specialitate nu a fost disponibilă o prezentare furnizată de specialist.',
   resultsSpecialtyOverview: 'Despre specialitate',
   resultsProfessionalProfile: 'Perspectiva completă asupra mediului profesional și compatibilității',
+  specialtyBibliographyTitle: 'Bibliografie',
   resultsInformationDisclaimer: 'Prezentările furnizate de specialiști și rezultatele clasamentului sunt materiale de orientare, nu diagnostice psihologice și nici garanții. Practica medicală variază în funcție de țară, instituție, rol și parcursul profesional individual.',
   fullRanking: 'Clasament complet',
   fullRankingDesc: (n: number) => `Toate cele ${n} specialități, grupate pe domenii.`,
@@ -825,6 +828,7 @@ const fr: UIStrings = {
   resultsNoSpecialistNarrative: 'Aucune présentation fournie par un spécialiste n’était disponible pour cette spécialité.',
   resultsSpecialtyOverview: 'Présentation de la spécialité',
   resultsProfessionalProfile: 'Perspective complète sur l’environnement professionnel et la compatibilité',
+  specialtyBibliographyTitle: 'Bibliographie',
   resultsInformationDisclaimer: 'Les présentations fournies par les spécialistes et les résultats du classement sont des contenus d’orientation, et non des diagnostics psychologiques ou des garanties. La pratique médicale varie selon le pays, l’établissement, le poste et le parcours professionnel individuel.',
   fullRanking: 'Classement complet',
   fullRankingDesc: (n: number) => `Les ${n} spécialités, groupées par domaine.`,

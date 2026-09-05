@@ -14,6 +14,7 @@ import { useLanguage } from '@/lib/LanguageContext';
 import { useSpecialtyCatalog } from '@/lib/SpecialtyCatalogContext';
 import { RESULTS_TOP_COUNT } from '@/lib/resultsPresentation';
 import LanguageSwitcher from './LanguageSwitcher';
+import SpecialtyBibliography from './SpecialtyBibliography';
 import {
   Stethoscope, Trophy, RotateCcw, Heart,
   FlaskConical, GitCompare, Compass, BookOpen, X,
@@ -105,6 +106,12 @@ function SpecialtyFacts({
                 <p className="whitespace-pre-line text-sm leading-relaxed text-ink-700">{clinicalSummary}</p>
               </section>
             )}
+
+            <SpecialtyBibliography
+              references={suppliedNarrative?.sourceReferences ?? []}
+              title={t.specialtyBibliographyTitle}
+              headingLevel={nested ? 'h5' : 'h3'}
+            />
 
           </div>
         )}
