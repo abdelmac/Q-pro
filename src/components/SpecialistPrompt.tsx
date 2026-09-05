@@ -9,6 +9,10 @@ import {
 } from '@/lib/supabase';
 import { Check, Search, Loader2, AlertCircle, PartyPopper, Pencil } from 'lucide-react';
 import { useSpecialtyCatalog } from '@/lib/SpecialtyCatalogContext';
+import {
+  getSpecialistPromptNavigationScrollKey,
+  useScrollToPageTop,
+} from '@/lib/scrollToTop';
 
 interface SpecialistPromptProps {
   initialSpecialty?: string | null;
@@ -40,6 +44,7 @@ export default function SpecialistPrompt({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  useScrollToPageTop(getSpecialistPromptNavigationScrollKey(success));
 
   const hasRequiredText = [
     currentSpecialtyView,

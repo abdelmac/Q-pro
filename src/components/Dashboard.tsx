@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { translateSpecialtyName } from '@/data/i18n';
 import { useLanguage } from '@/lib/LanguageContext';
+import { getDashboardNavigationScrollKey, useScrollToPageTop } from '@/lib/scrollToTop';
 import { DATA_VERSIONS, formatSupabaseError, getSupabaseConfigurationError, supabase } from '@/lib/supabase';
 import type { Database } from '@/lib/database.types';
 import {
@@ -175,6 +176,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [page, setPage] = useState(0);
+  useScrollToPageTop(getDashboardNavigationScrollKey(accessState, view));
   const [activeTotal, setActiveTotal] = useState(0);
   const [counts, setCounts] = useState<DashboardCounts>(EMPTY_COUNTS);
   const [loading, setLoading] = useState(false);

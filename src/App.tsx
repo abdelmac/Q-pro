@@ -10,6 +10,7 @@ import {
 import { DEFAULT_PRIORITY_WEIGHTS } from '@/data/dimensions';
 import { LanguageProvider, useLanguage } from '@/lib/LanguageContext';
 import { SpecialtyCatalogProvider, useSpecialtyCatalog } from '@/lib/SpecialtyCatalogContext';
+import { getAppNavigationScrollKey, useScrollToPageTop } from '@/lib/scrollToTop';
 import Intro from '@/components/Intro';
 import ProgressBar from '@/components/ProgressBar';
 import SpecialtyStep from '@/components/SpecialtyStep';
@@ -158,6 +159,10 @@ function AppContent() {
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [handleBeforeUnload]);
+
+  // App navigation is state-based, so the browser otherwise preserves the
+  // previous document offset when a new screen or questionnaire step renders.
+  useScrollToPageTop(getAppNavigationScrollKey(phase, stepIndex, explorerSpecialty));
 
   if (phase === 'intro') {
     return (

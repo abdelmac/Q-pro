@@ -24,6 +24,13 @@ import {
 import { DASHBOARD_ANALYSIS_VERSION, DATA_VERSIONS } from '../src/lib/researchVersions';
 import { RESULTS_TOP_COUNT } from '../src/lib/resultsPresentation';
 import {
+  getAppNavigationScrollKey,
+  getDashboardNavigationScrollKey,
+  getSpecialistPromptNavigationScrollKey,
+  scrollToPageTop,
+  type ScrollViewport,
+} from '../src/lib/scrollToTop';
+import {
   calculateTraits,
   rankSpecialties,
   SCORING_ENGINE_REVISION,
@@ -65,6 +72,42 @@ function parseCsv(csv: string): string[][] {
 
 const ratings = Object.fromEntries(ALL_QUESTION_IDS.map((id, index) => [id, (index % 10) + 1]));
 assert.equal(RESULTS_TOP_COUNT, 10, 'The results page must expose a complete Top 10');
+let requestedScroll: ScrollToOptions | undefined;
+scrollToPageTop({
+  scrollTo(options) {
+    requestedScroll = options;
+  },
+} satisfies ScrollViewport);
+assert.deepEqual(
+  requestedScroll,
+  { top: 0, left: 0, behavior: 'auto' },
+  'Every navigation transition must reset the viewport to the document origin',
+);
+assert.notEqual(
+  getAppNavigationScrollKey('quiz', 3, null),
+  getAppNavigationScrollKey('quiz', 4, null),
+  'Moving between questionnaire steps must create a new scroll-reset key',
+);
+assert.equal(
+  getAppNavigationScrollKey('results', 3, 'Cardiology'),
+  getAppNavigationScrollKey('results', 4, 'Pathology'),
+  'Non-navigation state must not reset scroll on a stable root screen',
+);
+assert.notEqual(
+  getAppNavigationScrollKey('detail', 0, 'Cardiology'),
+  getAppNavigationScrollKey('detail', 0, 'Pathology'),
+  'Opening another specialty detail must create a new scroll-reset key',
+);
+assert.notEqual(
+  getDashboardNavigationScrollKey('authorized', 'specialists'),
+  getDashboardNavigationScrollKey('authorized', 'configuration'),
+  'Changing dashboard screens must create a new scroll-reset key',
+);
+assert.notEqual(
+  getSpecialistPromptNavigationScrollKey(false),
+  getSpecialistPromptNavigationScrollKey(true),
+  'The specialist thank-you screen must create a new scroll-reset key',
+);
 const maximumTraits = calculateTraits(
   Object.fromEntries(ALL_QUESTION_IDS.map((id) => [id, 10])),
   [],
@@ -448,6 +491,7 @@ console.log(JSON.stringify({
   unavailableDimensionsAreNull: true,
   specialtyMetadataMatchesProfiles: true,
   multilingualSpecialtyNarratives: true,
+  navigationScrollPolicy: true,
   noTargetLeakage: true,
   tieAwareRanks: true,
   explicitDenominators: true,
