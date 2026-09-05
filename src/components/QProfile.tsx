@@ -71,7 +71,7 @@ export default function QProfile({ traits, onContinue }: QProfileProps) {
       <div className="flex justify-center">
         <button
           onClick={onContinue}
-          className="group inline-flex items-center gap-2.5 px-7 py-3.5 rounded-full bg-ink-900 text-white font-semibold text-sm shadow-lift hover:bg-ink-800 transition-all hover:scale-[1.03] active:scale-[0.98]"
+          className="group inline-flex items-center gap-2.5 px-7 py-3.5 rounded-full bg-brand-800 text-white font-semibold text-sm shadow-lift hover:bg-brand-900 transition-all hover:scale-[1.03] active:scale-[0.98]"
         >
           {t.qProfileContinue}
           <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />

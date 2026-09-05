@@ -62,7 +62,7 @@ export default function StudentPrompt({ preferredSpecialty, ratings, selectedVal
 
       {error && <div className="mt-5 p-3.5 rounded-xl bg-red-50 border border-red-200 flex items-center gap-2.5 text-sm text-red-700"><AlertCircle className="w-4 h-4 shrink-0" />{error}</div>}
 
-      <button onClick={handleSubmit} disabled={submitting} className="mt-8 w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full bg-ink-900 text-white font-semibold text-sm shadow-lift hover:bg-ink-800 transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+      <button onClick={handleSubmit} disabled={submitting} className="mt-8 w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full bg-brand-800 text-white font-semibold text-sm shadow-lift hover:bg-brand-900 transition-all disabled:opacity-40 disabled:cursor-not-allowed">
         {submitting ? <><Loader2 className="w-4 h-4 animate-spin" />{t.studentSaving}</> : <>{t.studentContinue}<ArrowRight className="w-4 h-4" /></>}
       </button>
       <button onClick={onDone} disabled={submitting} className="w-full mt-3 py-3 text-sm font-medium text-ink-500 hover:text-ink-900 transition-colors">{t.studentSkip}</button>

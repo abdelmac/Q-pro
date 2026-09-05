@@ -51,7 +51,7 @@ export default function SpecialtyComparison({ studentTraits, onBack }: Specialty
         {selected.length < 3 && (
           <button
             onClick={() => setShowPicker(!showPicker)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-ink-900 text-white text-sm font-semibold hover:bg-ink-800 transition-all mb-4"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-brand-800 text-white text-sm font-semibold hover:bg-brand-900 transition-all mb-4"
           >
             <Plus className="w-4 h-4" />
             {t.comparisonAdd}

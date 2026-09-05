@@ -183,7 +183,7 @@ function AppContent() {
 
   if (phase === 'qprofile') {
     return (
-      <div className="min-h-screen bg-ink-50">
+      <div className="min-h-screen bg-accent-50">
         <header className="px-6 py-5 sm:px-10 sm:py-7 flex items-center justify-between border-b border-ink-100 bg-white/80 backdrop-blur sticky top-0 z-10">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center text-white shadow-soft">
@@ -257,7 +257,7 @@ function AppContent() {
 
   if (phase === 'dashboard') {
     return (
-      <Suspense fallback={<main className="min-h-screen bg-ink-50 flex items-center justify-center text-sm text-ink-500">{lang === 'fr' ? 'Chargement du dashboard…' : 'Loading dashboard…'}</main>}>
+      <Suspense fallback={<main className="min-h-screen bg-accent-50 flex items-center justify-center text-sm text-ink-500">{lang === 'fr' ? 'Chargement du dashboard…' : 'Loading dashboard…'}</main>}>
         <Dashboard onBack={() => setPhase('intro')} />
       </Suspense>
     );
@@ -306,7 +306,7 @@ function AppContent() {
   const progressTotal = quizSteps.length;
 
   return (
-    <div className="min-h-screen flex flex-col bg-ink-50">
+    <div className="min-h-screen flex flex-col bg-accent-50">
       <header className="px-6 py-4 sm:px-10 sm:py-5 border-b border-ink-100 bg-white/80 backdrop-blur sticky top-0 z-10">
         <div className="max-w-3xl mx-auto">
           <div className="flex items-center justify-between mb-4">
@@ -389,7 +389,7 @@ function AppContent() {
           <button
             onClick={handleNext}
             disabled={!canProceed}
-            className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-ink-900 text-white font-semibold text-sm shadow-lift hover:bg-ink-800 transition-all hover:scale-[1.03] active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
+            className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-brand-800 text-white font-semibold text-sm shadow-lift hover:bg-brand-900 transition-all hover:scale-[1.03] active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
           >
             {isLastStep ? t.seeResults : t.continue}
             <ArrowRight className="w-4 h-4" />

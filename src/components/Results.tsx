@@ -37,7 +37,7 @@ function CategoryBadge({ category }: { category: string }) {
     Surgical: 'bg-accent-50 text-accent-700 border-accent-200',
     Medical: 'bg-brand-50 text-brand-700 border-brand-200',
     Pediatric: 'bg-blue-50 text-blue-700 border-blue-200',
-    Psychiatry: 'bg-purple-50 text-purple-700 border-purple-200',
+    Psychiatry: 'bg-rose-50 text-rose-700 border-rose-200',
     'Diagnostic & Support': 'bg-ink-100 text-ink-600 border-ink-200',
     'Public & Preventive': 'bg-emerald-50 text-emerald-700 border-emerald-200',
   };
@@ -419,7 +419,7 @@ export default function Results({
         </div>
 
         <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-4">
-          <button onClick={onRestart} className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-full bg-ink-900 text-white font-semibold text-sm shadow-lift hover:bg-ink-800 transition-all hover:scale-[1.03] active:scale-[0.98]">
+          <button onClick={onRestart} className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-full bg-brand-800 text-white font-semibold text-sm shadow-lift hover:bg-brand-900 transition-all hover:scale-[1.03] active:scale-[0.98]">
             <RotateCcw className="w-4 h-4" /> {t.retakeAssessment}
           </button>
         </div>

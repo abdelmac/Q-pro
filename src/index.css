@@ -8,7 +8,7 @@
     text-rendering: optimizeLegibility;
   }
   body {
-    @apply bg-ink-50 text-ink-900 font-sans antialiased;
+    @apply bg-accent-50 text-ink-900 font-sans antialiased;
   }
   ::selection {
     @apply bg-brand-200 text-brand-900;

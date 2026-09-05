@@ -62,7 +62,7 @@ export default function SpecialtyExplorer({ scores, onSelectSpecialty, onBack }:
           <button
             onClick={() => setFilterCat(null)}
             className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
-              !filterCat ? 'bg-ink-900 text-white border-ink-900' : 'bg-white text-ink-600 border-ink-200 hover:border-ink-300'
+              !filterCat ? 'bg-brand-800 text-white border-brand-800' : 'bg-white text-ink-600 border-ink-200 hover:border-ink-300'
             }`}
           >
             {t.explorerAllCategories}
@@ -72,7 +72,7 @@ export default function SpecialtyExplorer({ scores, onSelectSpecialty, onBack }:
               key={cat}
               onClick={() => setFilterCat(filterCat === cat ? null : cat)}
               className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
-                filterCat === cat ? 'bg-ink-900 text-white border-ink-900' : 'bg-white text-ink-600 border-ink-200 hover:border-ink-300'
+                filterCat === cat ? 'bg-brand-800 text-white border-brand-800' : 'bg-white text-ink-600 border-ink-200 hover:border-ink-300'
               }`}
             >
               {translateCategory(cat, lang)}

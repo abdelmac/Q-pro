@@ -739,7 +739,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
     : null, [analysisRows, specialtyFilter, specialties]);
 
   if (accessState !== 'authorized') return (
-    <main className="min-h-screen bg-ink-50 flex items-center justify-center px-6">
+    <main className="min-h-screen bg-accent-50 flex items-center justify-center px-6">
       <form onSubmit={signIn} className="w-full max-w-md p-8 rounded-2xl bg-white border border-ink-100 shadow-soft">
         <button type="button" onClick={() => void leaveDashboard()} className="inline-flex items-center gap-2 text-sm text-ink-500 hover:text-ink-900 mb-8"><ArrowLeft className="w-4 h-4" />{french ? 'Retour' : 'Back'}</button>
         <div className="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center mb-5"><BarChart3 /></div>
@@ -754,13 +754,13 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
           <input required disabled={accessState !== 'signed_out'} type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" className="w-full rounded-xl border border-ink-200 px-4 py-3 text-sm focus:border-brand-500 focus:outline-none disabled:opacity-60" />
         </label>
         {error && <p className="mt-4 text-sm text-red-700">{error}</p>}
-        <button disabled={loading || accessState !== 'signed_out'} className="mt-6 w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-ink-900 text-white font-semibold text-sm disabled:opacity-40"><LogIn className="w-4 h-4" />{loading || accessState !== 'signed_out' ? (french ? 'Vérification…' : 'Checking access...') : (french ? 'Se connecter' : 'Sign in')}</button>
+        <button disabled={loading || accessState !== 'signed_out'} className="mt-6 w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-brand-800 text-white font-semibold text-sm hover:bg-brand-900 disabled:opacity-40"><LogIn className="w-4 h-4" />{loading || accessState !== 'signed_out' ? (french ? 'Vérification…' : 'Checking access...') : (french ? 'Se connecter' : 'Sign in')}</button>
       </form>
     </main>
   );
 
   return (
-    <main className="min-h-screen bg-ink-50 px-4 py-6 sm:px-8 lg:px-10">
+    <main className="min-h-screen bg-accent-50 px-4 py-6 sm:px-8 lg:px-10">
       <div className="mx-auto max-w-[1500px]">
         <header className="mb-8 flex flex-wrap items-center justify-between gap-4">
           <div>
@@ -786,9 +786,9 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
 
         <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-2 rounded-full border border-ink-200 bg-white p-1">
-            <button onClick={() => { if (view !== 'specialists') { setView('specialists'); resetPageAndAnalysis(); } }} className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ${view === 'specialists' ? 'bg-ink-900 text-white' : 'text-ink-600'}`}><Stethoscope className="h-4 w-4" />{french ? 'Spécialistes' : 'Specialists'}</button>
-            <button onClick={() => { if (view !== 'students') { setView('students'); resetPageAndAnalysis(); } }} className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ${view === 'students' ? 'bg-ink-900 text-white' : 'text-ink-600'}`}><GraduationCap className="h-4 w-4" />{french ? 'Étudiants' : 'Students'}</button>
-            {portalProfile?.can_edit && <button onClick={() => { if (view !== 'configuration') { setView('configuration'); resetPageAndAnalysis(); } }} className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ${view === 'configuration' ? 'bg-ink-900 text-white' : 'text-ink-600'}`}><Settings2 className="h-4 w-4" />{french ? 'Configuration' : 'Configuration'}</button>}
+            <button onClick={() => { if (view !== 'specialists') { setView('specialists'); resetPageAndAnalysis(); } }} className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ${view === 'specialists' ? 'bg-brand-800 text-white' : 'text-ink-600'}`}><Stethoscope className="h-4 w-4" />{french ? 'Spécialistes' : 'Specialists'}</button>
+            <button onClick={() => { if (view !== 'students') { setView('students'); resetPageAndAnalysis(); } }} className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ${view === 'students' ? 'bg-brand-800 text-white' : 'text-ink-600'}`}><GraduationCap className="h-4 w-4" />{french ? 'Étudiants' : 'Students'}</button>
+            {portalProfile?.can_edit && <button onClick={() => { if (view !== 'configuration') { setView('configuration'); resetPageAndAnalysis(); } }} className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ${view === 'configuration' ? 'bg-brand-800 text-white' : 'text-ink-600'}`}><Settings2 className="h-4 w-4" />{french ? 'Configuration' : 'Configuration'}</button>}
           </div>
           {view !== 'configuration' && <div className="flex flex-wrap items-center gap-2">
             <ExportButton icon={<Download className="h-4 w-4" />} label={french ? 'CSV large' : 'Wide CSV'} busy={exporting === 'raw'} disabled={exporting !== null} onClick={() => void exportData('raw')} />
@@ -1027,7 +1027,7 @@ function ExportButton({ icon, label, busy, disabled, onClick }: { icon: React.Re
 }
 
 function Badge({ tone, children }: { tone: 'green' | 'amber'; children: React.ReactNode }) {
-  return <span className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase ${tone === 'green' ? 'bg-brand-50 text-brand-700' : 'bg-amber-50 text-amber-700'}`}>{children}</span>;
+  return <span className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase ${tone === 'green' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>{children}</span>;
 }
 
 function Stat({ label, value, icon }: { label: string; value: number; icon: React.ReactNode }) {

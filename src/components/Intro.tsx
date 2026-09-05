@@ -72,7 +72,7 @@ export default function Intro({ onStart, totalQuestions, isSpecialist, onSpecial
           <div className="mt-10 flex justify-center animate-fade-up" style={{ animationDelay: '160ms' }}>
             <button
               onClick={onStart}
-              className="group inline-flex items-center gap-2.5 px-7 py-4 rounded-full bg-ink-900 text-white font-semibold text-base shadow-lift hover:bg-ink-800 transition-all duration-200 hover:scale-[1.03] active:scale-[0.98]"
+              className="group inline-flex items-center gap-2.5 px-7 py-4 rounded-full bg-brand-800 text-white font-semibold text-base shadow-lift hover:bg-brand-900 transition-all duration-200 hover:scale-[1.03] active:scale-[0.98]"
             >
               {t.startButton}
               <ArrowRight className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />

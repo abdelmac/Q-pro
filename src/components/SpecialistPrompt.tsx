@@ -107,7 +107,7 @@ export default function SpecialistPrompt({
         </p>
         <button
           onClick={onDone}
-          className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-ink-900 text-white font-semibold text-sm shadow-lift hover:bg-ink-800 transition-all hover:scale-[1.03] active:scale-[0.98]"
+          className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-brand-800 text-white font-semibold text-sm shadow-lift hover:bg-brand-900 transition-all hover:scale-[1.03] active:scale-[0.98]"
         >
           {t.specialistAnother}
         </button>
@@ -286,7 +286,7 @@ export default function SpecialistPrompt({
       <button
         onClick={handleSubmit}
         disabled={!canSubmit || submitting}
-        className="w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full bg-ink-900 text-white font-semibold text-sm shadow-lift hover:bg-ink-800 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
+        className="w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full bg-brand-800 text-white font-semibold text-sm shadow-lift hover:bg-brand-900 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
       >
         {submitting ? (
           <>
