@@ -1,9 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   type SpecialtyScore,
-  strongestMatches,
   weakestMatches,
-  type Dimension,
 } from '@/lib/scoring';
 import { CATEGORY_ORDER } from '@/data/specialties';
 import { getSpecialtyNarrative, hasSpecialistAuthoredNarrative } from '@/data/specialtyNarratives';
@@ -18,7 +16,7 @@ import { RESULTS_TOP_COUNT } from '@/lib/resultsPresentation';
 import LanguageSwitcher from './LanguageSwitcher';
 import {
   Stethoscope, Trophy, RotateCcw, Heart,
-  FlaskConical, GitCompare, Compass, BookOpen, AlertCircle, X,
+  FlaskConical, GitCompare, Compass, BookOpen, X,
 } from 'lucide-react';
 
 interface ResultsProps {
@@ -30,36 +28,6 @@ interface ResultsProps {
   onOpenExplorer: () => void;
   onOpenComparison: () => void;
   onOpenMethodology: () => void;
-}
-
-function MatchRing({ percent, size = 132, label }: { percent: number; size?: number; label: string }) {
-  const stroke = 10;
-  const r = (size - stroke) / 2;
-  const circ = 2 * Math.PI * r;
-  const offset = circ - (percent / 100) * circ;
-  return (
-    <div className="relative" style={{ width: size, height: size }}>
-      <svg width={size} height={size} className="-rotate-90" aria-hidden="true">
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="currentColor" strokeWidth={stroke} className="text-ink-100" />
-        <circle
-          cx={size / 2} cy={size / 2} r={r} fill="none"
-          stroke="url(#ringGrad)" strokeWidth={stroke} strokeLinecap="round"
-          strokeDasharray={circ} strokeDashoffset={offset}
-          className="transition-all duration-1000 ease-out"
-        />
-        <defs>
-          <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#43ab97" />
-            <stop offset="100%" stopColor="#1f7264" />
-          </linearGradient>
-        </defs>
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="font-display text-4xl font-semibold text-ink-900 tabular-nums">{percent}</span>
-        <span className="text-xs font-medium text-ink-400 uppercase tracking-wide">{label}</span>
-      </div>
-    </div>
-  );
 }
 
 function CategoryBadge({ category }: { category: string }) {
@@ -78,14 +46,6 @@ function CategoryBadge({ category }: { category: string }) {
     </span>
   );
 }
-
-const DIMENSION_LABELS: Record<Dimension, string> = {
-  thinking: 'subScoreThinking',
-  working: 'subScoreWorking',
-  interpersonal: 'subScoreInterpersonal',
-  technical: 'subScoreTechnical',
-  lifestyle: 'subScoreLifestyle',
-};
 
 interface SpecialtyFactsProps {
   specialtyName: string;
@@ -216,12 +176,8 @@ export default function Results({
     return idx >= 0 ? { rank: idx + 1, score: scores[idx] } : null;
   }, [scores, preferredSpecialty]);
 
-  const topMatchPercent = Math.round(top.score);
-  const topStrongest = strongestMatches(top, 5);
   const topBlurb = getDescription(top.specialty.name, lang) || top.specialty.blurb;
   const topClinicalSummary = getClinicalSummary(top.specialty.name, lang);
-  const topTradeOffs = top.tradeOffs;
-  const topSubScores = top.subScores;
 
   useEffect(() => {
     if (!oppositeFitSpecialty) return undefined;
@@ -316,80 +272,6 @@ export default function Results({
           />
         </div>
 
-        <section className="mb-10" aria-labelledby="top-calculated-analysis-title">
-          <header className="mb-5">
-            <h2 id="top-calculated-analysis-title" className="font-display text-xl font-semibold text-ink-900">
-              {t.resultsCalculatedAnalysisTitle}
-            </h2>
-            <p className="mt-1.5 text-xs leading-relaxed text-ink-500">{t.resultsCalculatedAnalysisNote}</p>
-          </header>
-
-          <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-8 sm:gap-12 items-center mb-6 p-6 sm:p-10 rounded-3xl bg-white border border-ink-100 shadow-soft animate-fade-up" style={{ animationDelay: '80ms' }}>
-            <div className="flex justify-center">
-              <MatchRing percent={topMatchPercent} label={t.matchPercent} />
-            </div>
-            <div>
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-400 mb-3">{t.whyItFits}</h3>
-              <div className="flex flex-wrap gap-2">
-                {topStrongest.map((detail) => (
-                  <span key={detail.trait} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-brand-50 border border-brand-100 text-brand-700 text-xs font-medium">
-                    {translateTrait(detail.trait, lang)}
-                    <span className="tabular-nums text-brand-600">{Math.round(detail.similarity)}/100</span>
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="mb-6 p-6 rounded-2xl bg-white border border-ink-100 shadow-soft animate-fade-up" style={{ animationDelay: '100ms' }}>
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-400 mb-4">{t.subScoresTitle}</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
-              {topSubScores.map((sub) => {
-                const labelKey = DIMENSION_LABELS[sub.dimension] as keyof typeof t;
-                const circumference = 2 * Math.PI * 34;
-                return (
-                  <div key={sub.dimension} className="text-center">
-                    <div className="relative w-20 h-20 mx-auto mb-2">
-                      <svg width="80" height="80" className="-rotate-90" aria-hidden="true">
-                        <circle cx="40" cy="40" r="34" fill="none" stroke="currentColor" strokeWidth="6" className="text-ink-100" />
-                        <circle
-                          cx="40" cy="40" r="34" fill="none"
-                          stroke="url(#subGrad)" strokeWidth="6" strokeLinecap="round"
-                          strokeDasharray={circumference}
-                          strokeDashoffset={sub.score === null
-                            ? circumference
-                            : circumference - (sub.score / 100) * circumference}
-                          className="transition-all duration-1000 ease-out"
-                        />
-                        <defs>
-                          <linearGradient id="subGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stopColor="#43ab97" />
-                            <stop offset="100%" stopColor="#1f7264" />
-                          </linearGradient>
-                        </defs>
-                      </svg>
-                      <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-ink-700 tabular-nums">
-                        {sub.score === null ? '—' : Math.round(sub.score)}
-                      </span>
-                    </div>
-                    <span className="text-xs font-medium text-ink-500 leading-tight block">{String(t[labelKey])}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {topTradeOffs.length > 0 && (
-            <div className="p-5 rounded-2xl bg-amber-50 border border-amber-200 animate-fade-up" style={{ animationDelay: '120ms' }}>
-              <h3 className="text-sm font-semibold text-amber-800 mb-2 flex items-center gap-2">
-                <AlertCircle className="w-4 h-4" /> {t.tradeOffsTitle}
-              </h3>
-              <p className="text-sm text-amber-700 leading-relaxed mb-4">{t.tradeOffsDesc}</p>
-              <TraitComparisonList items={topTradeOffs} />
-            </div>
-          )}
-        </section>
-
         {/* Preferred specialty callout */}
         {preferredRank && preferredRank.rank > 1 && (
           <div className="mb-10 p-5 rounded-2xl bg-ink-50 border border-ink-100 flex items-start gap-4 animate-fade-up" style={{ animationDelay: '140ms' }}>
@@ -428,7 +310,6 @@ export default function Results({
         <ol start={2} className="space-y-6">
           {runnerUps.map((s, idx) => {
             const rank = idx + 2;
-            const strongest = strongestMatches(s, 5);
             const blurb = getDescription(s.specialty.name, lang) || s.specialty.blurb;
             const clinicalSummary = getClinicalSummary(s.specialty.name, lang);
             const headingId = `top-ten-specialty-${rank}`;
@@ -466,55 +347,6 @@ export default function Results({
                     nested
                   />
 
-                  <section className="mt-6 border-t border-ink-100 pt-5" aria-labelledby={`${headingId}-analysis`}>
-                    <h4 id={`${headingId}-analysis`} className="font-display text-base font-semibold text-ink-900">
-                      {t.resultsCalculatedAnalysisTitle}
-                    </h4>
-                    <p className="mt-1.5 text-xs leading-relaxed text-ink-500">{t.resultsCalculatedAnalysisNote}</p>
-
-                    <section className="mt-5">
-                      <h5 className="mb-3 text-xs font-semibold uppercase tracking-wider text-ink-400">{t.whyItFits}</h5>
-                      <div className="space-y-3">
-                        {strongest.map((detail) => {
-                          const percent = Math.round(detail.similarity);
-                          return (
-                            <div key={detail.trait} className="grid gap-1.5 sm:grid-cols-[minmax(0,10rem)_1fr_auto] sm:items-center sm:gap-3">
-                              <span className="text-xs font-medium text-ink-500">{translateTrait(detail.trait, lang)}</span>
-                              <div className="h-1.5 overflow-hidden rounded-full bg-ink-100" aria-hidden="true">
-                                <div className="h-full origin-left animate-grow-bar rounded-full bg-brand-400" style={{ width: `${Math.min(100, percent)}%` }} />
-                              </div>
-                              <span className="text-right text-xs tabular-nums text-ink-400">{percent}/100</span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </section>
-
-                    <section className="mt-5">
-                      <h5 className="mb-3 text-xs font-semibold uppercase tracking-wider text-ink-400">{t.subScoresTitle}</h5>
-                      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-                        {s.subScores.map((sub) => {
-                          const labelKey = DIMENSION_LABELS[sub.dimension] as keyof typeof t;
-                          return (
-                            <div key={sub.dimension} className="rounded-lg bg-ink-50 px-3 py-2 text-center">
-                              <div className="text-sm font-bold tabular-nums text-ink-700">
-                                {sub.score === null ? '—' : Math.round(sub.score)}
-                              </div>
-                              <div className="text-[10px] font-medium leading-tight text-ink-400">{String(t[labelKey])}</div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </section>
-
-                    {s.tradeOffs.length > 0 && (
-                      <section className="mt-5 rounded-xl border border-amber-100 bg-amber-50 p-3">
-                        <h5 className="mb-2 text-xs font-semibold uppercase tracking-wider text-amber-800">{t.tradeOffsTitle}</h5>
-                        <p className="mb-3 text-xs leading-relaxed text-amber-700">{t.tradeOffsDesc}</p>
-                        <TraitComparisonList items={s.tradeOffs} />
-                      </section>
-                    )}
-                  </section>
                 </article>
               </li>
             );

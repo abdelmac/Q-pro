@@ -68,8 +68,6 @@ export interface UIStrings {
   resultsNoSpecialistNarrative: string;
   resultsSpecialtyOverview: string;
   resultsProfessionalProfile: string;
-  resultsCalculatedAnalysisTitle: string;
-  resultsCalculatedAnalysisNote: string;
   resultsInformationDisclaimer: string;
   fullRanking: string;
   fullRankingDesc: (n: number) => string;
@@ -329,9 +327,7 @@ const en: UIStrings = {
   resultsNoSpecialistNarrative: 'No specialist-supplied narrative was available for this specialty.',
   resultsSpecialtyOverview: 'About the specialty',
   resultsProfessionalProfile: 'Full professional and compatibility perspective',
-  resultsCalculatedAnalysisTitle: 'Q-Pro calculated analysis',
-  resultsCalculatedAnalysisNote: 'These indices are calculated from the questionnaire and the active matching profile; they are not part of the specialist-supplied narrative.',
-  resultsInformationDisclaimer: 'The specialist-supplied narrative and calculated indices are presented separately. They are orientation material, not psychological diagnoses or guarantees. Medical practice varies by country, institution, role, and individual career path.',
+  resultsInformationDisclaimer: 'The specialist-supplied narratives and ranking results are orientation material, not psychological diagnoses or guarantees. Medical practice varies by country, institution, role, and individual career path.',
   fullRanking: 'Full ranking',
   fullRankingDesc: (n: number) => `All ${n} specialties, grouped by field.`,
   retakeAssessment: 'Retake the assessment',
@@ -580,9 +576,7 @@ const ro: UIStrings = {
   resultsNoSpecialistNarrative: 'Pentru această specialitate nu a fost disponibilă o prezentare furnizată de specialist.',
   resultsSpecialtyOverview: 'Despre specialitate',
   resultsProfessionalProfile: 'Perspectiva completă asupra mediului profesional și compatibilității',
-  resultsCalculatedAnalysisTitle: 'Analiză calculată de Q-Pro',
-  resultsCalculatedAnalysisNote: 'Acești indici sunt calculați din chestionar și profilul activ de potrivire; ei nu fac parte din prezentarea furnizată de specialist.',
-  resultsInformationDisclaimer: 'Prezentarea furnizată de specialist și indicii calculați sunt afișați separat. Acestea sunt materiale de orientare, nu diagnostice psihologice și nici garanții. Practica medicală variază în funcție de țară, instituție, rol și parcursul profesional individual.',
+  resultsInformationDisclaimer: 'Prezentările furnizate de specialiști și rezultatele clasamentului sunt materiale de orientare, nu diagnostice psihologice și nici garanții. Practica medicală variază în funcție de țară, instituție, rol și parcursul profesional individual.',
   fullRanking: 'Clasament complet',
   fullRankingDesc: (n: number) => `Toate cele ${n} specialități, grupate pe domenii.`,
   retakeAssessment: 'Reia evaluarea',
@@ -831,9 +825,7 @@ const fr: UIStrings = {
   resultsNoSpecialistNarrative: 'Aucune présentation fournie par un spécialiste n’était disponible pour cette spécialité.',
   resultsSpecialtyOverview: 'Présentation de la spécialité',
   resultsProfessionalProfile: 'Perspective complète sur l’environnement professionnel et la compatibilité',
-  resultsCalculatedAnalysisTitle: 'Analyse calculée par Q-Pro',
-  resultsCalculatedAnalysisNote: 'Ces indices sont calculés à partir du questionnaire et du profil de matching actif ; ils ne font pas partie de la présentation fournie par le spécialiste.',
-  resultsInformationDisclaimer: 'La présentation fournie par le spécialiste et les indices calculés sont affichés séparément. Il s’agit de contenus d’orientation, et non de diagnostics psychologiques ou de garanties. La pratique médicale varie selon le pays, l’établissement, le poste et le parcours professionnel individuel.',
+  resultsInformationDisclaimer: 'Les présentations fournies par les spécialistes et les résultats du classement sont des contenus d’orientation, et non des diagnostics psychologiques ou des garanties. La pratique médicale varie selon le pays, l’établissement, le poste et le parcours professionnel individuel.',
   fullRanking: 'Classement complet',
   fullRankingDesc: (n: number) => `Les ${n} spécialités, groupées par domaine.`,
   retakeAssessment: 'Recommencer l\'évaluation',
