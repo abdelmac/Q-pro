@@ -661,7 +661,7 @@ SELECT extensions.throws_ok(
   $$
     SELECT public.submit_student_response_v1(
       '10000000-0000-4000-8000-000000000001'::uuid,
-      7,
+      5,
       'Cardiology',
       current_setting('q_project_test.valid_ratings')::jsonb,
       '["Prestige"]'::jsonb,
