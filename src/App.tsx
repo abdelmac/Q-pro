@@ -27,7 +27,11 @@ import SpecialtyDetail from '@/components/SpecialtyDetail';
 import SpecialtyComparison from '@/components/SpecialtyComparison';
 import MethodologyPage from '@/components/MethodologyPage';
 import { ArrowLeft, ArrowRight, Stethoscope } from 'lucide-react';
-import { INITIAL_PARTICIPANT_ROLE, type ParticipantRole } from '@/lib/participantProfile';
+import {
+  getPostQuestionnaireDestination,
+  INITIAL_PARTICIPANT_ROLE,
+  type ParticipantRole,
+} from '@/lib/participantProfile';
 
 const Dashboard = lazy(() => import('@/components/Dashboard'));
 
@@ -101,13 +105,14 @@ function AppContent() {
   };
 
   const computeAndShowResults = () => {
+    if (participantRole === null) return;
     const result = reRankWithPriorities({
       ratings,
       selectedValues,
       preferredSpecialty: isSpecialist ? null : preferredSpecialty,
     }, priorities, specialties);
     setScores(result);
-    setPhase(isSpecialist ? 'specialist' : 'student');
+    setPhase(getPostQuestionnaireDestination(participantRole));
   };
 
   const restart = () => {
@@ -194,7 +199,7 @@ function AppContent() {
   if (phase === 'intro') {
     return (
       <>
-        <Intro onStart={startQuiz} totalQuestions={totalQuestions} isSpecialist={isSpecialist} onChangeRole={changeParticipantRole} onOpenExplorer={() => setPhase('explorer')} onOpenMethodology={() => setPhase('methodology')} onOpenDashboard={() => setPhase('dashboard')} />
+        <Intro onStart={startQuiz} totalQuestions={totalQuestions} participantRole={participantRole} onChangeRole={changeParticipantRole} onOpenExplorer={() => setPhase('explorer')} onOpenMethodology={() => setPhase('methodology')} onOpenDashboard={() => setPhase('dashboard')} />
         {(catalogGateMessage || (catalogError && catalogSource !== 'remote')) && (
           <div role="alert" className="fixed bottom-5 left-1/2 z-50 w-[min(92vw,680px)] -translate-x-1/2 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 shadow-lift">
             <p className="font-semibold">{catalogGateMessage ?? (lang === 'fr' ? 'Catalogue publié indisponible.' : 'Published catalog unavailable.')}</p>
@@ -231,7 +236,7 @@ function AppContent() {
         scores={scores}
         preferredSpecialty={isSpecialist ? null : preferredSpecialty}
         onRestart={restart}
-        isSpecialist={isSpecialist}
+        participantRole={participantRole}
         onContributeData={() => setPhase('specialist')}
         onOpenExplorer={() => setPhase('explorer')}
         onOpenComparison={() => setPhase('comparison')}

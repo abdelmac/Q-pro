@@ -30,6 +30,8 @@ export interface UIStrings {
   roleSelectionDescription: string;
   studentRoleDescription: string;
   specialistRoleDescription: string;
+  curiousRoleDescription: string;
+  curiousIntroBadge: string;
   changeRole: string;
 
   // Quiz navigation
@@ -100,6 +102,7 @@ export interface UIStrings {
   specialistAnother: string;
   specialistMode: string;
   studentMode: string;
+  curiousMode: string;
 
   // Specialist calibration fields
   specialistYearsExperience: string;
@@ -297,6 +300,8 @@ const en: UIStrings = {
   roleSelectionDescription: 'Choose your profile so the questionnaire follows the right path.',
   studentRoleDescription: 'I am a medical student.',
   specialistRoleDescription: 'I am a doctor or medical specialist.',
+  curiousRoleDescription: "I'm curious about medicine and not yet sure whether I want to study it.",
+  curiousIntroBadge: 'Exploring medicine',
   changeRole: 'Change profile',
 
   step: (current: number, total: number) => `Step ${current} of ${total}`,
@@ -362,6 +367,7 @@ const en: UIStrings = {
   specialistAnother: 'View my results',
   specialistMode: 'Specialist',
   studentMode: 'Student',
+  curiousMode: 'Exploring medicine',
 
   specialistYearsExperience: 'Years of experience',
   specialistYearsPlaceholder: 'e.g. 10',
@@ -550,6 +556,8 @@ const ro: UIStrings = {
   roleSelectionDescription: 'Alege profilul tău pentru ca chestionarul să urmeze parcursul potrivit.',
   studentRoleDescription: 'Sunt student sau studentă la medicină.',
   specialistRoleDescription: 'Sunt medic sau medic specialist.',
+  curiousRoleDescription: 'Mă interesează medicina, dar nu știu încă dacă vreau să o studiez.',
+  curiousIntroBadge: 'Explorez medicina',
   changeRole: 'Schimbă profilul',
 
   step: (current: number, total: number) => `Pasul ${current} din ${total}`,
@@ -615,6 +623,7 @@ const ro: UIStrings = {
   specialistAnother: 'Vezi rezultatele mele',
   specialistMode: 'Specialist',
   studentMode: 'Student',
+  curiousMode: 'Explorez medicina',
 
   specialistYearsExperience: 'Ani de experiență',
   specialistYearsPlaceholder: 'ex. 10',
@@ -803,6 +812,8 @@ const fr: UIStrings = {
   roleSelectionDescription: 'Choisissez votre profil afin que le questionnaire suive le parcours adapté.',
   studentRoleDescription: 'Je suis étudiant ou étudiante en médecine.',
   specialistRoleDescription: 'Je suis médecin ou spécialiste.',
+  curiousRoleDescription: 'La médecine m’intéresse, mais je ne sais pas encore si je souhaite l’étudier.',
+  curiousIntroBadge: 'Découverte de la médecine',
   changeRole: 'Changer de profil',
 
   step: (current: number, total: number) => `Étape ${current} sur ${total}`,
@@ -868,6 +879,7 @@ const fr: UIStrings = {
   specialistAnother: 'Voir mes résultats',
   specialistMode: 'Spécialiste',
   studentMode: 'Étudiant',
+  curiousMode: 'Je découvre la médecine',
 
   specialistYearsExperience: 'Années d\'expérience',
   specialistYearsPlaceholder: 'ex. 10',

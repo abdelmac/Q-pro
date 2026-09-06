@@ -13,6 +13,7 @@ import { FEATURE_FLAGS } from '@/config/features';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useSpecialtyCatalog } from '@/lib/SpecialtyCatalogContext';
 import { RESULTS_TOP_COUNT } from '@/lib/resultsPresentation';
+import type { ParticipantRole } from '@/lib/participantProfile';
 import LanguageSwitcher from './LanguageSwitcher';
 import SpecialtyBibliography from './SpecialtyBibliography';
 import {
@@ -24,7 +25,7 @@ interface ResultsProps {
   scores: SpecialtyScore[];
   preferredSpecialty: string | null;
   onRestart: () => void;
-  isSpecialist: boolean;
+  participantRole: ParticipantRole;
   onContributeData: () => void;
   onOpenExplorer: () => void;
   onOpenComparison: () => void;
@@ -165,7 +166,7 @@ function TraitComparisonList({ items }: { items: readonly ComparedTrait[] }) {
 }
 
 export default function Results({
-  scores, preferredSpecialty, onRestart, isSpecialist, onContributeData,
+  scores, preferredSpecialty, onRestart, participantRole, onContributeData,
   onOpenExplorer, onOpenComparison, onOpenMethodology,
 }: ResultsProps) {
   const { lang, t } = useLanguage();
@@ -294,7 +295,7 @@ export default function Results({
         )}
 
         {/* Specialist contribution CTA */}
-        {FEATURE_FLAGS.researchContributionCta && !isSpecialist && (
+        {FEATURE_FLAGS.researchContributionCta && participantRole === 'student' && (
           <div className="mb-10 p-5 rounded-2xl bg-brand-50 border border-brand-100 flex items-start gap-4 animate-fade-up" style={{ animationDelay: '160ms' }}>
             <div className="w-10 h-10 rounded-xl bg-white border border-brand-200 flex items-center justify-center text-brand-600 shrink-0">
               <FlaskConical className="w-5 h-5" />

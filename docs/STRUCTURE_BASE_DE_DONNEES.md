@@ -94,6 +94,7 @@ La migration `20260831120000_specialist_admin_portal.sql` ajoute la couche édit
 4. PostgreSQL vérifie que cet UUID correspond bien à un instantané publié.
 5. La réponse et la révision du catalogue sont enregistrées ensemble.
 6. Pour un spécialiste, la spécialité réelle et les cinq réponses qualitatives ne sont demandées qu'après les 81 notes et le choix des valeurs, afin de réduire le biais d'ancrage pendant le questionnaire principal.
+7. Le profil « découverte de la médecine » calcule son profil et son classement uniquement dans le navigateur, puis accède directement aux résultats. Il ne passe par aucun formulaire de recherche et n'est inséré ni dans `student_responses` ni dans `specialist_responses`, afin de préserver la séparation des cohortes.
 
 ### 2.2 Flux administratif
 

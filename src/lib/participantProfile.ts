@@ -1,8 +1,18 @@
-export const PARTICIPANT_ROLES = ['student', 'specialist'] as const;
+export const PARTICIPANT_ROLES = ['student', 'specialist', 'curious'] as const;
 
 export type ParticipantRole = (typeof PARTICIPANT_ROLES)[number];
 
 export const INITIAL_PARTICIPANT_ROLE: ParticipantRole | null = null;
+
+export type PostQuestionnaireDestination = 'student' | 'specialist' | 'results';
+
+export function getPostQuestionnaireDestination(
+  role: ParticipantRole,
+): PostQuestionnaireDestination {
+  if (role === 'student') return 'student';
+  if (role === 'specialist') return 'specialist';
+  return 'results';
+}
 
 export const STUDENT_STUDY_YEARS = [1, 2, 3, 4, 5, 6] as const;
 

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import RatingScale from '../src/components/RatingScale';
 import { RoleSelectionView, type RoleSelectionCopy } from '../src/components/RoleSelection';
 import SpecialtyBibliography from '../src/components/SpecialtyBibliography';
+import { TRANSLATIONS } from '../src/data/i18n';
 import { ALL_QUESTION_IDS } from '../src/data/questions';
 import { SPECIALTIES } from '../src/data/specialties';
 import { SPECIALTY_METADATA } from '../src/data/specialtyMetadata';
@@ -47,6 +48,7 @@ import { RATING_VALUES } from '../src/lib/ratingScale';
 import {
   isValidOptionalStudentStudyYear,
   isValidStudentStudyYear,
+  getPostQuestionnaireDestination,
   INITIAL_PARTICIPANT_ROLE,
   PARTICIPANT_ROLES,
   STUDENT_STUDY_YEARS,
@@ -115,8 +117,8 @@ function elementTextContent(node: unknown): string {
 
 assert.deepEqual(
   [...PARTICIPANT_ROLES],
-  ['student', 'specialist'],
-  'The initial identity gate must expose exactly the student and specialist roles',
+  ['student', 'specialist', 'curious'],
+  'The initial identity gate must expose student, specialist, and curious roles in that order',
 );
 assert.equal(
   INITIAL_PARTICIPANT_ROLE,
@@ -132,6 +134,8 @@ const roleSelectionCopy: RoleSelectionCopy = {
   studentDescription: 'Complete the orientation questionnaire.',
   specialistLabel: 'Specialist',
   specialistDescription: 'Contribute calibration data.',
+  curiousLabel: 'Exploring medicine',
+  curiousDescription: 'Explore medicine without joining a research cohort.',
   footerNote: 'Orientation tool',
 };
 const selectedRoles: ParticipantRole[] = [];
@@ -142,10 +146,10 @@ const roleSelection = RoleSelectionView({
 const roleFieldsets = elementPropsByType(roleSelection, 'fieldset');
 const roleLegends = elementPropsByType(roleSelection, 'legend');
 const roleButtons = elementPropsByType(roleSelection, 'button');
-assert.equal(roleFieldsets.length, 1, 'The two identity choices must be grouped in one fieldset');
+assert.equal(roleFieldsets.length, 1, 'The identity choices must be grouped in one fieldset');
 assert.equal(roleLegends.length, 1, 'The identity choice group must have one accessible legend');
 assert.equal(roleLegends[0].children, roleSelectionCopy.title);
-assert.equal(roleButtons.length, 2, 'The identity gate must render one button per participant role');
+assert.equal(roleButtons.length, 3, 'The identity gate must render one button per participant role');
 assert.deepEqual(
   roleButtons.map((button) => button['data-participant-role']),
   PARTICIPANT_ROLES,
@@ -158,10 +162,12 @@ for (const [index, button] of roleButtons.entries()) {
     String(button.className ?? '').includes('focus-visible:ring-2'),
     'Each role button must expose a visible keyboard focus treatment',
   );
-  const expectedLabel = index === 0 ? roleSelectionCopy.studentLabel : roleSelectionCopy.specialistLabel;
-  const expectedDescription = index === 0
-    ? roleSelectionCopy.studentDescription
-    : roleSelectionCopy.specialistDescription;
+  const expectedCopy = [
+    [roleSelectionCopy.studentLabel, roleSelectionCopy.studentDescription],
+    [roleSelectionCopy.specialistLabel, roleSelectionCopy.specialistDescription],
+    [roleSelectionCopy.curiousLabel, roleSelectionCopy.curiousDescription],
+  ][index];
+  const [expectedLabel, expectedDescription] = expectedCopy;
   const accessibleText = elementTextContent(button.children);
   assert.ok(
     accessibleText.includes(expectedLabel) && accessibleText.includes(expectedDescription),
@@ -174,6 +180,20 @@ assert.deepEqual(
   PARTICIPANT_ROLES,
   'Selecting each identity button must emit its exact canonical participant role',
 );
+
+assert.equal(getPostQuestionnaireDestination('student'), 'student');
+assert.equal(getPostQuestionnaireDestination('specialist'), 'specialist');
+assert.equal(
+  getPostQuestionnaireDestination('curious'),
+  'results',
+  'Curious participants must bypass both research-submission prompts and go directly to results',
+);
+for (const language of ['en', 'ro', 'fr'] as const) {
+  const copy = TRANSLATIONS[language];
+  assert.ok(copy.curiousMode.trim(), `${language} must define the curious role label`);
+  assert.ok(copy.curiousRoleDescription.trim(), `${language} must explain the curious role`);
+  assert.ok(copy.curiousIntroBadge.trim(), `${language} must define the curious intro badge`);
+}
 
 assert.deepEqual(
   [...STUDENT_STUDY_YEARS],
@@ -886,6 +906,7 @@ console.log(JSON.stringify({
   multilingualSpecialtyNarratives: true,
   navigationScrollPolicy: true,
   participantRoleSelection: true,
+  curiousParticipantFlow: true,
   studentStudyYearsOneToSix: true,
   mobileRatingScale: true,
   noTargetLeakage: true,

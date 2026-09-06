@@ -1,4 +1,4 @@
-import { ArrowRight, GraduationCap, Stethoscope } from 'lucide-react';
+import { ArrowRight, Compass, GraduationCap, Stethoscope } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 import type { ParticipantRole } from '@/lib/participantProfile';
 import LanguageSwitcher from './LanguageSwitcher';
@@ -11,6 +11,8 @@ export interface RoleSelectionCopy {
   studentDescription: string;
   specialistLabel: string;
   specialistDescription: string;
+  curiousLabel: string;
+  curiousDescription: string;
   footerNote: string;
 }
 
@@ -35,6 +37,13 @@ export function RoleSelectionView({ copy, onSelectRole }: RoleSelectionViewProps
       icon: Stethoscope,
       iconClassName: 'bg-accent-100 text-accent-700',
     },
+    {
+      role: 'curious' as const,
+      label: copy.curiousLabel,
+      description: copy.curiousDescription,
+      icon: Compass,
+      iconClassName: 'bg-amber-50 text-amber-700',
+    },
   ];
 
   return (
@@ -50,7 +59,7 @@ export function RoleSelectionView({ copy, onSelectRole }: RoleSelectionViewProps
       </header>
 
       <main className="flex flex-1 items-center justify-center px-6 py-12 sm:py-16">
-        <fieldset className="w-full max-w-3xl text-center">
+        <fieldset className="w-full max-w-5xl text-center">
           <legend className="w-full font-display text-3xl font-semibold tracking-tight text-ink-900 sm:text-5xl">
             {copy.title}
           </legend>
@@ -58,7 +67,7 @@ export function RoleSelectionView({ copy, onSelectRole }: RoleSelectionViewProps
             {copy.description}
           </p>
 
-          <div className="mx-auto mt-10 grid max-w-2xl gap-4 sm:grid-cols-2">
+          <div className="mx-auto mt-10 grid max-w-5xl gap-4 md:grid-cols-3">
             {choices.map(({ role, label, description, icon: Icon, iconClassName }) => (
               <button
                 key={role}
@@ -102,6 +111,8 @@ export default function RoleSelection({ onSelectRole }: { onSelectRole: (role: P
         studentDescription: t.studentRoleDescription,
         specialistLabel: t.specialistMode,
         specialistDescription: t.specialistRoleDescription,
+        curiousLabel: t.curiousMode,
+        curiousDescription: t.curiousRoleDescription,
         footerNote: t.footerNote,
       }}
     />
