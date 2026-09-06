@@ -3,6 +3,7 @@ import { ALL_QUESTION_IDS } from '@/data/questions';
 import { SPECIALTIES } from '@/data/specialties';
 import { VALUE_OPTIONS } from '@/data/traits';
 import { DATA_VERSIONS } from '@/lib/researchVersions';
+import { isValidOptionalStudentStudyYear } from '@/lib/participantProfile';
 import type { Database, Json } from '@/lib/database.types';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.trim();
@@ -201,11 +202,8 @@ function validateStudentResponse(data: StudentResponse): string | null {
   if (data.preferred_specialty != null && !specialtyNames.has(data.preferred_specialty)) {
     return 'La spécialité préférée est invalide.';
   }
-  if (
-    data.study_year != null
-    && (!Number.isInteger(data.study_year) || data.study_year < 1 || data.study_year > 12)
-  ) {
-    return 'L’année d’étude doit être comprise entre 1 et 12.';
+  if (!isValidOptionalStudentStudyYear(data.study_year)) {
+    return 'L’année d’étude doit être comprise entre 1 et 6.';
   }
   if (
     data.client_scores.length !== SPECIALTIES.length

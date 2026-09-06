@@ -26,6 +26,11 @@ export interface UIStrings {
   feature3Desc: string;
   footerNote: string;
   questionsCount: (n: number) => string;
+  roleSelectionTitle: string;
+  roleSelectionDescription: string;
+  studentRoleDescription: string;
+  specialistRoleDescription: string;
+  changeRole: string;
 
   // Quiz navigation
   step: (current: number, total: number) => string;
@@ -93,8 +98,6 @@ export interface UIStrings {
   specialistThankYou: string;
   specialistThankYouDesc: string;
   specialistAnother: string;
-  specialistToggleLabel: string;
-  specialistToggleDesc: string;
   specialistMode: string;
   studentMode: string;
 
@@ -290,6 +293,11 @@ const en: UIStrings = {
   feature3Desc: 'What matters to you beyond the work.',
   footerNote: 'A self-reflection tool — results are guidance, not a verdict.',
   questionsCount: (n: number) => `${n} questions · ~8 minutes`,
+  roleSelectionTitle: 'First, tell us who you are',
+  roleSelectionDescription: 'Choose your profile so the questionnaire follows the right path.',
+  studentRoleDescription: 'I am a medical student.',
+  specialistRoleDescription: 'I am a doctor or medical specialist.',
+  changeRole: 'Change profile',
 
   step: (current: number, total: number) => `Step ${current} of ${total}`,
   home: 'Home',
@@ -352,8 +360,6 @@ const en: UIStrings = {
   specialistThankYou: 'Thank you for contributing',
   specialistThankYouDesc: 'Your responses have been added to the research dataset and are available for reviewed calibration analysis.',
   specialistAnother: 'View my results',
-  specialistToggleLabel: 'I am a specialist',
-  specialistToggleDesc: 'Specialists answer the same 81 items and five follow-up questions to support reviewed, versioned calibration.',
   specialistMode: 'Specialist',
   studentMode: 'Student',
 
@@ -540,6 +546,11 @@ const ro: UIStrings = {
   feature3Desc: 'Ce contează pentru tine dincolo de muncă.',
   footerNote: 'Un instrument de auto-reflecție — rezultatele sunt orientative, nu un verdict.',
   questionsCount: (n: number) => `${n} întrebări · ~8 minute`,
+  roleSelectionTitle: 'Mai întâi, spune-ne cine ești',
+  roleSelectionDescription: 'Alege profilul tău pentru ca chestionarul să urmeze parcursul potrivit.',
+  studentRoleDescription: 'Sunt student sau studentă la medicină.',
+  specialistRoleDescription: 'Sunt medic sau medic specialist.',
+  changeRole: 'Schimbă profilul',
 
   step: (current: number, total: number) => `Pasul ${current} din ${total}`,
   home: 'Acasă',
@@ -602,8 +613,6 @@ const ro: UIStrings = {
   specialistThankYou: 'Mulțumim pentru contribuție',
   specialistThankYouDesc: 'Răspunsurile tale au fost adăugate la setul de date de cercetare și sunt disponibile pentru o analiză de calibrare revizuită.',
   specialistAnother: 'Vezi rezultatele mele',
-  specialistToggleLabel: 'Sunt specialist',
-  specialistToggleDesc: 'Specialiștii răspund la aceiași 81 de itemi și la cinci întrebări ulterioare pentru a susține o calibrare revizuită și versionată.',
   specialistMode: 'Specialist',
   studentMode: 'Student',
 
@@ -790,6 +799,11 @@ const fr: UIStrings = {
   feature3Desc: 'Ce qui compte pour vous au-delà du travail.',
   footerNote: 'Un outil d\'auto-réflexion — les résultats sont indicatifs, non un verdict.',
   questionsCount: (n: number) => `${n} questions · ~8 minutes`,
+  roleSelectionTitle: 'D’abord, indiquez-nous qui vous êtes',
+  roleSelectionDescription: 'Choisissez votre profil afin que le questionnaire suive le parcours adapté.',
+  studentRoleDescription: 'Je suis étudiant ou étudiante en médecine.',
+  specialistRoleDescription: 'Je suis médecin ou spécialiste.',
+  changeRole: 'Changer de profil',
 
   step: (current: number, total: number) => `Étape ${current} sur ${total}`,
   home: 'Accueil',
@@ -852,8 +866,6 @@ const fr: UIStrings = {
   specialistThankYou: 'Merci pour votre contribution',
   specialistThankYouDesc: 'Vos réponses ont été ajoutées au jeu de données de recherche et sont disponibles pour une analyse de calibration contrôlée.',
   specialistAnother: 'Voir mes résultats',
-  specialistToggleLabel: 'Je suis spécialiste',
-  specialistToggleDesc: 'Les spécialistes répondent aux mêmes 81 items et à cinq questions complémentaires pour soutenir une calibration contrôlée et versionnée.',
   specialistMode: 'Spécialiste',
   studentMode: 'Étudiant',
 

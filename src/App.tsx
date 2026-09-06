@@ -12,6 +12,7 @@ import { LanguageProvider, useLanguage } from '@/lib/LanguageContext';
 import { SpecialtyCatalogProvider, useSpecialtyCatalog } from '@/lib/SpecialtyCatalogContext';
 import { getAppNavigationScrollKey, useScrollToPageTop } from '@/lib/scrollToTop';
 import Intro from '@/components/Intro';
+import RoleSelection from '@/components/RoleSelection';
 import ProgressBar from '@/components/ProgressBar';
 import SpecialtyStep from '@/components/SpecialtyStep';
 import ValuesStep from '@/components/ValuesStep';
@@ -26,6 +27,7 @@ import SpecialtyDetail from '@/components/SpecialtyDetail';
 import SpecialtyComparison from '@/components/SpecialtyComparison';
 import MethodologyPage from '@/components/MethodologyPage';
 import { ArrowLeft, ArrowRight, Stethoscope } from 'lucide-react';
+import { INITIAL_PARTICIPANT_ROLE, type ParticipantRole } from '@/lib/participantProfile';
 
 const Dashboard = lazy(() => import('@/components/Dashboard'));
 
@@ -47,10 +49,11 @@ function AppContent() {
   const [selectedValues, setSelectedValues] = useState<string[]>([]);
   const [ratings, setRatings] = useState<Record<string, number>>({});
   const [scores, setScores] = useState<SpecialtyScore[]>([]);
-  const [isSpecialist, setIsSpecialist] = useState(false);
+  const [participantRole, setParticipantRole] = useState<ParticipantRole | null>(INITIAL_PARTICIPANT_ROLE);
   const [priorities, setPriorities] = useState<PriorityWeights>(DEFAULT_PRIORITY_WEIGHTS);
   const [explorerSpecialty, setExplorerSpecialty] = useState<string | null>(null);
   const [catalogGateMessage, setCatalogGateMessage] = useState<string | null>(null);
+  const isSpecialist = participantRole === 'specialist';
 
   // Ask specialists for their actual specialty only after the 81 ratings.
   // This keeps the ground-truth label from priming their questionnaire answers.
@@ -68,6 +71,7 @@ function AppContent() {
   );
 
   const startQuiz = () => {
+    if (participantRole === null) return;
     if (catalogLoading || catalogSource !== 'remote') {
       setCatalogGateMessage(lang === 'fr'
         ? 'La configuration publiée de l’algorithme doit être chargée avant de commencer.'
@@ -115,6 +119,21 @@ function AppContent() {
     setStepIndex(0);
     setPriorities(DEFAULT_PRIORITY_WEIGHTS);
     setExplorerSpecialty(null);
+    setParticipantRole(null);
+    setPhase('intro');
+  };
+
+  const changeParticipantRole = () => {
+    setPreferredSpecialty(null);
+    setActualSpecialty(null);
+    setSelectedValues([]);
+    setRatings({});
+    setScores([]);
+    setStepIndex(0);
+    setPriorities(DEFAULT_PRIORITY_WEIGHTS);
+    setExplorerSpecialty(null);
+    setCatalogGateMessage(null);
+    setParticipantRole(null);
     setPhase('intro');
   };
 
@@ -162,12 +181,20 @@ function AppContent() {
 
   // App navigation is state-based, so the browser otherwise preserves the
   // previous document offset when a new screen or questionnaire step renders.
-  useScrollToPageTop(getAppNavigationScrollKey(phase, stepIndex, explorerSpecialty));
+  useScrollToPageTop(getAppNavigationScrollKey(
+    participantRole === null ? 'role' : phase,
+    stepIndex,
+    explorerSpecialty,
+  ));
+
+  if (participantRole === null) {
+    return <RoleSelection onSelectRole={setParticipantRole} />;
+  }
 
   if (phase === 'intro') {
     return (
       <>
-        <Intro onStart={startQuiz} totalQuestions={totalQuestions} isSpecialist={isSpecialist} onSpecialistToggle={setIsSpecialist} onOpenExplorer={() => setPhase('explorer')} onOpenMethodology={() => setPhase('methodology')} onOpenDashboard={() => setPhase('dashboard')} />
+        <Intro onStart={startQuiz} totalQuestions={totalQuestions} isSpecialist={isSpecialist} onChangeRole={changeParticipantRole} onOpenExplorer={() => setPhase('explorer')} onOpenMethodology={() => setPhase('methodology')} onOpenDashboard={() => setPhase('dashboard')} />
         {(catalogGateMessage || (catalogError && catalogSource !== 'remote')) && (
           <div role="alert" className="fixed bottom-5 left-1/2 z-50 w-[min(92vw,680px)] -translate-x-1/2 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 shadow-lift">
             <p className="font-semibold">{catalogGateMessage ?? (lang === 'fr' ? 'Catalogue publié indisponible.' : 'Published catalog unavailable.')}</p>

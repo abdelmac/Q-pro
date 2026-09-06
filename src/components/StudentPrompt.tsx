@@ -3,6 +3,7 @@ import { submitStudentResponse, type SupportedLanguage } from '@/lib/supabase';
 import { useLanguage } from '@/lib/LanguageContext';
 import { AlertCircle, ArrowRight, Loader2, GraduationCap } from 'lucide-react';
 import { useSpecialtyCatalog } from '@/lib/SpecialtyCatalogContext';
+import { STUDENT_STUDY_YEARS } from '@/lib/participantProfile';
 
 interface StudentPromptProps {
   preferredSpecialty: string | null;
@@ -55,7 +56,7 @@ export default function StudentPrompt({ preferredSpecialty, ratings, selectedVal
         className="w-full px-4 py-3 rounded-xl bg-white border border-ink-200 text-sm text-ink-900 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 transition-all"
       >
         <option value="">{t.studentPreferNotToSay}</option>
-        {Array.from({ length: 12 }, (_, index) => index + 1).map((year) => (
+        {STUDENT_STUDY_YEARS.map((year) => (
           <option key={year} value={year}>{t.studentYear(year)}</option>
         ))}
       </select>

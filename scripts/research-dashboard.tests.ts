@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import RatingScale from '../src/components/RatingScale';
+import { RoleSelectionView, type RoleSelectionCopy } from '../src/components/RoleSelection';
 import SpecialtyBibliography from '../src/components/SpecialtyBibliography';
 import { ALL_QUESTION_IDS } from '../src/data/questions';
 import { SPECIALTIES } from '../src/data/specialties';
@@ -43,6 +44,14 @@ import {
   SELECTED_VALUE_ONLY_SCORE,
 } from '../src/lib/scoring';
 import { RATING_VALUES } from '../src/lib/ratingScale';
+import {
+  isValidOptionalStudentStudyYear,
+  isValidStudentStudyYear,
+  INITIAL_PARTICIPANT_ROLE,
+  PARTICIPANT_ROLES,
+  STUDENT_STUDY_YEARS,
+  type ParticipantRole,
+} from '../src/lib/participantProfile';
 
 function parseCsv(csv: string): string[][] {
   const input = csv.charCodeAt(0) === 0xfeff ? csv.slice(1) : csv;
@@ -94,6 +103,99 @@ function elementPropsByType(node: unknown, type: unknown): Array<Record<string, 
   visit(node);
   return matches;
 }
+
+function elementTextContent(node: unknown): string {
+  if (typeof node === 'string' || typeof node === 'number') return String(node);
+  if (Array.isArray(node)) return node.map(elementTextContent).join(' ');
+  if (!node || typeof node !== 'object') return '';
+
+  const element = node as { props?: { children?: unknown } };
+  return elementTextContent(element.props?.children);
+}
+
+assert.deepEqual(
+  [...PARTICIPANT_ROLES],
+  ['student', 'specialist'],
+  'The initial identity gate must expose exactly the student and specialist roles',
+);
+assert.equal(
+  INITIAL_PARTICIPANT_ROLE,
+  null,
+  'A new questionnaire session must not silently default to the student role',
+);
+
+const roleSelectionCopy: RoleSelectionCopy = {
+  appName: 'Q-Pro',
+  title: 'Identify your profile',
+  description: 'Choose the profile that applies to you.',
+  studentLabel: 'Student',
+  studentDescription: 'Complete the orientation questionnaire.',
+  specialistLabel: 'Specialist',
+  specialistDescription: 'Contribute calibration data.',
+  footerNote: 'Orientation tool',
+};
+const selectedRoles: ParticipantRole[] = [];
+const roleSelection = RoleSelectionView({
+  copy: roleSelectionCopy,
+  onSelectRole: (role) => selectedRoles.push(role),
+});
+const roleFieldsets = elementPropsByType(roleSelection, 'fieldset');
+const roleLegends = elementPropsByType(roleSelection, 'legend');
+const roleButtons = elementPropsByType(roleSelection, 'button');
+assert.equal(roleFieldsets.length, 1, 'The two identity choices must be grouped in one fieldset');
+assert.equal(roleLegends.length, 1, 'The identity choice group must have one accessible legend');
+assert.equal(roleLegends[0].children, roleSelectionCopy.title);
+assert.equal(roleButtons.length, 2, 'The identity gate must render one button per participant role');
+assert.deepEqual(
+  roleButtons.map((button) => button['data-participant-role']),
+  PARTICIPANT_ROLES,
+  'Role buttons must preserve the canonical student-then-specialist ordering',
+);
+for (const [index, button] of roleButtons.entries()) {
+  assert.equal(button.type, 'button', 'Role choices must not submit an enclosing form');
+  assert.equal(button.disabled, undefined, 'Both identity choices must be immediately operable');
+  assert.ok(
+    String(button.className ?? '').includes('focus-visible:ring-2'),
+    'Each role button must expose a visible keyboard focus treatment',
+  );
+  const expectedLabel = index === 0 ? roleSelectionCopy.studentLabel : roleSelectionCopy.specialistLabel;
+  const expectedDescription = index === 0
+    ? roleSelectionCopy.studentDescription
+    : roleSelectionCopy.specialistDescription;
+  const accessibleText = elementTextContent(button.children);
+  assert.ok(
+    accessibleText.includes(expectedLabel) && accessibleText.includes(expectedDescription),
+    'Each native role button must contain its visible label and explanatory accessible text',
+  );
+  (button.onClick as () => void)();
+}
+assert.deepEqual(
+  selectedRoles,
+  PARTICIPANT_ROLES,
+  'Selecting each identity button must emit its exact canonical participant role',
+);
+
+assert.deepEqual(
+  [...STUDENT_STUDY_YEARS],
+  [1, 2, 3, 4, 5, 6],
+  'Medical student study years must be limited to the exact range from 1 to 6',
+);
+for (const year of STUDENT_STUDY_YEARS) {
+  assert.equal(isValidStudentStudyYear(year), true, `Study year ${year} must be valid`);
+  assert.equal(isValidOptionalStudentStudyYear(year), true, `Optional study year ${year} must be valid`);
+}
+for (const invalidYear of [0, 7, 12, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY, '1', '6', {}, []]) {
+  assert.equal(isValidStudentStudyYear(invalidYear), false, `${String(invalidYear)} must not be a valid study year`);
+  assert.equal(
+    isValidOptionalStudentStudyYear(invalidYear),
+    false,
+    `${String(invalidYear)} must not be a valid optional study year`,
+  );
+}
+assert.equal(isValidStudentStudyYear(null), false, 'A required study year validator must reject null');
+assert.equal(isValidStudentStudyYear(undefined), false, 'A required study year validator must reject undefined');
+assert.equal(isValidOptionalStudentStudyYear(null), true, 'An optional study year must accept null');
+assert.equal(isValidOptionalStudentStudyYear(undefined), true, 'An optional study year must accept undefined');
 
 const ratings = Object.fromEntries(ALL_QUESTION_IDS.map((id, index) => [id, (index % 10) + 1]));
 assert.equal(ALL_QUESTION_IDS.length, 81, 'The questionnaire must keep all 81 rating questions');
@@ -383,6 +485,11 @@ assert.notEqual(
   getAppNavigationScrollKey('detail', 0, 'Cardiology'),
   getAppNavigationScrollKey('detail', 0, 'Pathology'),
   'Opening another specialty detail must create a new scroll-reset key',
+);
+assert.notEqual(
+  getAppNavigationScrollKey('role', 0, null),
+  getAppNavigationScrollKey('intro', 0, null),
+  'Choosing a participant role must scroll the following intro screen to the top',
 );
 assert.notEqual(
   getDashboardNavigationScrollKey('authorized', 'specialists'),
@@ -778,6 +885,8 @@ console.log(JSON.stringify({
   specialtyMetadataMatchesProfiles: true,
   multilingualSpecialtyNarratives: true,
   navigationScrollPolicy: true,
+  participantRoleSelection: true,
+  studentStudyYearsOneToSix: true,
   mobileRatingScale: true,
   noTargetLeakage: true,
   tieAwareRanks: true,

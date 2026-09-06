@@ -2,11 +2,30 @@ BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
 
-SELECT extensions.plan(112);
+SELECT extensions.plan(116);
 
 SELECT extensions.has_schema('private', 'private schema exists');
 SELECT extensions.has_table('public', 'student_responses', 'student table exists');
 SELECT extensions.has_table('public', 'specialist_responses', 'specialist table exists');
+SELECT extensions.ok(
+  EXISTS (
+    SELECT 1
+    FROM pg_constraint
+    WHERE conrelid = 'public.student_responses'::regclass
+      AND conname = 'student_responses_study_year_1_to_6_check'
+  ),
+  'student responses have the current 1-to-6 study-year constraint'
+);
+SELECT extensions.ok(
+  EXISTS (
+    SELECT 1
+    FROM pg_trigger
+    WHERE tgrelid = 'public.student_responses'::regclass
+      AND tgname = 'enforce_student_study_year_1_to_6'
+      AND tgenabled = 'O'
+  ),
+  'student responses enforce the 1-to-6 range across every RPC generation'
+);
 SELECT extensions.has_table('private', 'specialty_catalog_versions', 'private specialty catalog versions table exists');
 SELECT extensions.has_table('private', 'specialty_catalog_entries', 'private specialty catalog entries table exists');
 SELECT extensions.has_table('private', 'trait_catalog', 'private trait catalog exists');
@@ -594,6 +613,28 @@ SELECT extensions.is(
   'replaying the same submission id is idempotent'
 );
 
+SELECT extensions.throws_ok(
+  $$
+    SELECT public.submit_student_response_v1(
+      '10000000-0000-4000-8000-000000000005'::uuid,
+      7,
+      'Cardiology',
+      current_setting('q_project_test.valid_ratings')::jsonb,
+      '["Prestige"]'::jsonb,
+      current_setting('q_project_test.valid_scores')::jsonb,
+      'en',
+      'q81-v1',
+      'career-values-v1',
+      'medical-specialties-v1',
+      'client-scoring-v1',
+      'research-consent-2026-08-26'
+    )
+  $$,
+  '22023',
+  'Student study year must be between 1 and 6',
+  'legacy student RPCs reject study year 7 for new submissions'
+);
+
 SELECT extensions.is(
   public.submit_specialist_response_v1(
     '20000000-0000-4000-8000-000000000001'::uuid,
@@ -1050,6 +1091,29 @@ SELECT extensions.is(
   ),
   '10000000-0000-4000-8000-000000000004'::uuid,
   'replaying an identical student v3 payload is idempotent'
+);
+
+SELECT extensions.throws_ok(
+  $$
+    SELECT public.submit_student_response_v3(
+      '10000000-0000-4000-8000-000000000006'::uuid,
+      7,
+      'Cardiology',
+      current_setting('q_project_test.valid_ratings')::jsonb,
+      '["Prestige"]'::jsonb,
+      current_setting('q_project_test.valid_scores')::jsonb,
+      'en',
+      'q81-v1',
+      'career-values-v1',
+      'medical-specialties-v1',
+      'client-scoring-v2',
+      'research-consent-2026-09-04',
+      (public.get_active_specialty_catalog() -> 'version' ->> 'id')::uuid
+    )
+  $$,
+  '22023',
+  'Student study year must be between 1 and 6',
+  'current student RPC rejects study year 7'
 );
 SELECT extensions.is(
   public.submit_specialist_response_v3(

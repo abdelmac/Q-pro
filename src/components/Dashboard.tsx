@@ -20,6 +20,7 @@ import CalibrationAnalysis from '@/components/CalibrationAnalysis';
 import ResearchResponseDetail, { type DetailedResponse } from '@/components/ResearchResponseDetail';
 import SpecialtyConfigurationEditor from '@/components/SpecialtyConfigurationEditor';
 import { useSpecialtyCatalog } from '@/lib/SpecialtyCatalogContext';
+import { STUDENT_STUDY_YEARS } from '@/lib/participantProfile';
 import {
   ArrowLeft,
   BarChart3,
@@ -42,7 +43,6 @@ import {
 const PAGE_SIZE = 50;
 const EXPORT_BATCH_SIZE = 250;
 const IDLE_SIGN_OUT_MS = 30 * 60 * 1000;
-const STUDY_YEARS = Array.from({ length: 12 }, (_, index) => index + 1);
 
 type StudentListRow = Pick<
   Database['public']['Tables']['student_responses']['Row'],
@@ -825,7 +825,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
               <>
                 <FilterSelect label={french ? 'Année d’étude' : 'Study year'} value={yearFilter} onChange={(value) => { setYearFilter(value); resetPageAndAnalysis(); }}>
                   <option value="all">{french ? 'Toutes les années' : 'All study years'}</option>
-                  {STUDY_YEARS.map((year) => <option key={year} value={year}>{french ? 'Année' : 'Year'} {year}</option>)}
+                  {STUDENT_STUDY_YEARS.map((year) => <option key={year} value={year}>{french ? 'Année' : 'Year'} {year}</option>)}
                 </FilterSelect>
                 <FilterSelect label={french ? 'Spécialité préférée' : 'Preferred specialty'} value={studentSpecialtyFilter} onChange={(value) => { setStudentSpecialtyFilter(value); resetPageAndAnalysis(); }}>
                   <option value="all">{french ? 'Toutes les préférences' : 'All preferences'}</option>

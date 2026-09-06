@@ -768,9 +768,13 @@ def validate_source(markdown: str) -> None:
     findings = [label for label, pattern in forbidden_patterns.items() if pattern.search(markdown)]
     if findings:
         raise ValueError(f"Sensitive-looking content found in documentation: {', '.join(findings)}")
-    migration_name = "20260831120000_specialist_admin_portal.sql"
-    if migration_name not in markdown:
-        raise ValueError(f"Documentation must cite {migration_name}")
+    required_migrations = (
+        "20260831120000_specialist_admin_portal.sql",
+        "20260906090000_limit_student_study_year_to_six.sql",
+    )
+    for migration_name in required_migrations:
+        if migration_name not in markdown:
+            raise ValueError(f"Documentation must cite {migration_name}")
 
 
 def build_package(markdown: str) -> dict[str, bytes]:

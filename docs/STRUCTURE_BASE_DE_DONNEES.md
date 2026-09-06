@@ -2,9 +2,9 @@
 
 ## Structure de la base de données et portail Specialist/Admin
 
-**Version documentaire :** 5 septembre 2026
+**Version documentaire :** 6 septembre 2026
 
-**Migrations de référence :** `supabase/migrations/20260831120000_specialist_admin_portal.sql` et `supabase/migrations/20260904193000_accuracy_and_qualitative_specialist_v2.sql`
+**Migrations de référence :** `supabase/migrations/20260831120000_specialist_admin_portal.sql`, `supabase/migrations/20260904193000_accuracy_and_qualitative_specialist_v2.sql` et `supabase/migrations/20260906090000_limit_student_study_year_to_six.sql`
 
 **Périmètre :** Supabase Auth, PostgreSQL, collecte de recherche, catalogue éditable des spécialités, sécurité, versionnement et provenance scientifique.
 
@@ -49,11 +49,12 @@ Les principes structurants sont les suivants :
 - seul Professor peut publier ou demander la restauration d’une version historique ;
 - une version publiée est un instantané immuable ;
 - chaque nouvelle soumission de schéma 2, envoyée par une RPC v3, enregistre la version exacte du catalogue utilisée ;
+- toute nouvelle réponse étudiante limite l’année d’études facultative aux années 1 à 6 ;
 - l'entretien spécialiste de schéma 2 collecte cinq réponses qualitatives après les 81 items, au lieu des anciens champs structurés d'expérience, satisfaction, intention de changement et caractère volontaire du choix ;
 - les anciennes colonnes et les anciennes RPC restent présentes afin de conserver l'historique sans le mélanger au protocole courant ;
 - les indicateurs Top-k sont descriptifs et ne modifient jamais automatiquement les poids.
 
-La migration `20260831120000_specialist_admin_portal.sql` ajoute la couche éditoriale sans supprimer les fonctions v1 historiques. La migration `20260904193000_accuracy_and_qualitative_specialist_v2.sql` ajoute le schéma de soumission 2 et les RPC v3, publie un nouvel instantané immuable qui complète les traits clés mesurés manquants, et laisse volontairement `prevention_orientation` non mesuré. Les appels v2 restent utilisables pour l'historique ; les nouvelles collectes utilisent v3.
+La migration `20260831120000_specialist_admin_portal.sql` ajoute la couche éditoriale sans supprimer les fonctions v1 historiques. La migration `20260904193000_accuracy_and_qualitative_specialist_v2.sql` ajoute le schéma de soumission 2 et les RPC v3, publie un nouvel instantané immuable qui complète les traits clés mesurés manquants, et laisse volontairement `prevention_orientation` non mesuré. La migration `20260906090000_limit_student_study_year_to_six.sql` impose la plage 1–6 à toute nouvelle écriture étudiante, y compris via les anciennes RPC encore exécutables, sans réécrire les données historiques. Les appels v2 restent utilisables pour l'historique ; les nouvelles collectes utilisent v3.
 
 ## 2. Architecture générale
 
@@ -288,13 +289,13 @@ Réponses anonymes des étudiants.
 | Groupe | Colonnes | Description |
 |---|---|---|
 | Identité technique | `id`, `created_at` | UUID de soumission et horodatage. Aucun lien vers Auth. |
-| Contexte | `study_year`, `preferred_specialty`, `language` | Métadonnées facultatives et langue. |
+| Contexte | `study_year`, `preferred_specialty`, `language` | Métadonnées facultatives et langue. Pour toute nouvelle réponse, `study_year` vaut `NULL` ou un entier de 1 à 6. |
 | Données brutes | `ratings`, `selected_values` | 81 notes et 1 à 4 valeurs professionnelles. |
 | Résultat client | `client_scores` | Classement calculé dans le navigateur, non vérifié. |
 | Versions scientifiques | `submission_schema_version`, `questionnaire_version`, `value_catalog_version`, `specialty_catalog_version`, `scoring_version`, `consent_version` | Versions nécessaires à l’interprétation. |
 | Provenance du catalogue | `specialty_config_version_id`, `specialty_config_revision` | Instantané publié exact utilisé par les soumissions v2 et v3 ; obligatoire pour le schéma 2. |
 
-La paire de provenance est soit entièrement absente, soit entièrement présente. Une clé étrangère composite pointe vers `(id, revision)` de `private.specialty_catalog_versions`.
+La paire de provenance est soit entièrement absente, soit entièrement présente. Une clé étrangère composite pointe vers `(id, revision)` de `private.specialty_catalog_versions`. La contrainte 1–6 est ajoutée en mode `NOT VALID` : elle bloque les nouvelles valeurs hors plage, tandis que les éventuelles lignes historiques 7–12 restent intactes et auditables.
 
 ### 5.8 `public.specialist_responses`
 
@@ -396,7 +397,7 @@ Les fonctions restent idempotentes sur l’UUID de soumission. Un rejeu avec une
 
 #### `submit_student_response_v3(...)`
 
-Point d'entrée courant des étudiants. Il conserve les 81 items et le catalogue de valeurs, impose `client-scoring-v2`, `research-consent-2026-09-04` et la provenance exacte d'un catalogue publié, puis écrit `submission_schema_version = 2`. L'UUID fourni par le client reste idempotent : un rejeu strictement identique renvoie le même identifiant, tandis qu'un payload différent avec le même UUID est refusé.
+Point d'entrée courant des étudiants. Il conserve les 81 items et le catalogue de valeurs, accepte uniquement une année d’études facultative comprise entre 1 et 6, impose `client-scoring-v2`, `research-consent-2026-09-04` et la provenance exacte d'un catalogue publié, puis écrit `submission_schema_version = 2`. L'UUID fourni par le client reste idempotent : un rejeu strictement identique renvoie le même identifiant, tandis qu'un payload différent avec le même UUID est refusé.
 
 #### `submit_specialist_response_v3(...)`
 
@@ -528,6 +529,7 @@ Pour le schéma 2, la base contrôle notamment :
 - une à quatre valeurs canoniques, distinctes ;
 - une spécialité parmi les 58 valeurs du catalogue ;
 - une langue parmi `en`, `fr`, `ro` ;
+- une année d’études étudiante facultative limitée aux entiers de 1 à 6 pour toute nouvelle écriture ;
 - les versions exactes du questionnaire, des catalogues, du scoring ou du calibrage et du consentement ;
 - la structure des scores clients étudiants ;
 - l'existence de l'instantané publié référencé et la cohérence UUID/révision ;
@@ -775,7 +777,7 @@ Les journaux techniques de la plateforme peuvent aussi contenir des métadonnée
 
 ---
 
-**Références de structure :** `supabase/migrations/20260831120000_specialist_admin_portal.sql` et `supabase/migrations/20260904193000_accuracy_and_qualitative_specialist_v2.sql`
+**Références de structure :** `supabase/migrations/20260831120000_specialist_admin_portal.sql`, `supabase/migrations/20260904193000_accuracy_and_qualitative_specialist_v2.sql` et `supabase/migrations/20260906090000_limit_student_study_year_to_six.sql`
 
 **Source des règles antérieures de collecte et de sécurité :** migrations précédentes du dossier `supabase/migrations`.  
 **Format Word généré :** `docs/Q-Project-Structure-Base-de-donnees.docx`.

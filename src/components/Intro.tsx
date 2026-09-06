@@ -1,21 +1,21 @@
 import { useLanguage } from '@/lib/LanguageContext';
 import { FEATURE_FLAGS } from '@/config/features';
 import LanguageSwitcher from './LanguageSwitcher';
-import SpecialistToggle from './SpecialistToggle';
-import { Stethoscope, Brain, HeartPulse, Sparkles, ArrowRight, Compass, BookOpen, BarChart3 } from 'lucide-react';
+import { Stethoscope, Brain, HeartPulse, Sparkles, ArrowRight, Compass, BookOpen, BarChart3, GraduationCap, RefreshCw } from 'lucide-react';
 
 interface IntroProps {
   onStart: () => void;
   totalQuestions: number;
   isSpecialist: boolean;
-  onSpecialistToggle: (value: boolean) => void;
+  onChangeRole: () => void;
   onOpenExplorer: () => void;
   onOpenMethodology: () => void;
   onOpenDashboard: () => void;
 }
 
-export default function Intro({ onStart, totalQuestions, isSpecialist, onSpecialistToggle, onOpenExplorer, onOpenMethodology, onOpenDashboard }: IntroProps) {
+export default function Intro({ onStart, totalQuestions, isSpecialist, onChangeRole, onOpenExplorer, onOpenMethodology, onOpenDashboard }: IntroProps) {
   const { t } = useLanguage();
+  const RoleIcon = isSpecialist ? Stethoscope : GraduationCap;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -24,12 +24,21 @@ export default function Intro({ onStart, totalQuestions, isSpecialist, onSpecial
           <div className="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center text-white shadow-soft">
             <Stethoscope className="w-5 h-5" strokeWidth={2.2} />
           </div>
-          <span className="font-display text-lg font-semibold tracking-tight text-ink-900">
+          <span className="hidden font-display text-lg font-semibold tracking-tight text-ink-900 sm:inline">
             {t.appName}
           </span>
         </div>
         <div className="flex items-center gap-3">
-          <SpecialistToggle isSpecialist={isSpecialist} onToggle={onSpecialistToggle} />
+          <button
+            type="button"
+            onClick={onChangeRole}
+            aria-label={`${t.changeRole}: ${isSpecialist ? t.specialistMode : t.studentMode}`}
+            className="inline-flex items-center gap-2 rounded-full border border-ink-200 bg-white px-3 py-2.5 text-sm font-medium text-ink-700 transition-colors hover:border-brand-300 hover:text-brand-800"
+          >
+            <RoleIcon className="h-4 w-4 text-brand-600" />
+            <span>{isSpecialist ? t.specialistMode : t.studentMode}</span>
+            <RefreshCw className="h-3.5 w-3.5 text-ink-400" aria-hidden="true" />
+          </button>
           <LanguageSwitcher />
         </div>
       </header>
@@ -38,7 +47,7 @@ export default function Intro({ onStart, totalQuestions, isSpecialist, onSpecial
         <div className="max-w-3xl w-full text-center">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-brand-50 border border-brand-100 text-brand-700 text-xs font-semibold mb-8 animate-fade-in">
             <Sparkles className="w-3.5 h-3.5" />
-            <span>{t.forMedicalStudents}</span>
+            <span>{isSpecialist ? t.specialistBadge : t.forMedicalStudents}</span>
           </div>
 
           <h1 className="font-display text-4xl sm:text-6xl font-semibold tracking-tight text-ink-900 leading-[1.05] text-balance animate-fade-up">
