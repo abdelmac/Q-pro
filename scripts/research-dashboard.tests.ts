@@ -1,4 +1,15 @@
 import assert from 'node:assert/strict';
+import AlgorithmExplanation from '../src/components/AlgorithmExplanation';
+import DashboardSidebar from '../src/components/DashboardSidebar';
+import {
+  ALGORITHM_FLOW_STEP_IDS,
+  getAlgorithmCoverage,
+} from '../src/lib/algorithmExplanation';
+import {
+  getDashboardNavItems,
+  isCohortView,
+  type DashboardView,
+} from '../src/lib/dashboardNavigation';
 import RatingScale from '../src/components/RatingScale';
 import { RoleSelectionView, type RoleSelectionCopy } from '../src/components/RoleSelection';
 import SpecialtyBibliography from '../src/components/SpecialtyBibliography';
@@ -113,6 +124,297 @@ function elementTextContent(node: unknown): string {
 
   const element = node as { props?: { children?: unknown } };
   return elementTextContent(element.props?.children);
+}
+
+function resolvedElementPropsByType(node: unknown, type: unknown): Array<Record<string, unknown>> {
+  const matches: Array<Record<string, unknown>> = [];
+  const visit = (candidate: unknown) => {
+    if (Array.isArray(candidate)) {
+      candidate.forEach(visit);
+      return;
+    }
+    if (!candidate || typeof candidate !== 'object') return;
+
+    const element = candidate as { type?: unknown; props?: Record<string, unknown> };
+    if (!element.props) return;
+    if (element.type === type) matches.push(element.props);
+    if (typeof element.type === 'function') {
+      visit(element.type(element.props));
+      return;
+    }
+    visit(element.props.children);
+  };
+  visit(node);
+  return matches;
+}
+
+function resolvedElementTextContent(node: unknown): string {
+  if (typeof node === 'string' || typeof node === 'number') return String(node);
+  if (Array.isArray(node)) return node.map(resolvedElementTextContent).join(' ');
+  if (!node || typeof node !== 'object') return '';
+
+  const element = node as { type?: unknown; props?: Record<string, unknown> };
+  if (!element.props) return '';
+  if (typeof element.type === 'function') {
+    return resolvedElementTextContent(element.type(element.props));
+  }
+  return resolvedElementTextContent(element.props.children);
+}
+
+const readOnlyDashboardItems = getDashboardNavItems(false, 'en');
+assert.deepEqual(
+  readOnlyDashboardItems.map(({ id }) => id),
+  ['specialists', 'students', 'algorithm'],
+  'Every authorized portal account must see both cohorts followed by the algorithm guide',
+);
+assert.deepEqual(
+  readOnlyDashboardItems.map(({ section }) => section),
+  ['data', 'data', 'method'],
+  'The sidebar must separate research cohorts from the algorithm method guide',
+);
+assert.deepEqual(
+  getDashboardNavItems(true, 'en').map(({ id }) => id),
+  ['specialists', 'students', 'algorithm', 'configuration'],
+  'Catalog configuration must be appended only for accounts with edit permission',
+);
+assert.deepEqual(
+  getDashboardNavItems(false, 'fr').map(({ label }) => label),
+  ['Spécialistes', 'Étudiants', 'Comprendre l’algorithme'],
+  'The dashboard sidebar must expose French labels for every generally available view',
+);
+assert.deepEqual(
+  getDashboardNavItems(false, 'ro').map(({ label }) => label),
+  ['Specialiști', 'Studenți', 'Cum funcționează algoritmul'],
+  'The dashboard sidebar must expose Romanian labels for every generally available view',
+);
+
+for (const cohortView of ['specialists', 'students'] as const) {
+  assert.equal(isCohortView(cohortView), true, `${cohortView} must be recognized as a cohort view`);
+}
+for (const staticView of ['algorithm', 'configuration'] as const) {
+  assert.equal(
+    isCohortView(staticView),
+    false,
+    `${staticView} must not be treated as a cohort query, filter, table, or export view`,
+  );
+}
+
+const selectedDashboardViews: DashboardView[] = [];
+const dashboardSidebar = DashboardSidebar({
+  id: 'dashboard-sidebar-test',
+  activeView: 'algorithm',
+  canEdit: false,
+  lang: 'en',
+  displayName: 'Authorized reviewer',
+  portalRole: 'doctor',
+  onSelectView: (view) => selectedDashboardViews.push(view),
+  onBack: () => undefined,
+  onSignOut: () => undefined,
+});
+const dashboardAsides = elementPropsByType(dashboardSidebar, 'aside');
+const dashboardNavs = elementPropsByType(dashboardSidebar, 'nav');
+const dashboardNavButtons = elementPropsByType(dashboardSidebar, 'button')
+  .filter((button) => button['data-dashboard-view'] !== undefined);
+assert.equal(dashboardAsides.length, 1, 'The sidebar must use one semantic aside landmark');
+assert.equal(dashboardAsides[0].id, 'dashboard-sidebar-test');
+assert.equal(dashboardAsides[0]['data-dashboard-sidebar'], true);
+assert.equal(dashboardAsides[0]['aria-label'], 'Dashboard navigation');
+assert.equal(dashboardNavs.length, 1, 'The sidebar sections must be grouped in one navigation landmark');
+assert.equal(dashboardNavs[0]['aria-label'], 'Dashboard sections');
+assert.deepEqual(
+  dashboardNavButtons.map((button) => button['data-dashboard-view']),
+  ['specialists', 'students', 'algorithm'],
+  'Rendered read-only navigation must preserve its canonical order and hide configuration',
+);
+for (const button of dashboardNavButtons) {
+  assert.equal(button.type, 'button', 'Sidebar navigation controls must never submit a surrounding form');
+  assert.ok(
+    String(button.className ?? '').includes('focus-visible:ring-2'),
+    'Every sidebar destination must expose a visible keyboard focus treatment',
+  );
+  const view = button['data-dashboard-view'] as DashboardView;
+  assert.equal(
+    button['aria-current'],
+    view === 'algorithm' ? 'page' : undefined,
+    'Exactly the active sidebar destination must expose aria-current="page"',
+  );
+  (button.onClick as () => void)();
+}
+assert.deepEqual(
+  selectedDashboardViews,
+  ['specialists', 'students', 'algorithm'],
+  'Each sidebar destination must emit its exact dashboard view',
+);
+
+const editorSidebar = DashboardSidebar({
+  activeView: 'configuration',
+  canEdit: true,
+  lang: 'en',
+  displayName: 'Professor',
+  portalRole: 'professor',
+  onSelectView: () => undefined,
+  onBack: () => undefined,
+  onSignOut: () => undefined,
+});
+const editorNavButtons = elementPropsByType(editorSidebar, 'button')
+  .filter((button) => button['data-dashboard-view'] !== undefined);
+assert.equal(editorNavButtons.length, 4, 'An editor must receive the additional configuration destination');
+assert.equal(editorNavButtons[3]['data-dashboard-view'], 'configuration');
+assert.equal(editorNavButtons[3]['aria-current'], 'page');
+
+let sidebarCloseCount = 0;
+const mobileDashboardSidebar = DashboardSidebar({
+  activeView: 'specialists',
+  canEdit: false,
+  lang: 'en',
+  displayName: 'Doctor',
+  portalRole: 'doctor',
+  showClose: true,
+  onClose: () => { sidebarCloseCount += 1; },
+  onSelectView: () => undefined,
+  onBack: () => undefined,
+  onSignOut: () => undefined,
+});
+const closeSidebarButtons = elementPropsByType(mobileDashboardSidebar, 'button')
+  .filter((button) => button['aria-label'] === 'Close menu');
+assert.equal(closeSidebarButtons.length, 1, 'The mobile sidebar must expose one explicitly labelled close control');
+assert.equal(closeSidebarButtons[0].autoFocus, true, 'The mobile close control must receive initial keyboard focus');
+(closeSidebarButtons[0].onClick as () => void)();
+assert.equal(sidebarCloseCount, 1, 'The mobile close control must call its close handler');
+
+const algorithmSpecialtyCount = SPECIALTIES.length;
+const algorithmCatalogRevision = 42;
+const algorithmCatalogHash = '0123456789abcdef0123456789abcdef';
+const algorithmExplanation = AlgorithmExplanation({
+  lang: 'en',
+  catalogRevision: algorithmCatalogRevision,
+  catalogHash: algorithmCatalogHash,
+  specialties: SPECIALTIES,
+});
+const algorithmArticles = elementPropsByType(algorithmExplanation, 'article');
+const algorithmStepItems = elementPropsByType(algorithmExplanation, 'li')
+  .filter((item) => item['data-algorithm-step'] !== undefined);
+assert.equal(algorithmArticles.length, 1, 'The algorithm guide must have one article root');
+assert.equal(algorithmArticles[0]['data-algorithm-explanation'], true);
+assert.deepEqual(
+  algorithmStepItems.map((item) => item['data-algorithm-step']),
+  ALGORITHM_FLOW_STEP_IDS,
+  'The detailed guide must render every canonical algorithm stage exactly once and in order',
+);
+assert.deepEqual(
+  [...ALGORITHM_FLOW_STEP_IDS],
+  ['inputs', 'traits', 'values', 'comparison', 'score', 'ranking'],
+  'The public diagram contract must retain the complete input-to-ranking pipeline',
+);
+
+const algorithmText = resolvedElementTextContent(algorithmExplanation).replace(/\s+/gu, ' ');
+for (const requiredText of [
+  '81 ratings',
+  '((answer − 1) / 9) × 100',
+  '90/100 value-only signal',
+  'only traits available in both',
+  'similarity = max(0, 100 − |participant trait − specialty target|)',
+  'dimension multiplier = 0.5 + priority / 100 (or 1.0 when neutral)',
+  'value multiplier = 1 + mapped bonus / 24 (strongest selected value retained)',
+  'effective weight = profile importance × dimension multiplier × value multiplier',
+  'fit index = Σ(similarity × effective weight) / Σ(effective weight)',
+  'manual_orientation',
+  'prevention_orientation',
+  'Top-k recall',
+  'Very small eligible samples are descriptive only',
+  'No automatic learning from submissions',
+  'not a probability of success',
+]) {
+  assert.ok(
+    algorithmText.includes(requiredText),
+    `The algorithm guide must retain this scientific explanation: ${requiredText}`,
+  );
+}
+assert.ok(
+  algorithmText.includes(String(algorithmSpecialtyCount)),
+  'The algorithm guide must display the specialty count supplied by the runtime catalog',
+);
+const algorithmCoverage = getAlgorithmCoverage(SPECIALTIES);
+assert.deepEqual(
+  {
+    questionCount: algorithmCoverage.questionCount,
+    dimensionCount: algorithmCoverage.dimensionCount,
+    totalDictionary: algorithmCoverage.totalDictionary,
+    usedByProfiles: algorithmCoverage.usedByProfiles,
+    directlyMeasured: algorithmCoverage.directlyMeasured,
+    valueOnly: algorithmCoverage.valueOnly,
+    unmeasured: algorithmCoverage.unmeasured,
+    unusedByProfiles: algorithmCoverage.unusedByProfiles,
+    usedDirectlyMeasured: algorithmCoverage.usedDirectlyMeasured,
+    usedValueOnly: algorithmCoverage.usedValueOnly,
+    usedUnmeasured: algorithmCoverage.usedUnmeasured,
+  },
+  {
+    questionCount: 81,
+    dimensionCount: 5,
+    totalDictionary: 96,
+    usedByProfiles: 68,
+    directlyMeasured: 92,
+    valueOnly: 3,
+    unmeasured: 1,
+    unusedByProfiles: 28,
+    usedDirectlyMeasured: 66,
+    usedValueOnly: 1,
+    usedUnmeasured: 1,
+  },
+  'The visual coverage audit must be derived from the canonical mappings and published profiles',
+);
+assert.deepEqual(
+  algorithmCoverage.valueOnlyTraits,
+  ['manual_orientation', 'prestige_priority', 'security_priority'],
+);
+assert.deepEqual(algorithmCoverage.unmeasuredTraits, ['prevention_orientation']);
+for (const metric of [96, 92, 68, 66, 28]) {
+  assert.ok(
+    algorithmText.includes(String(metric)),
+    `The algorithm guide must display the derived coverage metric ${metric}`,
+  );
+}
+const algorithmImages = resolvedElementPropsByType(algorithmExplanation, 'svg');
+const algorithmImageTitles = resolvedElementPropsByType(algorithmExplanation, 'title');
+const algorithmImageDescriptions = resolvedElementPropsByType(algorithmExplanation, 'desc');
+assert.equal(algorithmImages.length, 1, 'The algorithm flow must render as exactly one image semantic');
+assert.equal(algorithmImages[0].role, 'img');
+assert.equal(
+  algorithmImages[0]['aria-labelledby'],
+  'algorithm-diagram-title algorithm-diagram-description',
+  'The algorithm image must reference its accessible title and description',
+);
+assert.equal(algorithmImageTitles.length, 1);
+assert.equal(algorithmImageTitles[0].id, 'algorithm-diagram-title');
+assert.equal(algorithmImageDescriptions.length, 1);
+assert.equal(algorithmImageDescriptions[0].id, 'algorithm-diagram-description');
+for (const provenance of [
+  SCORING_ENGINE_REVISION,
+  DATA_VERSIONS.scoring,
+  DATA_VERSIONS.questionnaire,
+  `r${algorithmCatalogRevision}`,
+  algorithmCatalogHash.slice(0, 12),
+]) {
+  assert.ok(
+    algorithmText.includes(provenance),
+    `The active algorithm provenance must display ${provenance}`,
+  );
+}
+
+for (const [language, requiredCopy] of [
+  ['fr', ['Comment fonctionne l’algorithme de correspondance', 'Aucun apprentissage automatique depuis les réponses', 'similarité = max(0', 'Limites structurelles à garder visibles']],
+  ['ro', ['Cum funcționează algoritmul de potrivire', 'Nicio învățare automată din răspunsuri', 'similaritate = max(0', 'Limitări structurale care trebuie păstrate vizibile']],
+] as const) {
+  const localizedText = resolvedElementTextContent(AlgorithmExplanation({
+    lang: language,
+    catalogRevision: algorithmCatalogRevision,
+    catalogHash: algorithmCatalogHash,
+    specialties: SPECIALTIES,
+  })).replace(/\s+/gu, ' ');
+  for (const copy of requiredCopy) {
+    assert.ok(localizedText.includes(copy), `The ${language} algorithm guide must include: ${copy}`);
+  }
 }
 
 assert.deepEqual(
@@ -516,6 +818,13 @@ assert.notEqual(
   getDashboardNavigationScrollKey('authorized', 'configuration'),
   'Changing dashboard screens must create a new scroll-reset key',
 );
+assert.equal(
+  new Set((['specialists', 'students', 'algorithm', 'configuration'] as const).map((view) => (
+    getDashboardNavigationScrollKey('authorized', view)
+  ))).size,
+  4,
+  'Every sidebar destination, including the algorithm guide, must receive a distinct scroll-reset key',
+);
 assert.notEqual(
   getSpecialistPromptNavigationScrollKey(false),
   getSpecialistPromptNavigationScrollKey(true),
@@ -905,6 +1214,8 @@ console.log(JSON.stringify({
   specialtyMetadataMatchesProfiles: true,
   multilingualSpecialtyNarratives: true,
   navigationScrollPolicy: true,
+  dashboardSidebarNavigation: true,
+  algorithmExplanation: true,
   participantRoleSelection: true,
   curiousParticipantFlow: true,
   studentStudyYearsOneToSix: true,

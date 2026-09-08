@@ -16,7 +16,14 @@ import {
   type SpecialistResponseRow,
   type StudentResponseRow,
 } from '@/lib/researchDashboard';
+import AlgorithmExplanation from '@/components/AlgorithmExplanation';
 import CalibrationAnalysis from '@/components/CalibrationAnalysis';
+import DashboardSidebar from '@/components/DashboardSidebar';
+import {
+  isCohortView,
+  type CohortView,
+  type DashboardView,
+} from '@/lib/dashboardNavigation';
 import ResearchResponseDetail, { type DetailedResponse } from '@/components/ResearchResponseDetail';
 import SpecialtyConfigurationEditor from '@/components/SpecialtyConfigurationEditor';
 import { useSpecialtyCatalog } from '@/lib/SpecialtyCatalogContext';
@@ -32,11 +39,10 @@ import {
   GraduationCap,
   Loader2,
   LogIn,
-  LogOut,
+  Menu,
   Microscope,
   RefreshCw,
   Stethoscope,
-  Settings2,
   Users,
 } from 'lucide-react';
 
@@ -67,7 +73,6 @@ type SpecialistListRow = Pick<
   | 'created_at'
 >;
 type AccessState = 'checking' | 'signed_out' | 'checking_access' | 'authorized';
-type DashboardView = 'students' | 'specialists' | 'configuration';
 type CompletenessFilter = 'all' | 'complete' | 'partial';
 type DataVersionFilter = 'current' | 'all' | 'legacy';
 type ExportKind = 'raw' | 'long' | 'analytic' | 'json';
@@ -158,7 +163,8 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
   const { lang } = useLanguage();
   const { specialties, version: catalogVersion, refresh: refreshCatalog } = useSpecialtyCatalog();
   const french = lang === 'fr';
-  const locale = french ? 'fr-FR' : 'en-GB';
+  const romanian = lang === 'ro';
+  const locale = french ? 'fr-FR' : romanian ? 'ro-RO' : 'en-GB';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [accessState, setAccessState] = useState<AccessState>('checking');
@@ -166,6 +172,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
   const [students, setStudents] = useState<StudentListRow[]>([]);
   const [specialists, setSpecialists] = useState<SpecialistListRow[]>([]);
   const [view, setView] = useState<DashboardView>('specialists');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [yearFilter, setYearFilter] = useState('all');
   const [studentSpecialtyFilter, setStudentSpecialtyFilter] = useState('all');
   const [specialtyFilter, setSpecialtyFilter] = useState('all');
@@ -190,6 +197,8 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
   const detailRequest = useRef(0);
   const analysisRequest = useRef(0);
   const exportRequest = useRef(0);
+  const sidebarTriggerRef = useRef<HTMLButtonElement>(null);
+  const mobileSidebarDialogRef = useRef<HTMLDivElement>(null);
 
   const resetPageAndAnalysis = () => {
     loadRequest.current += 1;
@@ -206,7 +215,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
   };
 
   const loadData = useCallback(async () => {
-    if (view === 'configuration') {
+    if (!isCohortView(view)) {
       setLoading(false);
       return;
     }
@@ -389,6 +398,8 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
         setActiveTotal(0);
         setCounts(EMPTY_COUNTS);
         setPage(0);
+        setView('specialists');
+        setSidebarOpen(false);
         setPortalProfile(null);
         setAccessState('signed_out');
         return;
@@ -429,8 +440,51 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
   }, []);
 
   useEffect(() => {
-    if (accessState === 'authorized' && view !== 'configuration') void loadData();
+    if (accessState === 'authorized' && isCohortView(view)) void loadData();
   }, [accessState, loadData, view]);
+
+  const closeMobileSidebar = useCallback(() => {
+    setSidebarOpen(false);
+    window.setTimeout(() => sidebarTriggerRef.current?.focus(), 0);
+  }, []);
+
+  useEffect(() => {
+    if (!sidebarOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        closeMobileSidebar();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      const focusable = Array.from(
+        mobileSidebarDialogRef.current?.querySelectorAll<HTMLElement>(
+          'button:not([disabled]):not([tabindex="-1"]), [href]:not([tabindex="-1"]), input:not([disabled]):not([tabindex="-1"]), select:not([disabled]):not([tabindex="-1"]), textarea:not([disabled]):not([tabindex="-1"]), [tabindex]:not([tabindex="-1"])',
+        ) ?? [],
+      );
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) setSidebarOpen(false);
+    };
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('resize', handleResize);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [closeMobileSidebar, sidebarOpen]);
 
   useEffect(() => {
     const client = supabase;
@@ -578,7 +632,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
     return allRows;
   }, [yearFilter, studentSpecialtyFilter, languageFilter, dataVersionFilter, dateFrom, dateTo]);
 
-  const openDetail = async (kind: DashboardView, id: string) => {
+  const openDetail = async (kind: CohortView, id: string) => {
     if (!supabase) return;
     const requestId = ++detailRequest.current;
     setDetailLoadingId(id);
@@ -621,6 +675,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
   };
 
   const exportData = async (kind: ExportKind) => {
+    if (!isCohortView(view)) return;
     const requestId = ++exportRequest.current;
     setExporting(kind);
     setError(null);
@@ -728,10 +783,54 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
       void refreshCatalog();
       return;
     }
+    if (!isCohortView(view)) return;
     analysisRequest.current += 1;
     setAnalysisRows(null);
     setAnalysisLoading(false);
     void loadData();
+  };
+
+  const selectDashboardView = (nextView: DashboardView) => {
+    if (sidebarOpen) closeMobileSidebar();
+    if (view === nextView) return;
+    setError(null);
+    setView(nextView);
+    resetPageAndAnalysis();
+  };
+
+  const viewCopy: Record<DashboardView, { title: string; description: string }> = {
+    specialists: {
+      title: french ? 'Cohorte des spécialistes' : romanian ? 'Cohorta specialiștilor' : 'Specialist cohort',
+      description: french
+        ? 'Entretiens qualitatifs, réponses brutes et analyse de calibration contrôlée.'
+        : romanian
+          ? 'Interviuri calitative, răspunsuri brute și analiză de calibrare controlată.'
+          : 'Qualitative interviews, raw responses, and governed calibration analysis.',
+    },
+    students: {
+      title: french ? 'Cohorte des étudiants' : romanian ? 'Cohorta studenților' : 'Student cohort',
+      description: french
+        ? 'Réponses anonymes, préférences déclarées et classements calculés dans le navigateur.'
+        : romanian
+          ? 'Răspunsuri anonime, preferințe declarate și clasamente calculate în browser.'
+          : 'Anonymous responses, stated preferences, and browser-computed rankings.',
+    },
+    algorithm: {
+      title: french ? 'Algorithme & calibration' : romanian ? 'Algoritm și calibrare' : 'Algorithm & calibration',
+      description: french
+        ? 'Du questionnaire au classement, avec les formules, la provenance et les limites actuelles.'
+        : romanian
+          ? 'De la chestionar la clasament, cu formulele, proveniența și limitările actuale.'
+          : 'From questionnaire to ranking, including formulas, provenance, and current limitations.',
+    },
+    configuration: {
+      title: french ? 'Configuration versionnée' : romanian ? 'Configurare versionată' : 'Versioned configuration',
+      description: french
+        ? 'Descriptions, résumés cliniques et profils cibles soumis à publication contrôlée.'
+        : romanian
+          ? 'Descrieri, rezumate clinice și profiluri-țintă supuse unei publicări controlate.'
+          : 'Descriptions, clinical summaries, and target profiles under governed publication.',
+    },
   };
 
   const calibrationSummary = useMemo(() => analysisRows
@@ -760,49 +859,121 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
   );
 
   return (
-    <main className="min-h-screen bg-accent-50 px-4 py-6 sm:px-8 lg:px-10">
-      <div className="mx-auto max-w-[1500px]">
-        <header className="mb-8 flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <button onClick={() => void leaveDashboard()} className="mb-3 inline-flex items-center gap-2 text-sm text-ink-500 hover:text-ink-900"><ArrowLeft className="h-4 w-4" />{french ? 'Retour et déconnexion' : 'Back and sign out'}</button>
-            <h1 className="font-display text-3xl font-semibold text-ink-900">{french ? 'Portail spécialistes & administration' : 'Specialist & admin portal'}</h1>
-            <p className="mt-1 text-sm text-ink-500">{french ? 'Cohortes anonymes, descriptions cliniques et configuration versionnée de l’algorithme.' : 'Anonymous cohorts, clinical content, and versioned algorithm configuration.'}</p>
-            {portalProfile && <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-brand-700">{portalProfile.display_name ?? (french ? 'Compte autorisé' : 'Authorized account')} · {portalProfile.portal_role}</p>}
+    <main className="min-h-screen bg-accent-50">
+      <div className="flex min-h-screen">
+        <DashboardSidebar
+          id="dashboard-sidebar-desktop"
+          className="sticky top-0 hidden h-screen w-72 shrink-0 lg:block"
+          activeView={view}
+          canEdit={portalProfile?.can_edit ?? false}
+          lang={lang}
+          displayName={portalProfile?.display_name ?? (french ? 'Compte autorisé' : romanian ? 'Cont autorizat' : 'Authorized account')}
+          portalRole={portalProfile?.portal_role ?? ''}
+          onSelectView={selectDashboardView}
+          onBack={() => void leaveDashboard()}
+          onSignOut={() => void signOutDashboard()}
+        />
+
+        {sidebarOpen && (
+          <div
+            ref={mobileSidebarDialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label={french ? 'Menu du dashboard' : romanian ? 'Meniul tabloului de bord' : 'Dashboard menu'}
+            className="fixed inset-0 z-50 lg:hidden"
+          >
+            <button
+              type="button"
+              tabIndex={-1}
+              aria-hidden="true"
+              onClick={closeMobileSidebar}
+              className="absolute inset-0 bg-ink-950/55 backdrop-blur-sm"
+            />
+            <DashboardSidebar
+              id="dashboard-sidebar-mobile"
+              className="relative z-10 w-[min(88vw,20rem)]"
+              activeView={view}
+              canEdit={portalProfile?.can_edit ?? false}
+              lang={lang}
+              displayName={portalProfile?.display_name ?? (french ? 'Compte autorisé' : romanian ? 'Cont autorizat' : 'Authorized account')}
+              portalRole={portalProfile?.portal_role ?? ''}
+              showClose
+              onClose={closeMobileSidebar}
+              onSelectView={selectDashboardView}
+              onBack={() => void leaveDashboard()}
+              onSignOut={() => void signOutDashboard()}
+            />
           </div>
-          <div className="flex items-center gap-2">
-            <button onClick={refreshData} disabled={loading} title={french ? 'Actualiser' : 'Refresh data'} className="inline-flex items-center gap-2 rounded-full border border-ink-200 bg-white px-4 py-2.5 text-sm font-semibold text-ink-700 disabled:opacity-40"><RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />{french ? 'Actualiser' : 'Refresh'}</button>
-            <button onClick={() => void signOutDashboard()} title={french ? 'Déconnexion' : 'Sign out'} className="inline-flex items-center gap-2 rounded-full border border-ink-200 bg-white px-4 py-2.5 text-sm font-semibold text-ink-700"><LogOut className="h-4 w-4" />{french ? 'Déconnexion' : 'Sign out'}</button>
-          </div>
-        </header>
+        )}
+
+        <section className="min-w-0 flex-1">
+          <div className="px-4 py-5 sm:px-8 sm:py-7 lg:px-10">
+            <div className="mx-auto max-w-[1500px]">
+              <header className="mb-8 flex flex-wrap items-start justify-between gap-4 border-b border-ink-100 pb-6">
+                <div className="flex min-w-0 items-start gap-3">
+                  <button
+                    ref={sidebarTriggerRef}
+                    type="button"
+                    aria-controls="dashboard-sidebar-mobile"
+                    aria-expanded={sidebarOpen}
+                    aria-label={french ? 'Ouvrir le menu du dashboard' : romanian ? 'Deschide meniul tabloului de bord' : 'Open dashboard menu'}
+                    onClick={() => setSidebarOpen(true)}
+                    className="mt-0.5 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-ink-200 bg-white text-ink-700 shadow-soft focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 lg:hidden"
+                  >
+                    <Menu className="h-5 w-5" aria-hidden="true" />
+                  </button>
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-700">
+                      {french ? 'Portail spécialistes & administration' : romanian ? 'Portal pentru specialiști și administrare' : 'Specialist & admin portal'}
+                    </p>
+                    <h1 className="mt-2 font-display text-3xl font-semibold tracking-tight text-ink-900">{viewCopy[view].title}</h1>
+                    <p className="mt-1 max-w-3xl text-sm leading-6 text-ink-500">{viewCopy[view].description}</p>
+                  </div>
+                </div>
+                {view !== 'algorithm' && (
+                  <button
+                    type="button"
+                    onClick={refreshData}
+                    disabled={loading}
+                    title={french ? 'Actualiser' : romanian ? 'Actualizează datele' : 'Refresh data'}
+                    className="inline-flex items-center gap-2 rounded-full border border-ink-200 bg-white px-4 py-2.5 text-sm font-semibold text-ink-700 shadow-soft disabled:opacity-40"
+                  >
+                    <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} aria-hidden="true" />
+                    {french ? 'Actualiser' : romanian ? 'Actualizează' : 'Refresh'}
+                  </button>
+                )}
+              </header>
 
         {error && <p className="mb-5 rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-700">{error}</p>}
 
-        <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        {isCohortView(view) && <div className="mb-8 grid grid-cols-2 gap-4 xl:grid-cols-4">
           <Stat label={french ? 'Spécialistes' : 'Specialists'} value={counts.specialists} icon={<Stethoscope className="h-5 w-5" />} />
           <Stat label={french ? 'Entretiens actuels complets' : 'Complete current interviews'} value={counts.specialistsComplete} icon={<CheckCircle2 className="h-5 w-5" />} />
           <Stat label={french ? 'Étudiants' : 'Students'} value={counts.students} icon={<Users className="h-5 w-5" />} />
           <Stat label={french ? 'Étudiants avec année' : 'Students with study year'} value={counts.studentsWithYear} icon={<GraduationCap className="h-5 w-5" />} />
-        </div>
+        </div>}
 
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-2 rounded-full border border-ink-200 bg-white p-1">
-            <button onClick={() => { if (view !== 'specialists') { setView('specialists'); resetPageAndAnalysis(); } }} className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ${view === 'specialists' ? 'bg-brand-800 text-white' : 'text-ink-600'}`}><Stethoscope className="h-4 w-4" />{french ? 'Spécialistes' : 'Specialists'}</button>
-            <button onClick={() => { if (view !== 'students') { setView('students'); resetPageAndAnalysis(); } }} className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ${view === 'students' ? 'bg-brand-800 text-white' : 'text-ink-600'}`}><GraduationCap className="h-4 w-4" />{french ? 'Étudiants' : 'Students'}</button>
-            {portalProfile?.can_edit && <button onClick={() => { if (view !== 'configuration') { setView('configuration'); resetPageAndAnalysis(); } }} className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ${view === 'configuration' ? 'bg-brand-800 text-white' : 'text-ink-600'}`}><Settings2 className="h-4 w-4" />{french ? 'Configuration' : 'Configuration'}</button>}
-          </div>
-          {view !== 'configuration' && <div className="flex flex-wrap items-center gap-2">
+        {isCohortView(view) && <div className="mb-5 flex flex-wrap items-center justify-end gap-2">
             <ExportButton icon={<Download className="h-4 w-4" />} label={french ? 'CSV large' : 'Wide CSV'} busy={exporting === 'raw'} disabled={exporting !== null} onClick={() => void exportData('raw')} />
             <ExportButton icon={<Download className="h-4 w-4" />} label={french ? 'CSV long' : 'Long CSV'} busy={exporting === 'long'} disabled={exporting !== null} onClick={() => void exportData('long')} />
             <ExportButton icon={<BarChart3 className="h-4 w-4" />} label={french ? 'CSV analytique' : 'Analytic CSV'} busy={exporting === 'analytic'} disabled={exporting !== null} onClick={() => void exportData('analytic')} />
             <ExportButton icon={<FileJson className="h-4 w-4" />} label="JSON" busy={exporting === 'json'} disabled={exporting !== null} onClick={() => void exportData('json')} />
-          </div>}
-        </div>
+        </div>}
+
+        {view === 'algorithm' && (
+          <AlgorithmExplanation
+            lang={lang}
+            catalogRevision={catalogVersion.revision}
+            catalogHash={catalogVersion.content_hash}
+            specialties={specialties}
+          />
+        )}
 
         {view === 'configuration' && portalProfile && (
           <SpecialtyConfigurationEditor french={french} portalProfile={portalProfile} onPublished={() => void refreshCatalog()} />
         )}
 
-        {view !== 'configuration' && <section className="mb-5 rounded-2xl border border-ink-100 bg-white p-4 shadow-soft">
+        {isCohortView(view) && <section className="mb-5 rounded-2xl border border-ink-100 bg-white p-4 shadow-soft">
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
             {view === 'specialists' ? (
               <>
@@ -863,7 +1034,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
           </div>
         )}
 
-        {view !== 'configuration' && <div className="overflow-x-auto rounded-2xl border border-ink-100 bg-white shadow-soft">
+        {isCohortView(view) && <div className="overflow-x-auto rounded-2xl border border-ink-100 bg-white shadow-soft">
           {view === 'specialists'
             ? <SpecialistTable rows={specialists} lang={lang} french={french} locale={locale} loadingId={detailLoadingId} onOpen={(id) => void openDetail('specialists', id)} />
             : <StudentTable rows={students} lang={lang} french={french} locale={locale} loadingId={detailLoadingId} onOpen={(id) => void openDetail('students', id)} />}
@@ -872,7 +1043,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
           )}
         </div>}
 
-        {view !== 'configuration' && <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-ink-500">
+        {isCohortView(view) && <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-ink-500">
           <span>{activeTotal === 0 ? (french ? '0 réponse' : '0 responses') : `${page * PAGE_SIZE + 1}-${Math.min((page + 1) * PAGE_SIZE, activeTotal)} / ${activeTotal}`}</span>
           <div className="flex items-center gap-2">
             <button type="button" onClick={() => setPage((current) => Math.max(0, current - 1))} disabled={loading || page === 0} className="rounded-full border border-ink-200 bg-white px-4 py-2 font-semibold text-ink-700 disabled:opacity-40">{french ? 'Précédent' : 'Previous'}</button>
@@ -890,6 +1061,9 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
             catalogHash={catalogVersion.content_hash}
           />
         )}
+            </div>
+          </div>
+        </section>
       </div>
 
       {detailedResponse && <ResearchResponseDetail response={detailedResponse} lang={lang} onClose={() => setDetailedResponse(null)} />}
