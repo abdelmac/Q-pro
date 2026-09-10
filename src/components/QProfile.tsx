@@ -6,9 +6,10 @@ import { ArrowRight } from 'lucide-react';
 interface QProfileProps {
   traits: Record<string, number>;
   onContinue: () => void;
+  continueLabel?: string;
 }
 
-export default function QProfile({ traits, onContinue }: QProfileProps) {
+export default function QProfile({ traits, onContinue, continueLabel }: QProfileProps) {
   const { t, lang } = useLanguage();
   const top = getTopTraits(traits, 12);
   const bottom = getBottomTraits(traits, 6);
@@ -73,7 +74,7 @@ export default function QProfile({ traits, onContinue }: QProfileProps) {
           onClick={onContinue}
           className="group inline-flex items-center gap-2.5 px-7 py-3.5 rounded-full bg-brand-800 text-white font-semibold text-sm shadow-lift hover:bg-brand-900 transition-all hover:scale-[1.03] active:scale-[0.98]"
         >
-          {t.qProfileContinue}
+          {continueLabel ?? t.qProfileContinue}
           <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
         </button>
       </div>

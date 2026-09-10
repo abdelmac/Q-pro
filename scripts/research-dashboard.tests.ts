@@ -12,6 +12,14 @@ import {
 } from '../src/lib/dashboardNavigation';
 import RatingScale from '../src/components/RatingScale';
 import { RoleSelectionView, type RoleSelectionCopy } from '../src/components/RoleSelection';
+import {
+  SpecialistQuestionnaireChoiceView,
+  type SpecialistQuestionnaireChoiceCopy,
+} from '../src/components/SpecialistQuestionnaireChoice';
+import {
+  SpecialistQuestionnaireChoiceView,
+  type SpecialistQuestionnaireChoiceCopy,
+} from '../src/components/SpecialistQuestionnaireChoice';
 import SpecialtyBibliography from '../src/components/SpecialtyBibliography';
 import { TRANSLATIONS } from '../src/data/i18n';
 import { ALL_QUESTION_IDS } from '../src/data/questions';
@@ -482,6 +490,43 @@ assert.deepEqual(
   PARTICIPANT_ROLES,
   'Selecting each identity button must emit its exact canonical participant role',
 );
+
+const specialistPathCopy: SpecialistQuestionnaireChoiceCopy = {
+  appName: 'Q-Pro',
+  back: 'Back',
+  title: 'How would you like to contribute?',
+  description: 'The 81-item questionnaire is optional.',
+  answerLabel: 'Answer the 81-item questionnaire',
+  answerDescription: 'Quantitative calibration and personal results.',
+  skipLabel: 'Go directly to the specialist questions',
+  skipDescription: 'Qualitative contribution only.',
+  privacy: 'Data is stored only after explicit submission.',
+};
+const selectedSpecialistPaths: string[] = [];
+const specialistPathChoice = SpecialistQuestionnaireChoiceView({
+  copy: specialistPathCopy,
+  onAnswerQuestionnaire: () => selectedSpecialistPaths.push('answer'),
+  onSkipQuestionnaire: () => selectedSpecialistPaths.push('skip'),
+  onBack: () => selectedSpecialistPaths.push('back'),
+});
+const specialistPathButtons = elementPropsByType(specialistPathChoice, 'button');
+const answerPathButton = specialistPathButtons.find((button) => button['data-specialist-path'] === 'answer');
+const skipPathButton = specialistPathButtons.find((button) => button['data-specialist-path'] === 'skip');
+assert.ok(answerPathButton, 'Specialists must be offered the complete 81-item path');
+assert.ok(skipPathButton, 'Specialists must be offered a direct path to the five qualitative questions');
+assert.equal(answerPathButton.type, 'button');
+assert.equal(skipPathButton.type, 'button');
+assert.ok(String(answerPathButton.className).includes('min-h-48'));
+assert.ok(String(skipPathButton.className).includes('min-h-48'));
+(answerPathButton.onClick as () => void)();
+(skipPathButton.onClick as () => void)();
+assert.deepEqual(selectedSpecialistPaths, ['answer', 'skip']);
+for (const language of ['en', 'ro', 'fr'] as const) {
+  const copy = TRANSLATIONS[language];
+  assert.ok(copy.specialistPathDescription.includes('81'), `${language} must explain that q81 is optional`);
+  assert.ok(copy.specialistPromptDescSkipped.trim(), `${language} must explain the qualitative-only consent`);
+  assert.ok(copy.specialistFinishSkipped.trim(), `${language} must provide a non-results completion action`);
+}
 
 assert.equal(getPostQuestionnaireDestination('student'), 'student');
 assert.equal(getPostQuestionnaireDestination('specialist'), 'specialist');
@@ -968,6 +1013,7 @@ const specialist: SpecialistResponseRow = {
   most_important_specialty_quality: 'Sound judgment under uncertainty.',
   would_not_choose_again_reason: null,
   student_self_question: 'Do I enjoy the daily work, including its difficult and repetitive parts?',
+  questionnaire_completed: true,
   language: 'fr',
   ratings,
   selected_values: [VALUE_OPTIONS[0]],
@@ -1070,6 +1116,70 @@ for (const row of invalidCases) {
   assert.equal(analyzeSpecialistResponse(row).ranking.length, 0);
 }
 
+const skippedSpecialist: SpecialistResponseRow = {
+  ...specialist,
+  id: '00000000-0000-4000-8000-000000000020',
+  questionnaire_completed: false,
+  ratings: {},
+  selected_values: [],
+};
+const skippedAssessment = assessSpecialistEligibility(skippedSpecialist);
+assert.equal(
+  skippedAssessment.eligible,
+  false,
+  'A specialist who explicitly skips the questionnaire must not enter quantitative calibration',
+);
+assert.deepEqual(
+  skippedAssessment.exclusionReasons,
+  ['questionnaire_skipped'],
+  'An explicit skip must have a dedicated exclusion reason rather than masquerading as corrupt ratings',
+);
+assert.equal(
+  analyzeSpecialistResponse(skippedSpecialist).ranking.length,
+  0,
+  'A skipped questionnaire must never produce a synthetic specialty ranking',
+);
+assert.equal(
+  isSpecialistCalibrationComplete(skippedSpecialist),
+  true,
+  'A complete qualitative interview remains complete when the optional quantitative questionnaire was skipped',
+);
+const skippedSummary = buildCalibrationSummary([specialist, skippedSpecialist], null);
+assert.equal(skippedSummary.total, 2);
+assert.equal(skippedSummary.eligibleCount, 1);
+assert.equal(skippedSummary.excludedCount, 1);
+assert.equal(
+  skippedSummary.completeCount,
+  2,
+  'A skipped quantitative questionnaire must not discard a complete qualitative interview',
+);
+assert.equal(skippedSummary.chooseAgainCount, 2);
+assert.equal(skippedSummary.chooseAgainRate, 100);
+assert.deepEqual(
+  skippedSummary.exclusionReasons,
+  [{ reason: 'questionnaire_skipped', count: 1 }],
+  'Skipped questionnaires must be reported separately from malformed quantitative payloads',
+);
+
+for (const inconsistentRow of [
+  { ...specialist, questionnaire_completed: false },
+  { ...specialist, questionnaire_completed: false, ratings, selected_values: [] },
+  { ...specialist, questionnaire_completed: false, ratings: {}, selected_values: [VALUE_OPTIONS[0]] },
+  { ...specialist, questionnaire_completed: true, ratings: {}, selected_values: [] },
+  {
+    ...specialist,
+    questionnaire_completed: true,
+    ratings: Object.fromEntries(ALL_QUESTION_IDS.slice(1).map((id) => [id, 5])),
+  },
+] satisfies SpecialistResponseRow[]) {
+  assert.equal(
+    assessSpecialistEligibility(inconsistentRow).eligible,
+    false,
+    'Partial or status-inconsistent specialist questionnaire data must remain quantitatively ineligible',
+  );
+  assert.equal(analyzeSpecialistResponse(inconsistentRow).ranking.length, 0);
+}
+
 const otherSpecialty = { ...specialist, actual_specialty: SPECIALTIES[1].name };
 assert.deepEqual(
   analyzeSpecialistResponse(specialist).ranking,
@@ -1163,6 +1273,11 @@ for (const csv of [
   assert.ok(parsed.every((row) => row.length === parsed[0].length), 'CSV rows must have equal widths');
 }
 assert.equal(parseCsv(specialistLongCsv([specialist])).length, 82);
+assert.equal(
+  parseCsv(specialistLongCsv([skippedSpecialist])).length,
+  1,
+  'A skipped questionnaire must not be expanded into 81 misleading blank long-format rows',
+);
 assert.equal(parseCsv(studentLongCsv([student])).length, 82);
 
 const rawLegacy = parseCsv(specialistRawCsv([legacy]));
@@ -1174,6 +1289,7 @@ assert.equal(rawValues[rawHeaders.indexOf('voluntary_choice')], "'@legacy");
 assert.equal(rawValues[rawHeaders.indexOf('years_of_experience')], '-1');
 assert.equal(rawHeaders.includes('specialty_config_version_id'), true);
 assert.equal(rawHeaders.includes('specialty_config_revision'), true);
+assert.equal(rawHeaders.includes('questionnaire_completed'), true);
 for (const column of [
   'current_specialty_view',
   'specialty_changes_over_years',
@@ -1206,6 +1322,17 @@ assert.ok(analyticValues[analyticHeaders.indexOf('scoring_engine_revision')]);
 assert.equal(analyticValues[analyticHeaders.indexOf('model_configuration_checksum')], DASHBOARD_MODEL_CHECKSUM);
 assert.ok(analyticValues[analyticHeaders.indexOf('analysis_generated_at')]);
 
+const analyticSkipped = parseCsv(specialistAnalyticCsv([skippedSpecialist]));
+const analyticSkippedHeaders = analyticSkipped[0];
+const analyticSkippedValues = analyticSkipped[1];
+assert.equal(analyticSkippedValues[analyticSkippedHeaders.indexOf('questionnaire_completed')], 'false');
+assert.equal(analyticSkippedValues[analyticSkippedHeaders.indexOf('analysis_eligible')], 'false');
+assert.equal(
+  analyticSkippedValues[analyticSkippedHeaders.indexOf('analysis_exclusion_reasons')],
+  'questionnaire_skipped',
+);
+assert.equal(analyticSkippedValues[analyticSkippedHeaders.indexOf('actual_rank_min')], '');
+
 console.log(JSON.stringify({
   eligibility: true,
   valueOnlyManualEvidence: true,
@@ -1218,6 +1345,7 @@ console.log(JSON.stringify({
   algorithmExplanation: true,
   participantRoleSelection: true,
   curiousParticipantFlow: true,
+  optionalSpecialistQuestionnaire: true,
   studentStudyYearsOneToSix: true,
   mobileRatingScale: true,
   noTargetLeakage: true,

@@ -137,8 +137,8 @@ const COPY: Record<Language, Omit<GuideCopy, 'steps'> & { steps: Array<Omit<Step
     calibrationTitle: 'How specialist data can improve a future version',
     calibrationDescription: 'Calibration is a governed research workflow outside the participant score. It produces evidence for human review, not automatic model changes.',
     calibrationSteps: [
-      { title: 'Specialist responses', description: 'Actual specialty, 81 ratings, selected values, and qualitative interview.' },
-      { title: 'Eligibility and provenance', description: 'Compatible protocol versions and a complete quantitative payload (81 ratings and valid selected values) are checked. Qualitative completeness is tracked separately.' },
+      { title: 'Specialist responses', description: 'Actual specialty and the qualitative interview are required. The 81 ratings and selected career values are optional.' },
+      { title: 'Eligibility and provenance', description: 'Only specialists who completed a compatible quantitative payload (81 ratings and valid selected values) enter ranks, traits, and Top-k indicators. Skipped questionnaires remain available for qualitative review.' },
       { title: 'Descriptive diagnostics', description: 'Tie-aware rank, target gaps, and Top-k recall describe current behavior.' },
       { title: 'Expert review', description: 'Professor and Doctor examine evidence, coverage, and possible profile changes.' },
       { title: 'Versioned publication', description: 'A reviewed complete catalog is published as a new auditable revision.' },
@@ -205,8 +205,8 @@ const COPY: Record<Language, Omit<GuideCopy, 'steps'> & { steps: Array<Omit<Step
     calibrationTitle: 'Comment les données spécialistes peuvent améliorer une future version',
     calibrationDescription: 'La calibration est un processus de recherche gouverné, distinct du score du participant. Elle produit des éléments pour une revue humaine, jamais des modifications automatiques.',
     calibrationSteps: [
-      { title: 'Réponses spécialistes', description: 'Spécialité réelle, 81 notes, valeurs choisies et entretien qualitatif.' },
-      { title: 'Éligibilité et provenance', description: 'Les versions compatibles et un dossier quantitatif complet (81 notes et valeurs sélectionnées valides) sont contrôlés. La complétude qualitative est suivie séparément.' },
+      { title: 'Réponses spécialistes', description: 'La spécialité réelle et l’entretien qualitatif sont obligatoires. Les 81 notes et les valeurs professionnelles sont facultatives.' },
+      { title: 'Éligibilité et provenance', description: 'Seuls les spécialistes ayant rempli un dossier quantitatif compatible (81 notes et valeurs valides) entrent dans les rangs, traits et indicateurs Top-k. Les questionnaires passés restent disponibles pour l’analyse qualitative.' },
       { title: 'Diagnostics descriptifs', description: 'Rang avec ex æquo, écarts aux cibles et rappels Top-k décrivent le moteur actuel.' },
       { title: 'Revue experte', description: 'Professeur et Docteur examinent les preuves, la couverture et les changements possibles.' },
       { title: 'Publication versionnée', description: 'Un catalogue complet validé est publié comme nouvelle révision auditable.' },
@@ -273,8 +273,8 @@ const COPY: Record<Language, Omit<GuideCopy, 'steps'> & { steps: Array<Omit<Step
     calibrationTitle: 'Cum pot datele specialiștilor îmbunătăți o versiune viitoare',
     calibrationDescription: 'Calibrarea este un proces de cercetare guvernat, separat de scorul participantului. Produce dovezi pentru revizuire umană, nu schimbări automate.',
     calibrationSteps: [
-      { title: 'Răspunsuri de la specialiști', description: 'Specialitatea reală, 81 de evaluări, valori și interviul calitativ.' },
-      { title: 'Eligibilitate și proveniență', description: 'Sunt verificate versiunile compatibile și setul cantitativ complet (81 de evaluări și valori selectate valide). Completitudinea calitativă este urmărită separat.' },
+      { title: 'Răspunsuri de la specialiști', description: 'Specialitatea reală și interviul calitativ sunt obligatorii. Cele 81 de evaluări și valorile profesionale sunt opționale.' },
+      { title: 'Eligibilitate și proveniență', description: 'Doar specialiștii cu un set cantitativ compatibil și complet (81 de evaluări și valori valide) intră în ranguri, trăsături și indicatorii Top-k. Chestionarele omise rămân disponibile pentru analiza calitativă.' },
       { title: 'Indicatori descriptivi', description: 'Rangul cu egalități, diferențele și Top-k descriu comportamentul actual.' },
       { title: 'Revizuire de specialitate', description: 'Profesorul și Doctorul examinează dovezile, acoperirea și schimbările posibile.' },
       { title: 'Publicare versionată', description: 'Un catalog complet revizuit este publicat ca o nouă versiune auditabilă.' },

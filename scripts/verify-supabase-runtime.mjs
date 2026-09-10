@@ -130,7 +130,7 @@ const anonymousEditorResponse = await fetch(`${supabaseUrl}/rest/v1/rpc/get_spec
 });
 assert([401, 403].includes(anonymousEditorResponse.status), `Anonymous editor access was not rejected (HTTP ${anonymousEditorResponse.status}).`);
 
-async function assertVersion3Rpc(name, body) {
+async function assertResearchRpcValidation(name, body) {
   const response = await fetch(`${supabaseUrl}/rest/v1/rpc/${name}`, {
     method: 'POST',
     headers,
@@ -138,18 +138,18 @@ async function assertVersion3Rpc(name, body) {
   });
   const payload = await response.json().catch(() => null);
   assert(response.status === 400, `${name} did not resolve to its validation error (HTTP ${response.status}).`);
-  assert(payload?.code === '22023', `${name} did not reject the deliberately invalid ratings with SQLSTATE 22023.`);
+  assert(payload?.code === '22023', `${name} did not reject the deliberately invalid payload with SQLSTATE 22023.`);
 }
 
 const invalidSubmissionId = '00000000-0000-4000-8000-000000000099';
-const version3Provenance = {
+const currentProvenance = {
   p_questionnaire_version: 'q81-v1',
   p_value_catalog_version: 'career-values-v1',
   p_specialty_catalog_version: 'medical-specialties-v1',
   p_consent_version: 'research-consent-2026-09-04',
   p_specialty_config_version_id: catalog.version.id,
 };
-await assertVersion3Rpc('submit_student_response_v3', {
+await assertResearchRpcValidation('submit_student_response_v3', {
   p_submission_id: invalidSubmissionId,
   p_study_year: 6,
   p_preferred_specialty: null,
@@ -158,9 +158,9 @@ await assertVersion3Rpc('submit_student_response_v3', {
   p_client_scores: [],
   p_language: 'en',
   p_scoring_version: 'client-scoring-v2',
-  ...version3Provenance,
+  ...currentProvenance,
 });
-await assertVersion3Rpc('submit_specialist_response_v3', {
+await assertResearchRpcValidation('submit_specialist_response_v3', {
   p_submission_id: invalidSubmissionId,
   p_actual_specialty: 'Cardiology',
   p_ratings: {},
@@ -173,7 +173,25 @@ await assertVersion3Rpc('submit_specialist_response_v3', {
   p_would_not_choose_again_reason: null,
   p_student_self_question: 'A valid qualitative question?',
   p_calibration_version: 'calibration-v2-qualitative',
-  ...version3Provenance,
+  ...currentProvenance,
+});
+await assertResearchRpcValidation('submit_specialist_response_v4', {
+  p_submission_id: invalidSubmissionId,
+  p_actual_specialty: 'Cardiology',
+  p_ratings: {},
+  p_selected_values: [],
+  p_questionnaire_completed: false,
+  p_language: 'en',
+  // Deliberately too short: this keeps the runtime probe non-mutating while
+  // proving that PostgREST resolves the new optional-questionnaire contract.
+  p_current_specialty_view: 'x',
+  p_specialty_changes_over_years: 'A valid qualitative answer.',
+  p_most_important_specialty_quality: 'A valid qualitative answer.',
+  p_would_choose_again_code: 'yes',
+  p_would_not_choose_again_reason: null,
+  p_student_self_question: 'A valid qualitative question?',
+  p_calibration_version: 'calibration-v2-qualitative',
+  ...currentProvenance,
 });
 
 console.log(JSON.stringify({
@@ -185,6 +203,7 @@ console.log(JSON.stringify({
   measuredMetadataTraitsPublished: true,
   multilingualNarratives,
   schema2SubmissionRpcs: true,
+  optionalSpecialistQuestionnaireRpc: true,
   multilingualEncoding: true,
   anonymousDirectTableAccessRejected: true,
   anonymousEditorAccessRejected: true,

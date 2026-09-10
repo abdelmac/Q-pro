@@ -103,6 +103,22 @@ export interface UIStrings {
   specialistMode: string;
   studentMode: string;
   curiousMode: string;
+  specialistPathTitle: string;
+  specialistPathDescription: string;
+  specialistPathAnswer: string;
+  specialistPathAnswerDescription: string;
+  specialistPathSkip: string;
+  specialistPathSkipDescription: string;
+  specialistPathPrivacy: string;
+  specialistSkipQuestionnaire: string;
+  specialistSkipQuestionnaireConfirm: string;
+  specialistContinueToQuestions: string;
+  specialistQuestionnaireCompleted: string;
+  specialistQuestionnaireSkipped: string;
+  specialistPromptDescCompleted: string;
+  specialistPromptDescSkipped: string;
+  specialistThankYouDescSkipped: string;
+  specialistFinishSkipped: string;
 
   // Specialist calibration fields
   specialistYearsExperience: string;
@@ -354,7 +370,7 @@ const en: UIStrings = {
   specialistSpecialtySubtitle: 'Select your current specialty so we can compare your profile with your field.',
   specialistSpecialtyRequired: 'Required — select the specialty you currently practice.',
   specialistPromptTitle: 'Tell us about your practice',
-  specialistPromptDesc: 'After the 81-item questionnaire, answer these five questions about your specialty. By submitting, you agree that your specialty, answers, selected values, and qualitative calibration data are stored for research.',
+  specialistPromptDesc: 'Answer these five questions about your specialty. The 81-item questionnaire is optional for specialists, and only the data from your chosen path is stored after you submit.',
   specialistActualSpecialty: 'Your actual specialty',
   specialistSelectSpecialty: 'Select your specialty',
   specialistChangeSpecialty: 'Change',
@@ -368,6 +384,22 @@ const en: UIStrings = {
   specialistMode: 'Specialist',
   studentMode: 'Student',
   curiousMode: 'Exploring medicine',
+  specialistPathTitle: 'How would you like to contribute?',
+  specialistPathDescription: 'The 81-item questionnaire is optional for specialists. Complete it for quantitative calibration, or go directly to the five questions about your specialty.',
+  specialistPathAnswer: 'Answer the 81-item questionnaire',
+  specialistPathAnswerDescription: 'About 8 minutes · Includes your personal specialty matches and quantitative calibration data.',
+  specialistPathSkip: 'Go directly to the specialist questions',
+  specialistPathSkipDescription: 'About 3 minutes · Share a qualitative contribution without completing the questionnaire.',
+  specialistPathPrivacy: 'Whichever path you choose, data is stored only after you explicitly consent and submit. We do not ask for your name or email address.',
+  specialistSkipQuestionnaire: 'Skip the optional questionnaire',
+  specialistSkipQuestionnaireConfirm: 'Skip the questionnaire? Your partial ratings and selected career values will not be submitted.',
+  specialistContinueToQuestions: 'Continue to the specialist questions',
+  specialistQuestionnaireCompleted: '81-item questionnaire completed',
+  specialistQuestionnaireSkipped: '81-item questionnaire skipped',
+  specialistPromptDescCompleted: 'Answer these five questions about your specialty. By submitting, you consent to the storage of your specialty, 81 ratings, selected career values, and qualitative answers for research.',
+  specialistPromptDescSkipped: 'Answer these five questions about your specialty. By submitting, you consent to the storage of your specialty and qualitative answers for research. No questionnaire ratings or career values will be stored.',
+  specialistThankYouDescSkipped: 'Your qualitative responses have been added to the research dataset. No questionnaire ratings or career values were stored.',
+  specialistFinishSkipped: 'Explore the specialties',
 
   specialistYearsExperience: 'Years of experience',
   specialistYearsPlaceholder: 'e.g. 10',
@@ -491,7 +523,7 @@ const en: UIStrings = {
   methodologyProfiles: 'Specialty Profiles',
   methodologyProfilesDesc: 'Each specialty is defined by target trait values and importance weights derived from initial heuristic archetypes. The profiles are versioned and editable by authorized reviewers, but they are not yet clinically validated norms.',
   methodologyCalibration: 'Calibration Process',
-  methodologyCalibrationDesc: 'Practicing specialists answer the same 81 items and five qualitative follow-up questions. Authorized reviewers can use these data to inform deliberate, versioned profile changes; responses do not update weights automatically.',
+  methodologyCalibrationDesc: 'Practicing specialists answer five qualitative questions and may also complete the same 81-item questionnaire. Authorized reviewers can use these data to inform deliberate, versioned profile changes; responses do not update weights automatically.',
   methodologyValidation: 'Validation Strategy',
   methodologyValidationDesc: 'Specialists’ own-field ranks and top-k recall are tracked as descriptive diagnostics. They do not by themselves establish validity or justify automatic weight changes; test-retest and external validation remain to be established.',
   methodologyAlgorithmVersion: 'Algorithm version',
@@ -515,7 +547,7 @@ const en: UIStrings = {
   methodologyProfilesDetailed: 'Specialty Profiles — How Fields Are Defined',
   methodologyProfilesDetailedDesc: 'Each specialty in the current catalog has a partial trait profile with targets from 0 to 100 and integer importance weights from 1 to 3 (relevant, important, very important). The starting profiles were assembled from heuristic archetypes such as surgical, cognitive-clinical, longitudinal, people-oriented, technical, diagnostic, laboratory, pediatric, and population. They are versioned calibration hypotheses, not validated clinical norms.',
   methodologyCalibrationDetailed: 'Calibration — Learning from Real Specialists',
-  methodologyCalibrationDetailedDesc: 'Practicing specialists submit the same 81 ratings, selected career values, their actual specialty, and five follow-ups: how they see the specialty now; what changed over the years; its most important required quality; whether they would choose it again (and why not, if applicable); and the question a student should ask before choosing it. Authorized reviewers may use the dataset to propose profile edits. Publication is deliberate and versioned; no response changes a target automatically.',
+  methodologyCalibrationDetailedDesc: 'Practicing specialists submit their actual specialty and five follow-ups: how they see the specialty now; what changed over the years; its most important required quality; whether they would choose it again (and why not, if applicable); and the question a student should ask before choosing it. They may optionally complete the same 81 ratings and select career values to contribute quantitative calibration data and receive specialty matches. Authorized reviewers may use the dataset to propose profile edits. Publication is deliberate and versioned; no response changes a target automatically.',
   methodologyValidationDetailed: 'Validation Strategy',
   methodologyValidationDetailedDesc: 'The dashboard tracks each specialist’s self-identified field rank and top-k recall under a named engine and catalog version. These are descriptive diagnostics of the current engine and can be distorted by small or uneven samples, incomplete trait coverage, and profile similarity. They must not alone validate or modify weights. Test-retest reliability, independent cohorts, and outcome-based validation have not yet been established.',
   methodologyDataPrivacy: 'Data Privacy',
@@ -610,7 +642,7 @@ const ro: UIStrings = {
   specialistSpecialtySubtitle: 'Selectează specialitatea în care profesezi în prezent, pentru a-ți putea compara profilul cu domeniul tău.',
   specialistSpecialtyRequired: 'Obligatoriu — selectează specialitatea pe care o practici în prezent.',
   specialistPromptTitle: 'Spune-ne despre experiența ta profesională',
-  specialistPromptDesc: 'După chestionarul cu 81 de itemi, răspunde la aceste cinci întrebări despre specialitatea ta. Prin trimitere, accepți stocarea pentru cercetare a specialității, răspunsurilor, valorilor selectate și datelor calitative de calibrare.',
+  specialistPromptDesc: 'Răspunde la aceste cinci întrebări despre specialitatea ta. Chestionarul cu 81 de itemi este opțional pentru specialiști, iar după trimitere sunt stocate numai datele din parcursul ales.',
   specialistActualSpecialty: 'Specialitatea ta reală',
   specialistSelectSpecialty: 'Selectează specialitatea',
   specialistChangeSpecialty: 'Modifică',
@@ -624,6 +656,22 @@ const ro: UIStrings = {
   specialistMode: 'Specialist',
   studentMode: 'Student',
   curiousMode: 'Explorez medicina',
+  specialistPathTitle: 'Cum dorești să contribui?',
+  specialistPathDescription: 'Chestionarul cu 81 de itemi este opțional pentru specialiști. Completează-l pentru calibrarea cantitativă sau mergi direct la cele cinci întrebări despre specialitatea ta.',
+  specialistPathAnswer: 'Răspund la cei 81 de itemi',
+  specialistPathAnswerDescription: 'Aproximativ 8 minute · Include potrivirile tale de specialitate și date cantitative de calibrare.',
+  specialistPathSkip: 'Merg direct la întrebările pentru specialiști',
+  specialistPathSkipDescription: 'Aproximativ 3 minute · O contribuție calitativă, fără completarea chestionarului.',
+  specialistPathPrivacy: 'Indiferent de opțiunea aleasă, datele sunt stocate numai după ce îți exprimi explicit consimțământul și le trimiți. Nu îți solicităm numele sau adresa de e-mail.',
+  specialistSkipQuestionnaire: 'Omite chestionarul opțional',
+  specialistSkipQuestionnaireConfirm: 'Omiți chestionarul? Răspunsurile parțiale și valorile profesionale selectate nu vor fi trimise.',
+  specialistContinueToQuestions: 'Continuă la întrebările pentru specialiști',
+  specialistQuestionnaireCompleted: 'Chestionar cu 81 de itemi completat',
+  specialistQuestionnaireSkipped: 'Chestionar cu 81 de itemi omis',
+  specialistPromptDescCompleted: 'Răspunde la aceste cinci întrebări despre specialitatea ta. Prin trimitere, accepți stocarea pentru cercetare a specialității, a celor 81 de evaluări, a valorilor profesionale selectate și a răspunsurilor calitative.',
+  specialistPromptDescSkipped: 'Răspunde la aceste cinci întrebări despre specialitatea ta. Prin trimitere, accepți stocarea pentru cercetare a specialității și a răspunsurilor calitative. Nu vor fi stocate evaluări din chestionar sau valori profesionale.',
+  specialistThankYouDescSkipped: 'Răspunsurile tale calitative au fost adăugate la setul de date de cercetare. Nu au fost stocate evaluări din chestionar sau valori profesionale.',
+  specialistFinishSkipped: 'Explorează specialitățile',
 
   specialistYearsExperience: 'Ani de experiență',
   specialistYearsPlaceholder: 'ex. 10',
@@ -747,7 +795,7 @@ const ro: UIStrings = {
   methodologyProfiles: 'Profiluri de specialitate',
   methodologyProfilesDesc: 'Fiecare specialitate este definită prin valori țintă și ponderi de importanță derivate din arhetipuri euristice inițiale. Profilurile sunt versionate și editabile de evaluatori autorizați, dar nu sunt încă norme validate clinic.',
   methodologyCalibration: 'Proces de calibrare',
-  methodologyCalibrationDesc: 'Specialiștii în exercițiu răspund la aceiași 81 de itemi și la cinci întrebări calitative ulterioare. Evaluatorii autorizați pot folosi datele pentru modificări deliberate și versionate ale profilurilor; răspunsurile nu actualizează automat ponderile.',
+  methodologyCalibrationDesc: 'Specialiștii în exercițiu răspund la cinci întrebări calitative și pot completa opțional același chestionar cu 81 de itemi. Evaluatorii autorizați pot folosi datele pentru modificări deliberate și versionate ale profilurilor; răspunsurile nu actualizează automat ponderile.',
   methodologyValidation: 'Strategie de validare',
   methodologyValidationDesc: 'Rangul propriei specialități și rata de regăsire top-k sunt urmărite ca indicatori descriptivi. Ele nu stabilesc singure validitatea și nu justifică modificări automate ale ponderilor; validarea test-retest și externă rămân de realizat.',
   methodologyAlgorithmVersion: 'Versiune algoritm',
@@ -771,7 +819,7 @@ const ro: UIStrings = {
   methodologyProfilesDetailed: 'Profiluri de specialitate — Cum sunt definite domeniile',
   methodologyProfilesDetailedDesc: 'Fiecare specialitate din catalogul actual are un profil parțial de trăsături, cu ținte între 0 și 100 și ponderi întregi de importanță între 1 și 3 (relevantă, importantă, foarte importantă). Profilurile inițiale au fost alcătuite din arhetipuri euristice precum chirurgical, cognitiv-clinic, longitudinal, orientat spre oameni, tehnic, diagnostic, laborator, pediatric și populație. Sunt ipoteze de calibrare versionate, nu norme clinice validate.',
   methodologyCalibrationDetailed: 'Calibrare — Învățăm de la specialiști reali',
-  methodologyCalibrationDetailedDesc: 'Specialiștii în exercițiu trimit aceleași 81 de evaluări, valorile profesionale selectate, specialitatea reală și cinci răspunsuri ulterioare: cum văd specialitatea acum; ce s-a schimbat în timp; cea mai importantă calitate necesară; dacă ar alege-o din nou (și motivul, dacă nu); și întrebarea pe care un student ar trebui să și-o pună înainte de alegere. Evaluatorii autorizați pot folosi setul de date pentru a propune modificări ale profilurilor. Publicarea este deliberată și versionată; niciun răspuns nu modifică automat o țintă.',
+  methodologyCalibrationDetailedDesc: 'Specialiștii în exercițiu trimit specialitatea reală și cinci răspunsuri ulterioare: cum văd specialitatea acum; ce s-a schimbat în timp; cea mai importantă calitate necesară; dacă ar alege-o din nou (și motivul, dacă nu); și întrebarea pe care un student ar trebui să și-o pună înainte de alegere. Ei pot completa opțional aceleași 81 de evaluări și pot selecta valori profesionale pentru a contribui cu date cantitative de calibrare și a primi potriviri de specialitate. Evaluatorii autorizați pot folosi setul de date pentru a propune modificări ale profilurilor. Publicarea este deliberată și versionată; niciun răspuns nu modifică automat o țintă.',
   methodologyValidationDetailed: 'Strategie de validare',
   methodologyValidationDetailedDesc: 'Dashboardul urmărește rangul domeniului auto-identificat al fiecărui specialist și rata de regăsire top-k pentru o versiune numită a motorului și catalogului. Acestea sunt diagnostice descriptive ale motorului actual și pot fi distorsionate de eșantioane mici sau neuniforme, acoperirea incompletă a trăsăturilor și similaritatea profilurilor. Nu trebuie să valideze sau să modifice singure ponderile. Fiabilitatea test-retest, cohortele independente și validarea pe rezultate nu au fost încă stabilite.',
   methodologyDataPrivacy: 'Confidențialitatea datelor',
@@ -866,7 +914,7 @@ const fr: UIStrings = {
   specialistSpecialtySubtitle: 'Sélectionnez votre spécialité actuelle afin que nous puissions comparer votre profil à votre domaine.',
   specialistSpecialtyRequired: 'Obligatoire — sélectionnez la spécialité que vous exercez actuellement.',
   specialistPromptTitle: 'Parlez-nous de votre pratique',
-  specialistPromptDesc: 'Après le questionnaire de 81 items, répondez à ces cinq questions sur votre spécialité. En envoyant, vous acceptez que votre spécialité, vos réponses, vos valeurs et les données qualitatives de calibration soient conservées à des fins de recherche.',
+  specialistPromptDesc: 'Répondez à ces cinq questions sur votre spécialité. Le questionnaire de 81 items est facultatif pour les spécialistes et seules les données du parcours choisi sont conservées après l’envoi.',
   specialistActualSpecialty: 'Votre spécialité réelle',
   specialistSelectSpecialty: 'Sélectionnez votre spécialité',
   specialistChangeSpecialty: 'Modifier',
@@ -880,6 +928,22 @@ const fr: UIStrings = {
   specialistMode: 'Spécialiste',
   studentMode: 'Étudiant',
   curiousMode: 'Je découvre la médecine',
+  specialistPathTitle: 'Comment souhaitez-vous contribuer ?',
+  specialistPathDescription: 'Le questionnaire de 81 items est facultatif pour les spécialistes. Remplissez-le pour contribuer à la calibration quantitative, ou allez directement aux cinq questions sur votre spécialité.',
+  specialistPathAnswer: 'Répondre aux 81 items',
+  specialistPathAnswerDescription: 'Environ 8 minutes · Inclut vos résultats d’adéquation et des données quantitatives de calibration.',
+  specialistPathSkip: 'Aller directement aux questions pour spécialistes',
+  specialistPathSkipDescription: 'Environ 3 minutes · Partagez une contribution qualitative sans remplir le questionnaire.',
+  specialistPathPrivacy: 'Quel que soit le parcours choisi, les données ne sont conservées qu’après votre consentement explicite et leur envoi. Nous ne demandons ni votre nom ni votre adresse e-mail.',
+  specialistSkipQuestionnaire: 'Passer le questionnaire facultatif',
+  specialistSkipQuestionnaireConfirm: 'Passer le questionnaire ? Vos évaluations partielles et les valeurs professionnelles sélectionnées ne seront pas envoyées.',
+  specialistContinueToQuestions: 'Continuer vers les questions pour spécialistes',
+  specialistQuestionnaireCompleted: 'Questionnaire de 81 items rempli',
+  specialistQuestionnaireSkipped: 'Questionnaire de 81 items non rempli',
+  specialistPromptDescCompleted: 'Répondez à ces cinq questions sur votre spécialité. En envoyant, vous consentez à la conservation à des fins de recherche de votre spécialité, de vos 81 évaluations, des valeurs professionnelles sélectionnées et de vos réponses qualitatives.',
+  specialistPromptDescSkipped: 'Répondez à ces cinq questions sur votre spécialité. En envoyant, vous consentez à la conservation de votre spécialité et de vos réponses qualitatives à des fins de recherche. Aucune évaluation du questionnaire ni valeur professionnelle ne sera conservée.',
+  specialistThankYouDescSkipped: 'Vos réponses qualitatives ont été ajoutées au jeu de données de recherche. Aucune évaluation du questionnaire ni valeur professionnelle n’a été conservée.',
+  specialistFinishSkipped: 'Explorer les spécialités',
 
   specialistYearsExperience: 'Années d\'expérience',
   specialistYearsPlaceholder: 'ex. 10',
@@ -1003,7 +1067,7 @@ const fr: UIStrings = {
   methodologyProfiles: 'Profils de Spécialités',
   methodologyProfilesDesc: 'Chaque spécialité est définie par des valeurs cibles et des poids d’importance issus d’archétypes heuristiques initiaux. Les profils sont versionnés et modifiables par des évaluateurs autorisés, mais ne constituent pas encore des normes validées cliniquement.',
   methodologyCalibration: 'Processus de Calibration',
-  methodologyCalibrationDesc: 'Les spécialistes en exercice répondent aux mêmes 81 items et à cinq questions qualitatives complémentaires. Les évaluateurs autorisés peuvent utiliser ces données pour éclairer des modifications délibérées et versionnées des profils ; les réponses ne changent jamais automatiquement les poids.',
+  methodologyCalibrationDesc: 'Les spécialistes en exercice répondent à cinq questions qualitatives et peuvent également remplir le même questionnaire de 81 items. Les évaluateurs autorisés peuvent utiliser ces données pour éclairer des modifications délibérées et versionnées des profils ; les réponses ne changent jamais automatiquement les poids.',
   methodologyValidation: 'Stratégie de Validation',
   methodologyValidationDesc: 'Le rang de la spécialité propre des spécialistes et le rappel top-k sont suivis comme indicateurs descriptifs. Ils ne suffisent ni à établir la validité ni à justifier des changements automatiques de poids ; la validation test-retest et externe reste à établir.',
   methodologyAlgorithmVersion: 'Version de l\'algorithme',
@@ -1027,7 +1091,7 @@ const fr: UIStrings = {
   methodologyProfilesDetailed: 'Profils de spécialités — Comment les domaines sont définis',
   methodologyProfilesDetailedDesc: 'Chaque spécialité du catalogue actuel possède un profil partiel de traits, avec des cibles de 0 à 100 et des poids d’importance entiers de 1 à 3 (pertinent, important, très important). Les profils initiaux ont été assemblés à partir d’archétypes heuristiques tels que chirurgical, cognitif-clinique, longitudinal, orienté personnes, technique, diagnostique, laboratoire, pédiatrique et population. Ce sont des hypothèses de calibration versionnées, pas des normes cliniques validées.',
   methodologyCalibrationDetailed: 'Calibration — Apprendre des vrais spécialistes',
-  methodologyCalibrationDetailedDesc: 'Les spécialistes en exercice soumettent les mêmes 81 évaluations, leurs valeurs professionnelles, leur spécialité réelle et cinq réponses complémentaires : leur perception actuelle de la spécialité ; ce qui a changé au fil des années ; la qualité requise la plus importante ; s’ils la choisiraient de nouveau (et pourquoi pas, le cas échéant) ; et la question qu’un étudiant devrait se poser avant de la choisir. Les évaluateurs autorisés peuvent utiliser ce jeu de données pour proposer des modifications de profils. La publication est délibérée et versionnée ; aucune réponse ne modifie automatiquement une cible.',
+  methodologyCalibrationDetailedDesc: 'Les spécialistes en exercice soumettent leur spécialité réelle et cinq réponses complémentaires : leur perception actuelle de la spécialité ; ce qui a changé au fil des années ; la qualité requise la plus importante ; s’ils la choisiraient de nouveau (et pourquoi pas, le cas échéant) ; et la question qu’un étudiant devrait se poser avant de la choisir. Ils peuvent également remplir les mêmes 81 évaluations et sélectionner des valeurs professionnelles afin de contribuer à la calibration quantitative et d’obtenir leurs résultats d’adéquation. Les évaluateurs autorisés peuvent utiliser ce jeu de données pour proposer des modifications de profils. La publication est délibérée et versionnée ; aucune réponse ne modifie automatiquement une cible.',
   methodologyValidationDetailed: 'Stratégie de validation',
   methodologyValidationDetailedDesc: 'Le tableau de bord suit le rang du domaine auto-identifié de chaque spécialiste et le rappel top-k sous une version nommée du moteur et du catalogue. Ce sont des diagnostics descriptifs du moteur actuel, susceptibles d’être faussés par des échantillons petits ou inégaux, une couverture incomplète des traits et la similarité des profils. Ils ne doivent pas, à eux seuls, valider ou modifier les poids. La fidélité test-retest, les cohortes indépendantes et la validation fondée sur les résultats ne sont pas encore établies.',
   methodologyDataPrivacy: 'Confidentialité des données',

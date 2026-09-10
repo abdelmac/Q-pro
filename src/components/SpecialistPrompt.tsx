@@ -18,6 +18,7 @@ interface SpecialistPromptProps {
   initialSpecialty?: string | null;
   ratings: Record<string, number>;
   selectedValues: string[];
+  questionnaireCompleted: boolean;
   language: SupportedLanguage;
   onDone: () => void;
 }
@@ -26,6 +27,7 @@ export default function SpecialistPrompt({
   initialSpecialty = null,
   ratings,
   selectedValues,
+  questionnaireCompleted,
   language,
   onDone,
 }: SpecialistPromptProps) {
@@ -74,6 +76,7 @@ export default function SpecialistPrompt({
       actual_specialty: actualSpecialty,
       ratings,
       selected_values: selectedValues,
+      questionnaire_completed: questionnaireCompleted,
       language,
       current_specialty_view: currentSpecialtyView.trim(),
       specialty_changes_over_years: specialtyChangesOverYears.trim(),
@@ -103,13 +106,13 @@ export default function SpecialistPrompt({
           {t.specialistThankYou}
         </h2>
         <p className="text-ink-500 leading-relaxed mb-8 text-balance">
-          {t.specialistThankYouDesc}
+          {questionnaireCompleted ? t.specialistThankYouDesc : t.specialistThankYouDescSkipped}
         </p>
         <button
           onClick={onDone}
           className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-brand-800 text-white font-semibold text-sm shadow-lift hover:bg-brand-900 transition-all hover:scale-[1.03] active:scale-[0.98]"
         >
-          {t.specialistAnother}
+          {questionnaireCompleted ? t.specialistAnother : t.specialistFinishSkipped}
         </button>
       </div>
     );
@@ -122,7 +125,14 @@ export default function SpecialistPrompt({
           {t.specialistPromptTitle}
         </h2>
         <p className="text-ink-500 leading-relaxed text-balance">
-          {t.specialistPromptDesc}
+          {questionnaireCompleted ? t.specialistPromptDescCompleted : t.specialistPromptDescSkipped}
+        </p>
+        <p className={`mx-auto mt-4 inline-flex rounded-full border px-3 py-1.5 text-xs font-semibold ${
+          questionnaireCompleted
+            ? 'border-brand-100 bg-brand-50 text-brand-800'
+            : 'border-accent-200 bg-accent-50 text-accent-800'
+        }`}>
+          {questionnaireCompleted ? t.specialistQuestionnaireCompleted : t.specialistQuestionnaireSkipped}
         </p>
       </div>
 
@@ -150,7 +160,7 @@ export default function SpecialistPrompt({
         ) : (
           <>
             <div className="relative mb-4">
-              <Search aria-hidden="true" className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-ink-400" />
+              <Search aria-hidden="true" className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-ink-400" />
               <input
                 type="text"
                 value={query}

@@ -20,6 +20,7 @@ import RatingStep from '@/components/RatingStep';
 import Results from '@/components/Results';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import SpecialistPrompt from '@/components/SpecialistPrompt';
+import SpecialistQuestionnaireChoice from '@/components/SpecialistQuestionnaireChoice';
 import StudentPrompt from '@/components/StudentPrompt';
 import QProfile from '@/components/QProfile';
 import SpecialtyExplorer from '@/components/SpecialtyExplorer';
@@ -35,7 +36,8 @@ import {
 
 const Dashboard = lazy(() => import('@/components/Dashboard'));
 
-type Phase = 'intro' | 'quiz' | 'qprofile' | 'student' | 'results' | 'specialist' | 'dashboard' | 'explorer' | 'detail' | 'methodology' | 'comparison';
+type Phase = 'intro' | 'specialist-choice' | 'quiz' | 'qprofile' | 'student' | 'results' | 'specialist' | 'dashboard' | 'explorer' | 'detail' | 'methodology' | 'comparison';
+type SpecialistQuestionnaireMode = 'completed' | 'skipped' | null;
 
 const QUIZ_STEPS = [
   { type: 'specialty' as const, label: 'Specialty', sectionId: undefined as string | undefined },
@@ -54,20 +56,21 @@ function AppContent() {
   const [ratings, setRatings] = useState<Record<string, number>>({});
   const [scores, setScores] = useState<SpecialtyScore[]>([]);
   const [participantRole, setParticipantRole] = useState<ParticipantRole | null>(INITIAL_PARTICIPANT_ROLE);
+  const [specialistQuestionnaireMode, setSpecialistQuestionnaireMode] = useState<SpecialistQuestionnaireMode>(null);
   const [priorities, setPriorities] = useState<PriorityWeights>(DEFAULT_PRIORITY_WEIGHTS);
   const [explorerSpecialty, setExplorerSpecialty] = useState<string | null>(null);
   const [catalogGateMessage, setCatalogGateMessage] = useState<string | null>(null);
   const isSpecialist = participantRole === 'specialist';
 
-  // Ask specialists for their actual specialty only after the 81 ratings.
-  // This keeps the ground-truth label from priming their questionnaire answers.
+  // Specialists who opt into the quantitative profile identify their actual
+  // specialty only after the 81 ratings, avoiding ground-truth priming.
   const quizSteps = useMemo(
     () => isSpecialist ? QUIZ_STEPS.filter((step) => step.type !== 'specialty') : QUIZ_STEPS,
     [isSpecialist],
   );
-  // Count every visible input: career values, 81 ratings, then (for a
-  // specialist) their actual specialty plus five qualitative questions.
-  const totalQuestions = ALL_QUESTION_IDS.length + (isSpecialist ? 7 : 2);
+  // The intro count applies to student/curious orientation. Specialists see
+  // the duration and scope of each optional path on their dedicated choice.
+  const totalQuestions = ALL_QUESTION_IDS.length + 2;
 
   const studentTraits = useMemo(
     () => calculateTraits(ratings, selectedValues),
@@ -86,9 +89,31 @@ function AppContent() {
       return;
     }
     setCatalogGateMessage(null);
-    setPhase('quiz');
+    setSpecialistQuestionnaireMode(null);
+    setPhase(isSpecialist ? 'specialist-choice' : 'quiz');
     setStepIndex(0);
   };
+
+  const answerSpecialistQuestionnaire = () => {
+    setSpecialistQuestionnaireMode('completed');
+    setSelectedValues([]);
+    setRatings({});
+    setScores([]);
+    setStepIndex(0);
+    setPhase('quiz');
+  };
+
+  const skipSpecialistQuestionnaire = useCallback(() => {
+    if (!isSpecialist) return;
+    const hasPartialAnswers = selectedValues.length > 0 || Object.keys(ratings).length > 0;
+    if (hasPartialAnswers && !window.confirm(t.specialistSkipQuestionnaireConfirm)) return;
+    setSpecialistQuestionnaireMode('skipped');
+    setSelectedValues([]);
+    setRatings({});
+    setScores([]);
+    setStepIndex(0);
+    setPhase('specialist');
+  }, [isSpecialist, ratings, selectedValues.length, t.specialistSkipQuestionnaireConfirm]);
 
   const toggleValue = (value: string) => {
     setSelectedValues((prev) =>
@@ -125,6 +150,7 @@ function AppContent() {
     setPriorities(DEFAULT_PRIORITY_WEIGHTS);
     setExplorerSpecialty(null);
     setParticipantRole(null);
+    setSpecialistQuestionnaireMode(null);
     setPhase('intro');
   };
 
@@ -139,6 +165,7 @@ function AppContent() {
     setExplorerSpecialty(null);
     setCatalogGateMessage(null);
     setParticipantRole(null);
+    setSpecialistQuestionnaireMode(null);
     setPhase('intro');
   };
 
@@ -155,21 +182,22 @@ function AppContent() {
     return true;
   }, [actualSpecialty, currentStep.sectionId, currentStep.type, isSpecialist, ratings, selectedValues.length]);
 
-  const handleNext = useCallback(() => {
+  const handleNext = () => {
     if (isLastStep) {
-      computeAndShowQProfile();
+      if (isSpecialist) computeAndShowResults();
+      else computeAndShowQProfile();
     } else {
       setStepIndex((i) => i + 1);
     }
-  }, [isLastStep]);
+  };
 
   const handleBack = useCallback(() => {
     if (stepIndex === 0) {
-      setPhase('intro');
+      setPhase(isSpecialist ? 'specialist-choice' : 'intro');
     } else {
       setStepIndex((i) => i - 1);
     }
-  }, [stepIndex]);
+  }, [isSpecialist, stepIndex]);
 
   // Prevent accidental data loss
   const handleBeforeUnload = useCallback((e: BeforeUnloadEvent) => {
@@ -213,6 +241,16 @@ function AppContent() {
     );
   }
 
+  if (phase === 'specialist-choice') {
+    return (
+      <SpecialistQuestionnaireChoice
+        onAnswerQuestionnaire={answerSpecialistQuestionnaire}
+        onSkipQuestionnaire={skipSpecialistQuestionnaire}
+        onBack={() => setPhase('intro')}
+      />
+    );
+  }
+
   if (phase === 'qprofile') {
     return (
       <div className="min-h-screen bg-accent-50">
@@ -225,7 +263,11 @@ function AppContent() {
           </div>
           <LanguageSwitcher />
         </header>
-        <QProfile traits={studentTraits} onContinue={computeAndShowResults} />
+        <QProfile
+          traits={studentTraits}
+          onContinue={computeAndShowResults}
+          continueLabel={isSpecialist ? t.specialistContinueToQuestions : undefined}
+        />
       </div>
     );
   }
@@ -280,8 +322,9 @@ function AppContent() {
           initialSpecialty={isSpecialist ? actualSpecialty : null}
           ratings={ratings}
           selectedValues={selectedValues}
+          questionnaireCompleted={specialistQuestionnaireMode !== 'skipped'}
           language={lang}
-          onDone={() => setPhase('results')}
+          onDone={() => setPhase(specialistQuestionnaireMode === 'skipped' ? 'explorer' : 'results')}
         />
       </div>
     );
@@ -359,6 +402,17 @@ function AppContent() {
             </div>
           </div>
           <ProgressBar current={progressCurrent} total={progressTotal} />
+          {isSpecialist && specialistQuestionnaireMode === 'completed' && (
+            <div className="mt-2 flex justify-end">
+              <button
+                type="button"
+                onClick={skipSpecialistQuestionnaire}
+                className="min-h-11 rounded-full px-3 text-xs font-semibold text-ink-500 underline decoration-ink-300 underline-offset-4 transition-colors hover:text-brand-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+              >
+                {t.specialistSkipQuestionnaire}
+              </button>
+            </div>
+          )}
         </div>
       </header>
 
@@ -423,7 +477,7 @@ function AppContent() {
             disabled={!canProceed}
             className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-brand-800 text-white font-semibold text-sm shadow-lift hover:bg-brand-900 transition-all hover:scale-[1.03] active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
           >
-            {isLastStep ? t.seeResults : t.continue}
+            {isLastStep && isSpecialist ? t.specialistContinueToQuestions : isLastStep ? t.seeResults : t.continue}
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>

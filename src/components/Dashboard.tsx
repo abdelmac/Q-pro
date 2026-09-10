@@ -58,6 +58,7 @@ type SpecialistListRow = Pick<
   Database['public']['Tables']['specialist_responses']['Row'],
   | 'id'
   | 'actual_specialty'
+  | 'questionnaire_completed'
   | 'submission_schema_version'
   | 'current_specialty_view'
   | 'specialty_changes_over_years'
@@ -74,6 +75,7 @@ type SpecialistListRow = Pick<
 >;
 type AccessState = 'checking' | 'signed_out' | 'checking_access' | 'authorized';
 type CompletenessFilter = 'all' | 'complete' | 'partial';
+type QuestionnaireFilter = 'all' | 'completed' | 'skipped';
 type DataVersionFilter = 'current' | 'all' | 'legacy';
 type ExportKind = 'raw' | 'long' | 'analytic' | 'json';
 
@@ -176,6 +178,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
   const [yearFilter, setYearFilter] = useState('all');
   const [studentSpecialtyFilter, setStudentSpecialtyFilter] = useState('all');
   const [specialtyFilter, setSpecialtyFilter] = useState('all');
+  const [questionnaireFilter, setQuestionnaireFilter] = useState<QuestionnaireFilter>('all');
   const [completenessFilter, setCompletenessFilter] = useState<CompletenessFilter>('all');
   const [chooseAgainFilter, setChooseAgainFilter] = useState('all');
   const [languageFilter, setLanguageFilter] = useState('all');
@@ -249,11 +252,12 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
       if (view === 'specialists') {
         let query = supabase
           .from('specialist_responses')
-          .select('id, actual_specialty, submission_schema_version, current_specialty_view, specialty_changes_over_years, most_important_specialty_quality, would_choose_again_code, would_not_choose_again_reason, student_self_question, years_of_experience, career_satisfaction, intention_to_change_code, voluntary_choice_code, language, created_at', { count: 'exact' })
+          .select('id, actual_specialty, questionnaire_completed, submission_schema_version, current_specialty_view, specialty_changes_over_years, most_important_specialty_quality, would_choose_again_code, would_not_choose_again_reason, student_self_question, years_of_experience, career_satisfaction, intention_to_change_code, voluntary_choice_code, language, created_at', { count: 'exact' })
           .order('created_at', { ascending: false })
           .order('id', { ascending: false })
           .range(rangeStart, rangeEnd);
         if (specialtyFilter !== 'all') query = query.eq('actual_specialty', specialtyFilter);
+        if (questionnaireFilter !== 'all') query = query.eq('questionnaire_completed', questionnaireFilter === 'completed');
         if (chooseAgainFilter !== 'all') query = query.eq('would_choose_again_code', chooseAgainFilter);
         if (languageFilter !== 'all') query = query.eq('language', languageFilter);
         if (dataVersionFilter === 'current') {
@@ -362,6 +366,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
     page,
     view,
     specialtyFilter,
+    questionnaireFilter,
     chooseAgainFilter,
     completenessFilter,
     yearFilter,
@@ -531,6 +536,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
         query = query.or(`created_at.lt.${cursor.createdAt},and(created_at.eq.${cursor.createdAt},id.lt.${cursor.id})`);
       }
       if (specialtyFilter !== 'all') query = query.eq('actual_specialty', specialtyFilter);
+      if (questionnaireFilter !== 'all') query = query.eq('questionnaire_completed', questionnaireFilter === 'completed');
       if (chooseAgainFilter !== 'all') query = query.eq('would_choose_again_code', chooseAgainFilter);
       if (languageFilter !== 'all') query = query.eq('language', languageFilter);
       if (dataVersionFilter === 'current') {
@@ -584,6 +590,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
     return allRows;
   }, [
     specialtyFilter,
+    questionnaireFilter,
     chooseAgainFilter,
     completenessFilter,
     languageFilter,
@@ -723,6 +730,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
     const alreadyReset = yearFilter === 'all'
       && studentSpecialtyFilter === 'all'
       && specialtyFilter === 'all'
+      && questionnaireFilter === 'all'
       && completenessFilter === 'all'
       && chooseAgainFilter === 'all'
       && languageFilter === 'all'
@@ -734,6 +742,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
     setYearFilter('all');
     setStudentSpecialtyFilter('all');
     setSpecialtyFilter('all');
+    setQuestionnaireFilter('all');
     setCompletenessFilter('all');
     setChooseAgainFilter('all');
     setLanguageFilter('all');
@@ -981,6 +990,15 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
                   <option value="all">{french ? 'Toutes les spécialités' : 'All specialties'}</option>
                   {specialties.map(({ name }) => <option key={name} value={name}>{translateSpecialtyName(name, lang)}</option>)}
                 </FilterSelect>
+                <FilterSelect
+                  label={french ? 'Questionnaire 81 items' : romanian ? 'Chestionar 81 itemi' : '81-item questionnaire'}
+                  value={questionnaireFilter}
+                  onChange={(value) => { setQuestionnaireFilter(value as QuestionnaireFilter); resetPageAndAnalysis(); }}
+                >
+                  <option value="all">{french ? 'Tous les parcours' : romanian ? 'Toate parcursurile' : 'All paths'}</option>
+                  <option value="completed">{french ? 'Complété' : romanian ? 'Completat' : 'Completed'}</option>
+                  <option value="skipped">{french ? 'Passé' : romanian ? 'Omis' : 'Skipped'}</option>
+                </FilterSelect>
                 <FilterSelect label={french ? 'Complétude' : 'Completeness'} value={completenessFilter} onChange={(value) => { setCompletenessFilter(value as CompletenessFilter); resetPageAndAnalysis(); }}>
                   <option value="all">{french ? 'Tous les dossiers' : 'All records'}</option>
                   <option value="complete">{french ? 'Entretien qualitatif complet' : 'Complete qualitative interview'}</option>
@@ -1087,9 +1105,12 @@ function SpecialistTable({
   onOpen: (id: string) => void;
 }) {
   return (
-    <table className="w-full min-w-[2100px] text-left text-sm">
+    <table className="w-full min-w-[2220px] text-left text-sm">
       <thead className="bg-ink-50 text-xs text-ink-500"><tr>
         <th className="px-5 py-3 font-semibold">{french ? 'Spécialité réelle' : 'Actual specialty'}</th>
+        <th className="px-4 py-3 font-semibold">
+          {french ? 'Questionnaire 81 items' : lang === 'ro' ? 'Chestionar 81 itemi' : '81-item questionnaire'}
+        </th>
         <th className="px-4 py-3 font-semibold">{french ? 'Vision actuelle' : 'Current view'}</th>
         <th className="px-4 py-3 font-semibold">{french ? 'Évolution au fil des ans' : 'Changes over the years'}</th>
         <th className="px-4 py-3 font-semibold">{french ? 'Qualité essentielle' : 'Most important quality'}</th>
@@ -1105,6 +1126,11 @@ function SpecialistTable({
       <tbody>{rows.map((row) => (
         <tr key={row.id} className="border-t border-ink-100 hover:bg-ink-50/60">
           <td className="px-5 py-3 font-medium text-ink-900">{translateSpecialtyName(row.actual_specialty, lang)}</td>
+          <td className="px-4 py-3">
+            {row.questionnaire_completed
+              ? <Badge tone="green">{french ? 'Complété' : lang === 'ro' ? 'Completat' : 'Completed'}</Badge>
+              : <Badge tone="amber">{french ? 'Passé' : lang === 'ro' ? 'Omis' : 'Skipped'}</Badge>}
+          </td>
           <td className="px-4 py-3"><AnswerPreview value={row.current_specialty_view} /></td>
           <td className="px-4 py-3"><AnswerPreview value={row.specialty_changes_over_years} /></td>
           <td className="px-4 py-3"><AnswerPreview value={row.most_important_specialty_quality} /></td>

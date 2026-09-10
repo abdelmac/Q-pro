@@ -79,9 +79,11 @@ export default function Intro({ onStart, totalQuestions, participantRole, onChan
             </div>
           )}
 
-          <p className="mt-4 text-sm text-ink-400 animate-fade-up" style={{ animationDelay: '120ms' }}>
-            {t.questionsCount(totalQuestions)}
-          </p>
+          {!isSpecialist && (
+            <p className="mt-4 text-sm text-ink-400 animate-fade-up" style={{ animationDelay: '120ms' }}>
+              {t.questionsCount(totalQuestions)}
+            </p>
+          )}
 
           <div className="mt-10 flex justify-center animate-fade-up" style={{ animationDelay: '160ms' }}>
             <button

@@ -67,6 +67,9 @@ export default function ResearchResponseDetail({ response, lang, onClose }: Rese
   const dialogRef = useRef<HTMLElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const row = response.row;
+  const specialistQuestionnaireSkipped = response.kind === 'specialist'
+    && !response.row.questionnaire_completed;
+  const hasQuantitativeProfile = !specialistQuestionnaireSkipped;
   const ratings = useMemo(() => parseRatings(row.ratings), [row.ratings]);
   const selectedValues = useMemo(() => parseSelectedValues(row.selected_values), [row.selected_values]);
   const analysis = useMemo(() => response.kind === 'specialist'
@@ -171,12 +174,19 @@ export default function ResearchResponseDetail({ response, lang, onClose }: Rese
 
           {!analysis.eligible && (
             <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950" role="status">
-              <p className="font-semibold">{french ? 'Réponse exclue du calcul analytique' : 'Response excluded from analytical calculations'}</p>
+              <p className="font-semibold">
+                {specialistQuestionnaireSkipped
+                  ? (french ? 'Questionnaire quantitatif facultatif passé' : 'Optional quantitative questionnaire skipped')
+                  : (french ? 'Réponse exclue du calcul analytique' : 'Response excluded from analytical calculations')}
+              </p>
               <p className="mt-1 text-xs">
-                {french
-                  ? 'Elle reste entièrement consultable et exportable. Motifs : '
-                  : 'It remains fully viewable and exportable. Reasons: '}
-                <span className="font-mono">{analysis.exclusionReasons.join(', ')}</span>
+                {specialistQuestionnaireSkipped
+                  ? (french
+                      ? 'L’entretien qualitatif reste intégralement consultable et exportable. Aucun rang, profil de traits ni indicateur Top-k n’est calculé.'
+                      : 'The qualitative interview remains fully viewable and exportable. No rank, trait profile, or Top-k indicator is calculated.')
+                  : <>{french
+                      ? 'Elle reste entièrement consultable et exportable. Motifs : '
+                      : 'It remains fully viewable and exportable. Reasons: '}<span className="font-mono">{analysis.exclusionReasons.join(', ')}</span></>}
               </p>
             </div>
           )}
@@ -194,7 +204,7 @@ export default function ResearchResponseDetail({ response, lang, onClose }: Rese
             </div>
           )}
 
-          <section className="rounded-2xl border border-ink-100 bg-white p-5 shadow-soft">
+          {hasQuantitativeProfile && <section className="rounded-2xl border border-ink-100 bg-white p-5 shadow-soft">
             <div className="mb-4 flex items-center gap-2">
               <CheckCircle2 className="h-5 w-5 text-brand-600" />
               <h3 className="font-semibold text-ink-900">{french ? 'Valeurs sélectionnées' : 'Selected values'}</h3>
@@ -207,9 +217,9 @@ export default function ResearchResponseDetail({ response, lang, onClose }: Rese
               ))}
               {selectedValues.length === 0 && <span className="text-sm text-ink-500">—</span>}
             </div>
-          </section>
+          </section>}
 
-          <section className="rounded-2xl border border-ink-100 bg-white shadow-soft">
+          {hasQuantitativeProfile && <section className="rounded-2xl border border-ink-100 bg-white shadow-soft">
             <div className="border-b border-ink-100 p-5">
               <div className="flex items-center gap-2">
                 <BarChart3 className="h-5 w-5 text-brand-600" />
@@ -247,13 +257,13 @@ export default function ResearchResponseDetail({ response, lang, onClose }: Rese
                 <p className="px-5 py-4 text-sm text-ink-500">{french ? 'Aucun classement n’est produit pour une réponse incompatible.' : 'No ranking is produced for an incompatible response.'}</p>
               )}
             </div>
-          </section>
+          </section>}
 
           {response.kind === 'student' && (
             <StoredStudentScores response={response.row} lang={lang} />
           )}
 
-          <details className="rounded-2xl border border-ink-100 bg-white shadow-soft">
+          {hasQuantitativeProfile && <details className="rounded-2xl border border-ink-100 bg-white shadow-soft">
             <summary className="cursor-pointer list-none p-5 font-semibold text-ink-900">
               {french ? `Profil complet des traits (${sortedTraits.length})` : `Full trait profile (${sortedTraits.length})`}
             </summary>
@@ -286,9 +296,9 @@ export default function ResearchResponseDetail({ response, lang, onClose }: Rese
                 </tbody>
               </table>
             </div>
-          </details>
+          </details>}
 
-          <section className="space-y-4">
+          {hasQuantitativeProfile && <section className="space-y-4">
             <div>
               <h3 className="font-semibold text-ink-900">{french ? 'Réponses aux 81 items' : 'Responses to all 81 items'}</h3>
               <p className="mt-1 text-xs text-ink-500">{french ? 'Échelle brute de 1 à 10.' : 'Raw 1–10 scale.'}</p>
@@ -318,7 +328,7 @@ export default function ResearchResponseDetail({ response, lang, onClose }: Rese
                 </div>
               </details>
             ))}
-          </section>
+          </section>}
 
           <section className="rounded-2xl border border-ink-100 bg-white p-5 shadow-soft">
             <h3 className="font-semibold text-ink-900">{french ? 'Versions enregistrées' : 'Recorded versions'}</h3>
@@ -366,6 +376,12 @@ function SpecialistMetadata({
         <h3 className="font-semibold text-ink-900">{french ? 'Repères de calibration' : 'Calibration overview'}</h3>
         <dl className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <Info label={french ? 'Spécialité réelle' : 'Actual specialty'} value={translateSpecialtyName(response.actual_specialty, lang)} />
+          <Info
+            label={french ? 'Questionnaire 81 items' : '81-item questionnaire'}
+            value={response.questionnaire_completed
+              ? (french ? 'Complété' : 'Completed')
+              : (french ? 'Passé — contribution qualitative' : 'Skipped — qualitative contribution')}
+          />
           <Info label={french ? 'Rechoisirait' : 'Would choose again'} value={codeLabel(response.would_choose_again_code, lang)} />
           <Info label={french ? 'Rang canonique réel' : 'Canonical actual rank'} value={actualRank === '—' ? '—' : `${actualRank} / ${analysis.ranking.length}`} />
           <Info label={french ? 'Ex æquo' : 'Tied specialties'} value={analysis.actualTieCount ?? '—'} />
@@ -377,7 +393,9 @@ function SpecialistMetadata({
         <section className="rounded-2xl border border-brand-100 bg-white p-5 shadow-soft">
           <h3 className="font-semibold text-ink-900">{french ? 'Entretien qualitatif du spécialiste' : 'Specialist qualitative interview'}</h3>
           <p className="mt-1 text-xs leading-relaxed text-ink-500">
-            {french ? 'Réponses libres recueillies après les 81 questions principales.' : 'Free-text answers collected after the 81 main questions.'}
+            {response.questionnaire_completed
+              ? (french ? 'Réponses libres recueillies après les 81 questions principales.' : 'Free-text answers collected after the 81 main questions.')
+              : (french ? 'Contribution qualitative directe ; le questionnaire de 81 items a été passé.' : 'Direct qualitative contribution; the 81-item questionnaire was skipped.')}
           </p>
           <div className="mt-4 grid gap-4">
             <QualitativeAnswer

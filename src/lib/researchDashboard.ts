@@ -10,6 +10,7 @@ export type StudentResponseRow = Database['public']['Tables']['student_responses
 type SpecialtyCatalog = readonly Specialty[];
 
 export type EligibilityReason =
+  | 'questionnaire_skipped'
   | 'schema_version'
   | 'questionnaire_version'
   | 'value_catalog_version'
@@ -251,7 +252,7 @@ function assessPayload(ratingsJson: Json, selectedValuesJson: Json): Eligibility
   return uniqueReasons(reasons);
 }
 
-function assessSharedVersions(row: Pick<
+type SharedVersionFields = Pick<
   SpecialistResponseRow | StudentResponseRow,
   | 'submission_schema_version'
   | 'questionnaire_version'
@@ -261,19 +262,43 @@ function assessSharedVersions(row: Pick<
   | 'language'
   | 'ratings'
   | 'selected_values'
->): EligibilityReason[] {
-  const reasons = assessPayload(row.ratings, row.selected_values);
+>;
+
+function assessSharedVersionsWithoutPayload(row: SharedVersionFields): EligibilityReason[] {
+  const reasons: EligibilityReason[] = [];
   if (row.submission_schema_version !== DATA_VERSIONS.submissionSchema) reasons.push('schema_version');
   if (row.questionnaire_version !== DATA_VERSIONS.questionnaire) reasons.push('questionnaire_version');
   if (row.value_catalog_version !== DATA_VERSIONS.valueCatalog) reasons.push('value_catalog_version');
   if (row.specialty_catalog_version !== DATA_VERSIONS.specialtyCatalog) reasons.push('specialty_catalog_version');
   if (row.consent_version !== DATA_VERSIONS.consent) reasons.push('consent_version');
   if (!LANGUAGES.has(row.language)) reasons.push('language');
-  return reasons;
+  return uniqueReasons(reasons);
+}
+
+function assessSharedVersions(row: SharedVersionFields): EligibilityReason[] {
+  return uniqueReasons([
+    ...assessPayload(row.ratings, row.selected_values),
+    ...assessSharedVersionsWithoutPayload(row),
+  ]);
 }
 
 export function assessSpecialistEligibility(row: SpecialistResponseRow): EligibilityAssessment {
-  const reasons = assessSharedVersions(row);
+  const reasons = row.questionnaire_completed
+    ? assessSharedVersions(row)
+    : assessSharedVersionsWithoutPayload(row);
+  if (!row.questionnaire_completed) {
+    reasons.push('questionnaire_skipped');
+    if (!row.ratings || Array.isArray(row.ratings) || typeof row.ratings !== 'object') {
+      reasons.push('ratings_shape');
+    } else if (Object.keys(row.ratings).length !== 0) {
+      reasons.push('ratings_count');
+    }
+    if (!Array.isArray(row.selected_values)) {
+      reasons.push('selected_values_shape');
+    } else if (row.selected_values.length !== 0) {
+      reasons.push('selected_values_count');
+    }
+  }
   if (row.calibration_version !== DATA_VERSIONS.calibration) reasons.push('analysis_version');
   if (!SPECIALTY_NAMES.has(row.actual_specialty)) reasons.push('specialty');
   const exclusionReasons = uniqueReasons(reasons);
@@ -490,7 +515,8 @@ export function buildCalibrationSummary(
   const eligibleRows = eligible.map(({ row }) => row);
   const rankable = eligible.filter(({ analysis }) => analysis.actualRankMin !== null);
   const actualRanks = rankable.map(({ analysis }) => analysis.actualRankMin as number);
-  const chooseAgainAnswers = eligibleRows.filter(({ would_choose_again_code }) => (
+  const completeQualitativeRows = rows.filter(isSpecialistCalibrationComplete);
+  const chooseAgainAnswers = completeQualitativeRows.filter(({ would_choose_again_code }) => (
     would_choose_again_code === 'yes' || would_choose_again_code === 'no'
   ));
   const targetProfile = targetSpecialty
@@ -571,10 +597,11 @@ export function buildCalibrationSummary(
   }
   const specialtyAggregates = Array.from(specialtyGroups, ([specialty, group]) => {
     const groupEligible = group.filter(({ analysis }) => analysis.eligible);
-    const groupRows = groupEligible.map(({ row }) => row);
+    const groupRows = group.map(({ row }) => row);
+    const groupCompleteRows = groupRows.filter(isSpecialistCalibrationComplete);
     const groupRankable = groupEligible.filter(({ analysis }) => analysis.actualRankMin !== null);
     const groupRanks = groupRankable.map(({ analysis }) => analysis.actualRankMin as number);
-    const groupChooseAgain = groupRows.filter(({ would_choose_again_code }) => (
+    const groupChooseAgain = groupCompleteRows.filter(({ would_choose_again_code }) => (
       would_choose_again_code === 'yes' || would_choose_again_code === 'no'
     ));
     return {
@@ -582,7 +609,7 @@ export function buildCalibrationSummary(
       count: group.length,
       eligibleCount: groupEligible.length,
       excludedCount: group.length - groupEligible.length,
-      completeCount: groupRows.filter(isSpecialistCalibrationComplete).length,
+      completeCount: groupCompleteRows.length,
       chooseAgainCount: groupChooseAgain.length,
       rankableCount: groupRankable.length,
       chooseAgainRate: percentage(
@@ -606,7 +633,7 @@ export function buildCalibrationSummary(
     eligibleCount: eligible.length,
     excludedCount: rows.length - eligible.length,
     rankableCount: rankable.length,
-    completeCount: eligibleRows.filter(isSpecialistCalibrationComplete).length,
+    completeCount: completeQualitativeRows.length,
     chooseAgainCount: chooseAgainAnswers.length,
     chooseAgainRate: percentage(
       chooseAgainAnswers.filter(({ would_choose_again_code }) => would_choose_again_code === 'yes').length,
@@ -646,7 +673,7 @@ function makeCsv(headers: string[], rows: unknown[][]): string {
 }
 
 const SPECIALIST_METADATA_COLUMNS = [
-  'id', 'created_at', 'actual_specialty',
+  'id', 'created_at', 'actual_specialty', 'questionnaire_completed',
   'current_specialty_view', 'specialty_changes_over_years',
   'most_important_specialty_quality', 'would_choose_again_code',
   'would_not_choose_again_reason', 'student_self_question',
@@ -772,6 +799,7 @@ export function specialistLongCsv(rows: SpecialistResponseRow[]): string {
     'selected_values', 'known_question', 'section', 'question_id', 'question_text_en', 'rating',
   ];
   return makeCsv(headers, rows.flatMap((row) => {
+    if (!row.questionnaire_completed) return [];
     const ratings = parseRatings(row.ratings);
     const eligibility = assessSpecialistEligibility(row);
     return exportQuestionIds(ratings).map((id) => {

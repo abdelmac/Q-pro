@@ -2,7 +2,7 @@ BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
 
-SELECT extensions.plan(116);
+SELECT extensions.plan(127);
 
 SELECT extensions.has_schema('private', 'private schema exists');
 SELECT extensions.has_table('public', 'student_responses', 'student table exists');
@@ -66,6 +66,10 @@ SELECT extensions.has_column(
 SELECT extensions.has_column(
   'public', 'specialist_responses', 'student_self_question',
   'specialist rows store the proposed student self-question'
+);
+SELECT extensions.has_column(
+  'public', 'specialist_responses', 'questionnaire_completed',
+  'specialist rows explicitly distinguish a complete questionnaire from an intentional skip'
 );
 
 SELECT extensions.is(
@@ -329,6 +333,14 @@ SELECT extensions.ok(
   'anon can execute the qualitative specialist submission RPC'
 );
 SELECT extensions.ok(
+  has_function_privilege(
+    'anon',
+    'public.submit_specialist_response_v4(uuid,text,jsonb,jsonb,boolean,text,text,text,text,text,text,text,text,text,text,text,text,uuid)',
+    'EXECUTE'
+  ),
+  'anon can execute the optional-questionnaire specialist submission RPC'
+);
+SELECT extensions.ok(
   NOT has_function_privilege(
     'anon',
     'private.submit_student_response_v3(uuid,integer,text,jsonb,jsonb,jsonb,text,text,text,text,text,text,uuid)',
@@ -337,6 +349,11 @@ SELECT extensions.ok(
   AND NOT has_function_privilege(
     'authenticated',
     'private.submit_specialist_response_v3(uuid,text,jsonb,jsonb,text,text,text,text,text,text,text,text,text,text,text,text,uuid)',
+    'EXECUTE'
+  )
+  AND NOT has_function_privilege(
+    'authenticated',
+    'private.submit_specialist_response_v4(uuid,text,jsonb,jsonb,boolean,text,text,text,text,text,text,text,text,text,text,text,text,text,uuid)',
     'EXECUTE'
   ),
   'clients cannot execute schema-2 private submission workers'
@@ -365,7 +382,8 @@ SELECT extensions.ok(
     FROM pg_catalog.pg_proc AS procedure
     WHERE procedure.oid IN (
       'public.submit_student_response_v3(uuid,integer,text,jsonb,jsonb,jsonb,text,text,text,text,text,text,uuid)'::regprocedure,
-      'public.submit_specialist_response_v3(uuid,text,jsonb,jsonb,text,text,text,text,text,text,text,text,text,text,text,text,uuid)'::regprocedure
+      'public.submit_specialist_response_v3(uuid,text,jsonb,jsonb,text,text,text,text,text,text,text,text,text,text,text,text,uuid)'::regprocedure,
+      'public.submit_specialist_response_v4(uuid,text,jsonb,jsonb,boolean,text,text,text,text,text,text,text,text,text,text,text,text,uuid)'::regprocedure
     )
   ),
   'schema-2 public submission wrappers are security definer with empty search paths'
@@ -1294,6 +1312,235 @@ SELECT extensions.throws_ok(
   '23505',
   'Submission id already exists with a different payload',
   'a specialist v3 id cannot be replayed with changed qualitative text'
+);
+SELECT extensions.is(
+  public.submit_specialist_response_v4(
+    '20000000-0000-4000-8000-000000000008'::uuid,
+    'Cardiology',
+    current_setting('q_project_test.valid_ratings')::jsonb,
+    '["Prestige"]'::jsonb,
+    true,
+    'en',
+    'A current view supplied after completing the optional questionnaire.',
+    'A description of changes observed over the years.',
+    'Sound clinical judgment under uncertainty.',
+    'yes',
+    NULL,
+    'Would I enjoy the real daily work in this specialty?',
+    'q81-v1',
+    'career-values-v1',
+    'medical-specialties-v1',
+    'calibration-v2-qualitative',
+    'research-consent-2026-09-04',
+    (public.get_active_specialty_catalog() -> 'version' ->> 'id')::uuid
+  ),
+  '20000000-0000-4000-8000-000000000008'::uuid,
+  'specialist v4 preserves the complete 81-rating questionnaire path'
+);
+SELECT extensions.is(
+  public.submit_specialist_response_v4(
+    '20000000-0000-4000-8000-000000000009'::uuid,
+    'Cardiology',
+    '{}'::jsonb,
+    '[]'::jsonb,
+    false,
+    'fr',
+    'La spécialité reste stimulante et exigeante au quotidien.',
+    'Le travail multidisciplinaire a pris une place croissante.',
+    'Le jugement clinique dans les situations incertaines.',
+    'no',
+    'Je rechercherais un rythme de travail plus soutenable.',
+    'Le quotidien réel correspond-il à mes priorités personnelles ?',
+    'q81-v1',
+    'career-values-v1',
+    'medical-specialties-v1',
+    'calibration-v2-qualitative',
+    'research-consent-2026-09-04',
+    (public.get_active_specialty_catalog() -> 'version' ->> 'id')::uuid
+  ),
+  '20000000-0000-4000-8000-000000000009'::uuid,
+  'specialist v4 accepts an explicit questionnaire skip with a complete qualitative interview'
+);
+SELECT extensions.ok(
+  (
+    SELECT response.questionnaire_completed IS FALSE
+      AND response.ratings = '{}'::jsonb
+      AND response.selected_values = '[]'::jsonb
+      AND response.submission_schema_version = 2
+      AND response.current_specialty_view =
+        'La spécialité reste stimulante et exigeante au quotidien.'
+      AND response.specialty_changes_over_years =
+        'Le travail multidisciplinaire a pris une place croissante.'
+      AND response.most_important_specialty_quality =
+        'Le jugement clinique dans les situations incertaines.'
+      AND response.would_choose_again_code = 'no'
+      AND response.would_not_choose_again_reason =
+        'Je rechercherais un rythme de travail plus soutenable.'
+      AND response.student_self_question =
+        'Le quotidien réel correspond-il à mes priorités personnelles ?'
+    FROM public.specialist_responses AS response
+    WHERE response.id = '20000000-0000-4000-8000-000000000009'::uuid
+  ),
+  'an intentional skip is stored unambiguously without weakening qualitative requirements'
+);
+SELECT extensions.throws_ok(
+  $$
+    SELECT public.submit_specialist_response_v4(
+      '20000000-0000-4000-8000-000000000010'::uuid,
+      'Cardiology',
+      current_setting('q_project_test.valid_ratings')::jsonb,
+      '["Prestige"]'::jsonb,
+      false,
+      'en',
+      'A valid current view.',
+      'A valid description of change.',
+      'A valid required quality.',
+      'yes',
+      NULL,
+      'A valid student self-question?',
+      'q81-v1',
+      'career-values-v1',
+      'medical-specialties-v1',
+      'calibration-v2-qualitative',
+      'research-consent-2026-09-04',
+      (public.get_active_specialty_catalog() -> 'version' ->> 'id')::uuid
+    )
+  $$,
+  '22023',
+  'Invalid specialist research submission',
+  'specialist v4 rejects complete questionnaire data marked as skipped'
+);
+SELECT extensions.throws_ok(
+  $$
+    SELECT public.submit_specialist_response_v4(
+      '20000000-0000-4000-8000-000000000011'::uuid,
+      'Cardiology',
+      '{}'::jsonb,
+      '[]'::jsonb,
+      true,
+      'en',
+      'A valid current view.',
+      'A valid description of change.',
+      'A valid required quality.',
+      'yes',
+      NULL,
+      'A valid student self-question?',
+      'q81-v1',
+      'career-values-v1',
+      'medical-specialties-v1',
+      'calibration-v2-qualitative',
+      'research-consent-2026-09-04',
+      (public.get_active_specialty_catalog() -> 'version' ->> 'id')::uuid
+    )
+  $$,
+  '22023',
+  'Invalid specialist research submission',
+  'specialist v4 rejects an empty payload marked as completed'
+);
+SELECT extensions.throws_ok(
+  $$
+    SELECT public.submit_specialist_response_v4(
+      '20000000-0000-4000-8000-000000000012'::uuid,
+      'Cardiology',
+      '{}'::jsonb,
+      '[]'::jsonb,
+      false,
+      'en',
+      '  ',
+      'A valid description of change.',
+      'A valid required quality.',
+      'yes',
+      NULL,
+      'A valid student self-question?',
+      'q81-v1',
+      'career-values-v1',
+      'medical-specialties-v1',
+      'calibration-v2-qualitative',
+      'research-consent-2026-09-04',
+      (public.get_active_specialty_catalog() -> 'version' ->> 'id')::uuid
+    )
+  $$,
+  '22023',
+  'Invalid specialist research submission',
+  'skipping q81 does not make the qualitative specialist answers optional'
+);
+SELECT extensions.throws_ok(
+  $$
+    SELECT public.submit_specialist_response_v4(
+      '20000000-0000-4000-8000-000000000013'::uuid,
+      'Cardiology',
+      '{}'::jsonb,
+      '[]'::jsonb,
+      false,
+      'en',
+      'A valid current view.',
+      'A valid description of change.',
+      'A valid required quality.',
+      'no',
+      NULL,
+      'A valid student self-question?',
+      'q81-v1',
+      'career-values-v1',
+      'medical-specialties-v1',
+      'calibration-v2-qualitative',
+      'research-consent-2026-09-04',
+      (public.get_active_specialty_catalog() -> 'version' ->> 'id')::uuid
+    )
+  $$,
+  '22023',
+  'Invalid specialist research submission',
+  'a skipped questionnaire still requires the conditional no explanation'
+);
+SELECT extensions.is(
+  public.submit_specialist_response_v4(
+    '20000000-0000-4000-8000-000000000009'::uuid,
+    'Cardiology',
+    '{}'::jsonb,
+    '[]'::jsonb,
+    false,
+    'fr',
+    'La spécialité reste stimulante et exigeante au quotidien.',
+    'Le travail multidisciplinaire a pris une place croissante.',
+    'Le jugement clinique dans les situations incertaines.',
+    'no',
+    'Je rechercherais un rythme de travail plus soutenable.',
+    'Le quotidien réel correspond-il à mes priorités personnelles ?',
+    'q81-v1',
+    'career-values-v1',
+    'medical-specialties-v1',
+    'calibration-v2-qualitative',
+    'research-consent-2026-09-04',
+    (public.get_active_specialty_catalog() -> 'version' ->> 'id')::uuid
+  ),
+  '20000000-0000-4000-8000-000000000009'::uuid,
+  'replaying an identical skipped specialist v4 payload is idempotent'
+);
+SELECT extensions.throws_ok(
+  $$
+    SELECT public.submit_specialist_response_v4(
+      '20000000-0000-4000-8000-000000000009'::uuid,
+      'Cardiology',
+      current_setting('q_project_test.valid_ratings')::jsonb,
+      '["Prestige"]'::jsonb,
+      true,
+      'fr',
+      'La spécialité reste stimulante et exigeante au quotidien.',
+      'Le travail multidisciplinaire a pris une place croissante.',
+      'Le jugement clinique dans les situations incertaines.',
+      'no',
+      'Je rechercherais un rythme de travail plus soutenable.',
+      'Le quotidien réel correspond-il à mes priorités personale ?',
+      'q81-v1',
+      'career-values-v1',
+      'medical-specialties-v1',
+      'calibration-v2-qualitative',
+      'research-consent-2026-09-04',
+      (public.get_active_specialty_catalog() -> 'version' ->> 'id')::uuid
+    )
+  $$,
+  '23505',
+  'Submission id already exists with a different payload',
+  'a skipped specialist submission id cannot be replayed as completed'
 );
 SELECT extensions.ok(
   (

@@ -27,6 +27,7 @@ export type Database = {
           intention_to_change_code: string | null
           language: string
           most_important_specialty_quality: string | null
+          questionnaire_completed: boolean
           questionnaire_version: string
           ratings: Json
           selected_values: Json
@@ -56,6 +57,7 @@ export type Database = {
           intention_to_change_code?: string | null
           language?: string
           most_important_specialty_quality?: string | null
+          questionnaire_completed?: boolean
           questionnaire_version?: string
           ratings: Json
           selected_values: Json
@@ -85,6 +87,7 @@ export type Database = {
           intention_to_change_code?: string | null
           language?: string
           most_important_specialty_quality?: string | null
+          questionnaire_completed?: boolean
           questionnaire_version?: string
           ratings?: Json
           selected_values?: Json
@@ -286,6 +289,29 @@ export type Database = {
           p_current_specialty_view: string
           p_language: string
           p_most_important_specialty_quality: string
+          p_questionnaire_version: string
+          p_ratings: Json
+          p_selected_values: Json
+          p_specialty_catalog_version: string
+          p_specialty_changes_over_years: string
+          p_specialty_config_version_id: string
+          p_student_self_question: string
+          p_submission_id: string
+          p_value_catalog_version: string
+          p_would_choose_again_code: string
+          p_would_not_choose_again_reason: string | null
+        }
+        Returns: string
+      }
+      submit_specialist_response_v4: {
+        Args: {
+          p_actual_specialty: string
+          p_calibration_version: string
+          p_consent_version: string
+          p_current_specialty_view: string
+          p_language: string
+          p_most_important_specialty_quality: string
+          p_questionnaire_completed: boolean
           p_questionnaire_version: string
           p_ratings: Json
           p_selected_values: Json

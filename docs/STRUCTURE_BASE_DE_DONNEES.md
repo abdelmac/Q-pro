@@ -2,9 +2,9 @@
 
 ## Structure de la base de données et portail Specialist/Admin
 
-**Version documentaire :** 6 septembre 2026
+**Version documentaire :** 10 septembre 2026
 
-**Migrations de référence :** `supabase/migrations/20260831120000_specialist_admin_portal.sql`, `supabase/migrations/20260904193000_accuracy_and_qualitative_specialist_v2.sql` et `supabase/migrations/20260906090000_limit_student_study_year_to_six.sql`
+**Migrations de référence :** `supabase/migrations/20260831120000_specialist_admin_portal.sql`, `supabase/migrations/20260904193000_accuracy_and_qualitative_specialist_v2.sql`, `supabase/migrations/20260906090000_limit_student_study_year_to_six.sql` et `supabase/migrations/20260910090000_optional_specialist_questionnaire.sql`
 
 **Périmètre :** Supabase Auth, PostgreSQL, collecte de recherche, catalogue éditable des spécialités, sécurité, versionnement et provenance scientifique.
 
@@ -48,13 +48,13 @@ Les principes structurants sont les suivants :
 - Doctor et Professor peuvent modifier un brouillon ;
 - seul Professor peut publier ou demander la restauration d’une version historique ;
 - une version publiée est un instantané immuable ;
-- chaque nouvelle soumission de schéma 2, envoyée par une RPC v3, enregistre la version exacte du catalogue utilisée ;
+- chaque nouvelle soumission de schéma 2, envoyée par la RPC étudiante v3 ou spécialiste v4, enregistre la version exacte du catalogue utilisée ;
 - toute nouvelle réponse étudiante limite l’année d’études facultative aux années 1 à 6 ;
-- l'entretien spécialiste de schéma 2 collecte cinq réponses qualitatives après les 81 items, au lieu des anciens champs structurés d'expérience, satisfaction, intention de changement et caractère volontaire du choix ;
+- l'entretien spécialiste de schéma 2 collecte toujours cinq réponses qualitatives ; les 81 items et les valeurs professionnelles sont facultatifs et leur complétion est enregistrée explicitement ;
 - les anciennes colonnes et les anciennes RPC restent présentes afin de conserver l'historique sans le mélanger au protocole courant ;
 - les indicateurs Top-k sont descriptifs et ne modifient jamais automatiquement les poids.
 
-La migration `20260831120000_specialist_admin_portal.sql` ajoute la couche éditoriale sans supprimer les fonctions v1 historiques. La migration `20260904193000_accuracy_and_qualitative_specialist_v2.sql` ajoute le schéma de soumission 2 et les RPC v3, publie un nouvel instantané immuable qui complète les traits clés mesurés manquants, et laisse volontairement `prevention_orientation` non mesuré. La migration `20260906090000_limit_student_study_year_to_six.sql` impose la plage 1–6 à toute nouvelle écriture étudiante, y compris via les anciennes RPC encore exécutables, sans réécrire les données historiques. Les appels v2 restent utilisables pour l'historique ; les nouvelles collectes utilisent v3.
+La migration `20260831120000_specialist_admin_portal.sql` ajoute la couche éditoriale sans supprimer les fonctions v1 historiques. La migration `20260904193000_accuracy_and_qualitative_specialist_v2.sql` ajoute le schéma de soumission 2 et les RPC v3, publie un nouvel instantané immuable qui complète les traits clés mesurés manquants, et laisse volontairement `prevention_orientation` non mesuré. La migration `20260906090000_limit_student_study_year_to_six.sql` impose la plage 1–6 à toute nouvelle écriture étudiante, y compris via les anciennes RPC encore exécutables, sans réécrire les données historiques. Enfin, `20260910090000_optional_specialist_questionnaire.sql` ajoute l'état explicite `questionnaire_completed` et la RPC spécialiste v4. Les appels antérieurs restent disponibles pour la compatibilité ; les nouvelles collectes utilisent v3 pour les étudiants et v4 pour les spécialistes.
 
 ## 2. Architecture générale
 
@@ -64,7 +64,7 @@ La migration `20260831120000_specialist_admin_portal.sql` ajoute la couche édit
 │                                                                     │
 │  Questionnaire public             Dashboard sécurisé                │
 │  - catalogue actif                - réponses de recherche            │
-│  - soumissions v3 / schéma 2      - réponses qualitatives            │
+│  - étudiant v3 / spécialiste v4   - réponses qualitatives            │
 │                                    - publication / historique        │
 └───────────────┬───────────────────────────────┬─────────────────────┘
                 │ clé publique                  │ session Auth JWT
@@ -74,7 +74,7 @@ La migration `20260831120000_specialist_admin_portal.sql` ajoute la couche édit
 │                                                                     │
 │ RPC publiques validées             RPC administratives contrôlées   │
 │ get_active_specialty_catalog       current_user_portal_profile      │
-│ submit_*_response_v1/v2/v3         get/save/publish/list/restore     │
+│ submit_*_response_v1/v2/v3/v4      get/save/publish/list/restore     │
 └───────────────┬───────────────────────────────┬─────────────────────┘
                 ▼                               ▼
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -90,11 +90,12 @@ La migration `20260831120000_specialist_admin_portal.sql` ajoute la couche édit
 
 1. L’application charge l’unique catalogue publié avec `get_active_specialty_catalog()`.
 2. Le moteur construit le profil et le classement dans le navigateur.
-3. La soumission v3 transmet l’identifiant UUID de la version publiée utilisée et crée une ligne de `submission_schema_version = 2`.
+3. La soumission v3 étudiante ou v4 spécialiste transmet l’identifiant UUID de la version publiée utilisée et crée une ligne de `submission_schema_version = 2`.
 4. PostgreSQL vérifie que cet UUID correspond bien à un instantané publié.
 5. La réponse et la révision du catalogue sont enregistrées ensemble.
-6. Pour un spécialiste, la spécialité réelle et les cinq réponses qualitatives ne sont demandées qu'après les 81 notes et le choix des valeurs, afin de réduire le biais d'ancrage pendant le questionnaire principal.
-7. Le profil « découverte de la médecine » calcule son profil et son classement uniquement dans le navigateur, puis accède directement aux résultats. Il ne passe par aucun formulaire de recherche et n'est inséré ni dans `student_responses` ni dans `specialist_responses`, afin de préserver la séparation des cohortes.
+6. Le spécialiste choisit soit le profil quantitatif complet (81 notes et 1 à 4 valeurs), soit l'accès direct aux cinq questions qualitatives. Un abandon quantitatif efface les réponses partielles ; aucun profil incomplet n'est enregistré.
+7. Pour le parcours quantitatif spécialiste, la spécialité réelle n'est demandée qu'après les 81 notes afin de réduire le biais d'ancrage. Pour le parcours direct, elle est demandée avec l'entretien qualitatif.
+8. Le profil « découverte de la médecine » calcule son profil et son classement uniquement dans le navigateur, puis accède directement aux résultats. Il ne passe par aucun formulaire de recherche et n'est inséré ni dans `student_responses` ni dans `specialist_responses`, afin de préserver la séparation des cohortes.
 
 ### 2.2 Flux administratif
 
@@ -306,13 +307,14 @@ Réponses anonymes des médecins spécialistes utilisées pour étudier la calib
 |---|---|---|
 | Identité technique | `id`, `created_at` | UUID de soumission et horodatage. Aucun lien vers Auth. |
 | Spécialité réelle | `actual_specialty` | Spécialité déclarée par le participant. |
-| Données brutes | `ratings`, `selected_values`, `language` | 81 notes, valeurs choisies et langue. |
+| État du profil quantitatif | `questionnaire_completed` | `true` pour un profil complet ; `false` pour un passage volontaire directement à l’entretien qualitatif. Les lignes historiques sont reprises à `true`. |
+| Données brutes | `ratings`, `selected_values`, `language` | Si `questionnaire_completed = true` : exactement 81 notes et 1 à 4 valeurs. Si `false` : exactement l’objet `{}` et le tableau `[]`. |
 | Entretien qualitatif courant | `current_specialty_view`, `specialty_changes_over_years`, `most_important_specialty_quality`, `student_self_question` | Quatre textes obligatoires du schéma 2, nettoyés des espaces périphériques. Les trois premiers acceptent 3 à 2 000 caractères ; la question destinée à l'étudiant, 3 à 1 000 caractères. |
 | Choix à refaire | `would_choose_again_code`, `would_not_choose_again_reason` | Code obligatoire `yes` ou `no`. La raison de 3 à 2 000 caractères est obligatoire si la réponse vaut `no` et doit rester `NULL` si elle vaut `yes`. |
 | Champs structurés legacy | `years_of_experience`, `career_satisfaction`, `intention_to_change_code`, `voluntary_choice_code` | Anciens champs conservés pour relire les lignes historiques. Les nouvelles lignes de schéma 2 les laissent à `NULL`. |
 | Libellés legacy | `would_choose_again`, `intention_to_change`, `voluntary_choice` | Anciennes étiquettes localisées conservées pour l'historique ; elles restent `NULL` pour le schéma 2. |
 | Versions scientifiques | `submission_schema_version`, `questionnaire_version`, `value_catalog_version`, `specialty_catalog_version`, `calibration_version`, `consent_version` | Versions nécessaires à l’analyse. |
-| Provenance du catalogue | `specialty_config_version_id`, `specialty_config_revision` | Instantané publié exact utilisé par les soumissions v2 et v3 ; obligatoire pour le schéma 2. |
+| Provenance du catalogue | `specialty_config_version_id`, `specialty_config_revision` | Instantané publié exact utilisé par les soumissions v2, v3 et v4 ; obligatoire pour le schéma 2. |
 
 Comme pour les étudiants, la paire `(specialty_config_version_id, specialty_config_revision)` est cohérente et contrôlée par une clé étrangère composite. La suppression de l'ancien formulaire ne supprime donc aucune colonne ni aucune réponse historique : elle sépare le protocole courant de l'ancien par `submission_schema_version` et les versions scientifiques.
 
@@ -402,7 +404,11 @@ Point d'entrée courant des étudiants. Il conserve les 81 items et le catalogue
 
 #### `submit_specialist_response_v3(...)`
 
-Point d'entrée courant des spécialistes. Après les 81 notes et les valeurs, il reçoit :
+Point d'entrée spécialiste antérieur conservé pour compatibilité. Il exige encore les 81 notes et les valeurs, et enregistre implicitement `questionnaire_completed = true` grâce à la valeur par défaut.
+
+#### `submit_specialist_response_v4(...)`
+
+Point d'entrée courant des spécialistes. Il reçoit le booléen `p_questionnaire_completed`, puis :
 
 1. la spécialité actuelle ;
 2. la manière dont le spécialiste voit aujourd'hui sa spécialité ;
@@ -411,18 +417,20 @@ Point d'entrée courant des spécialistes. Après les 81 notes et les valeurs, i
 5. le choix `yes` ou `no` de refaire la même spécialité, avec une justification obligatoire seulement pour `no` ;
 6. la question qu'un étudiant devrait se poser avant de choisir cette spécialité.
 
-La fonction normalise les espaces périphériques, vérifie les longueurs et le caractère conditionnel de la justification, exige `calibration-v2-qualitative`, `research-consent-2026-09-04` et une provenance publiée, puis écrit une ligne de schéma 2. Les anciens champs d'expérience, satisfaction, intention de changement et caractère volontaire sont volontairement écrits à `NULL`.
+La fonction impose un invariant tout-ou-rien : `true` exige les 81 notes et 1 à 4 valeurs valides ; `false` exige exactement `{}` et `[]`. Elle normalise les espaces périphériques, vérifie les longueurs et le caractère conditionnel de la justification, exige `calibration-v2-qualitative`, `research-consent-2026-09-04` et une provenance publiée, puis écrit une ligne de schéma 2. Les anciens champs d'expérience, satisfaction, intention de changement et caractère volontaire sont volontairement écrits à `NULL`.
 
-Les façades `public.*_v3` sont exécutables par `anon` et `authenticated`. Elles délèguent aux implémentations `private.*_v3`, auxquelles ces rôles n'ont aucun droit direct.
+Les façades publiques v3 et v4 nécessaires sont exécutables par `anon` et `authenticated`. Elles délèguent aux implémentations privées correspondantes, auxquelles ces rôles n'ont aucun droit direct.
 
 ### 6.5 Consultation et export des réponses qualitatives
 
 Les comptes allowlistés disposant du droit de recherche peuvent :
 
 - filtrer les spécialistes selon la complétude de l'entretien qualitatif ;
+- filtrer selon la complétion ou le passage volontaire du questionnaire de 81 items ;
 - prévisualiser la réponse sur la perception actuelle dans la liste ;
 - ouvrir le détail d'une réponse et lire les cinq réponses dans leur intégralité ;
 - exporter les colonnes qualitatives en JSON ou dans les CSV large, long et analytique ;
+- conserver les questionnaires passés dans les exports brut, analytique et JSON avec leur statut explicite, sans créer de lignes d'items fictives dans le CSV long ;
 - consulter séparément les anciens champs pour les lignes antérieures au schéma 2.
 
 La recherche, la pagination et l'export passent par les politiques RLS existantes. Les cellules CSV commençant comme une formule de tableur sont préfixées afin de limiter l'injection de formules lors de l'ouverture dans Excel ou un logiciel équivalent.
@@ -432,7 +440,7 @@ La recherche, la pagination et l'export passent par les politiques RLS existante
 | Opération | `anon` | Auth ordinaire | Researcher | Doctor | Professor |
 |---|---:|---:|---:|---:|---:|
 | Lire le catalogue actif | Oui | Oui | Oui | Oui | Oui |
-| Soumettre une réponse v1/v2/v3 | Oui | Oui | Oui | Oui | Oui |
+| Soumettre une réponse v1/v2/v3/v4 | Oui | Oui | Oui | Oui | Oui |
 | Lire les réponses de recherche | Non | Non | Oui | Oui | Oui |
 | Lire/exporter les verbatims spécialistes | Non | Non | Oui | Oui | Oui |
 | Lire le brouillon | Non | Non | Non | Oui | Oui |
@@ -525,9 +533,8 @@ Les contraintes de table distinguent trois générations sans réinterpréter le
 
 Pour le schéma 2, la base contrôle notamment :
 
-- exactement 81 identifiants de questions attendus ;
-- des notes entières de 1 à 10 ;
-- une à quatre valeurs canoniques, distinctes ;
+- pour les étudiants et les spécialistes ayant choisi le profil quantitatif : exactement 81 identifiants, des notes entières de 1 à 10 et une à quatre valeurs canoniques distinctes ;
+- pour un spécialiste ayant passé ce profil : `questionnaire_completed = false`, `ratings = {}` et `selected_values = []`, sans état partiel possible ;
 - une spécialité parmi les 58 valeurs du catalogue ;
 - une langue parmi `en`, `fr`, `ro` ;
 - une année d’études étudiante facultative limitée aux entiers de 1 à 6 pour toute nouvelle écriture ;
@@ -545,8 +552,8 @@ Les contrôles existent à la fois dans les RPC et dans des contraintes `CHECK`,
 
 Une recommandation reproductible dépend de plusieurs éléments :
 
-- les 81 réponses brutes ;
-- les valeurs sélectionnées ;
+- l'état explicite de complétion du questionnaire spécialiste ;
+- les 81 réponses brutes et les valeurs sélectionnées lorsqu'elles ont été réellement fournies ;
 - la version du questionnaire ;
 - la version du catalogue de valeurs ;
 - la version du catalogue canonique des spécialités ;
@@ -554,7 +561,7 @@ Une recommandation reproductible dépend de plusieurs éléments :
 - la version du consentement ;
 - l’UUID et la révision du catalogue dynamique publié.
 
-Les RPC v2 et v3 enregistrent les deux derniers champs de provenance dans la ligne de réponse. Les RPC v3 les rendent obligatoires pour le schéma 2. Cela permet de retrouver l'instantané exact même après plusieurs publications et d'éviter d'analyser une réponse avec un catalogue différent de celui réellement utilisé.
+Les RPC v2, v3 et v4 enregistrent les deux derniers champs de provenance dans la ligne de réponse. Les RPC courantes v3 étudiante et v4 spécialiste les rendent obligatoires pour le schéma 2. Cela permet de retrouver l'instantané exact même après plusieurs publications et d'éviter d'analyser une réponse avec un catalogue différent de celui réellement utilisé.
 
 Le `checksum` sert à détecter une différence de contenu et à identifier un instantané. Il n’est pas un secret et ne remplace pas le contrôle d’accès.
 
@@ -690,10 +697,11 @@ Les mécanismes de sauvegarde disponibles dépendent du plan Supabase. Ils doive
 - la publication est atomique ;
 - le checksum est stable pour un contenu stable ;
 - `prevention_orientation` ne peut pas changer ;
-- les appels v2 et v3 refusent une version non publiée ;
+- les appels v2, v3 et v4 refusent une version non publiée ;
 - l’UUID et la révision enregistrés sont cohérents ;
 - les fonctions v1 et v2 restent compatibles avec les données historiques ;
-- les soumissions v3 écrivent le schéma 2 et les versions scientifiques exactes ;
+- les soumissions courantes v3 étudiantes et v4 spécialistes écrivent le schéma 2 et les versions scientifiques exactes ;
+- le RPC spécialiste v4 accepte soit un profil quantitatif complet, soit un passage explicite avec `{}` et `[]`, et rejette tout état intermédiaire ou incohérent ;
 - les quatre textes permanents et, pour une réponse `no`, le texte conditionnel sont obligatoires selon leurs règles de longueur ;
 - une réponse `no` exige une raison et une réponse `yes` interdit cette raison ;
 - les champs structurés legacy restent `NULL` dans le schéma 2 ;
@@ -727,7 +735,7 @@ Après déploiement :
 3. tester chaque rôle avec un compte distinct ;
 4. tester la lecture publique du seul catalogue actif ;
 5. créer un brouillon de test, vérifier le conflit optimiste, puis l’annuler ou le publier selon le protocole ;
-6. effectuer une soumission étudiante v3 et une soumission spécialiste v3 synthétiques, puis vérifier leur schéma, leurs versions, leurs réponses qualitatives et leur provenance ;
+6. effectuer une soumission étudiante v3 et deux soumissions spécialistes v4 synthétiques (profil complet et questionnaire passé), puis vérifier leur schéma, leur statut, leurs versions, leurs réponses qualitatives et leur provenance ;
 7. supprimer les données synthétiques avec une procédure administrative contrôlée.
 
 ## 14. Exploitation et bonnes pratiques

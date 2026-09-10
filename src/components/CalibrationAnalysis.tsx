@@ -26,6 +26,7 @@ const QUESTION_SECTION = new Map(
 );
 
 const REASON_LABELS: Record<EligibilityReason, { fr: string; en: string }> = {
+  questionnaire_skipped: { fr: 'questionnaire facultatif passé', en: 'optional questionnaire skipped' },
   schema_version: { fr: 'schéma non courant', en: 'non-current schema' },
   questionnaire_version: { fr: 'questionnaire incompatible', en: 'incompatible questionnaire' },
   value_catalog_version: { fr: 'catalogue de valeurs incompatible', en: 'incompatible value catalog' },
@@ -114,8 +115,8 @@ export default function CalibrationAnalysis({
             </h2>
             <p className="mt-1 text-sm leading-relaxed text-ink-600">
               {french
-                ? `${summary.eligibleCount} réponse(s) éligible(s) sur ${summary.total} chargée(s). Les résultats sont recalculés avec le moteur courant et les priorités neutres par défaut.`
-                : `${summary.eligibleCount} eligible response(s) out of ${summary.total} loaded. Results are recomputed with the current engine and neutral default priorities.`}
+                ? `${summary.eligibleCount} profil(s) quantitatif(s) éligible(s) sur ${summary.total} contribution(s) chargée(s). Les résultats sont recalculés avec le moteur courant et les priorités neutres par défaut.`
+                : `${summary.eligibleCount} quantitative profile(s) eligible out of ${summary.total} contribution(s) loaded. Results are recomputed with the current engine and neutral default priorities.`}
             </p>
             <p className="mt-1 text-xs leading-relaxed text-ink-500">
               {french
@@ -137,9 +138,9 @@ export default function CalibrationAnalysis({
       </div>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 xl:grid-cols-8">
-        <Metric label={french ? 'Éligibles / chargées' : 'Eligible / loaded'} value={`${summary.eligibleCount}/${summary.total}`} />
-        <Metric label={french ? 'Exclues du calcul' : 'Excluded from analysis'} value={String(summary.excludedCount)} />
-        <Metric label={french ? 'Entretiens qualitatifs complets' : 'Complete qualitative interviews'} value={`${summary.completeCount}/${summary.eligibleCount}`} />
+        <Metric label={french ? 'Profils quantitatifs / contributions' : 'Quantitative profiles / contributions'} value={`${summary.eligibleCount}/${summary.total}`} />
+        <Metric label={french ? 'Sans analyse quantitative' : 'Without quantitative analysis'} value={String(summary.excludedCount)} />
+        <Metric label={french ? 'Entretiens qualitatifs complets' : 'Complete qualitative interviews'} value={`${summary.completeCount}/${summary.total}`} />
         <Metric label={french ? 'Rechoisirait' : 'Would choose again'} value={withN(formatPercent(summary.chooseAgainRate), summary.chooseAgainCount)} />
         <Metric label={french ? 'Rappel Top 1 incl. / cons.' : 'Top-1 recall incl. / cons.'} value={ratePair(summary.top1Rate, summary.top1ConservativeRate, summary.rankableCount)} />
         <Metric label={french ? 'Rappel Top 3 incl. / cons.' : 'Top-3 recall incl. / cons.'} value={ratePair(summary.top3Rate, summary.top3ConservativeRate, summary.rankableCount)} />
@@ -153,7 +154,7 @@ export default function CalibrationAnalysis({
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
             <div>
               <p className="font-semibold">
-                {french ? 'Les lignes incompatibles restent exportables, mais sont exclues des indicateurs de calibration.' : 'Incompatible rows remain exportable but are excluded from calibration indicators.'}
+                {french ? 'Les contributions sans questionnaire facultatif complet restent consultables et exportables pour l’analyse qualitative, mais ne participent pas aux rangs, traits ni rappels Top-k.' : 'Contributions without a complete optional questionnaire remain viewable and exportable for qualitative review, but do not enter ranks, traits, or Top-k recall.'}
               </p>
               <p className="mt-1 text-xs">{french ? 'Une même ligne peut cumuler plusieurs motifs; leur somme peut donc dépasser le nombre de lignes exclues.' : 'One row may have several reasons, so their sum can exceed the number of excluded rows.'}</p>
               <ul className="mt-2 list-disc space-y-1 pl-5 text-xs">
@@ -208,7 +209,7 @@ export default function CalibrationAnalysis({
             <thead className="bg-ink-50 text-xs text-ink-500">
               <tr>
                 <th className="px-5 py-3 font-semibold">{french ? 'Spécialité' : 'Specialty'}</th>
-                <th className="px-4 py-3 font-semibold">{french ? 'Éligibles / chargées' : 'Eligible / loaded'}</th>
+                <th className="px-4 py-3 font-semibold">{french ? 'Profils quantitatifs / contributions' : 'Quantitative profiles / contributions'}</th>
                 <th className="px-4 py-3 font-semibold">{french ? 'Entretiens complets' : 'Complete interviews'}</th>
                 <th className="px-4 py-3 font-semibold">{french ? 'Rechoisirait' : 'Choose again'}</th>
                 <th className="px-4 py-3 font-semibold">{french ? 'Rang min. médian' : 'Median minimum rank'}</th>
@@ -220,7 +221,7 @@ export default function CalibrationAnalysis({
                 <tr key={item.specialty} className="border-t border-ink-100">
                   <td className="px-5 py-3 font-medium text-ink-900">{translateSpecialtyName(item.specialty, lang)}</td>
                   <td className={`px-4 py-3 tabular-nums ${item.eligibleCount > 0 && item.eligibleCount < 10 ? 'font-semibold text-amber-700' : ''}`}>{item.eligibleCount}/{item.count}</td>
-                  <td className="px-4 py-3 tabular-nums">{item.completeCount}/{item.eligibleCount}</td>
+                  <td className="px-4 py-3 tabular-nums">{item.completeCount}/{item.count}</td>
                   <td className="px-4 py-3 tabular-nums">{withN(formatPercent(item.chooseAgainRate), item.chooseAgainCount)}</td>
                   <td className="px-4 py-3 tabular-nums">{withN(formatNumber(item.medianActualRank), item.rankableCount)}</td>
                   <td className="px-4 py-3 tabular-nums">{ratePair(item.top3Rate, item.top3ConservativeRate, item.rankableCount)}</td>

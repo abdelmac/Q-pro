@@ -78,11 +78,12 @@ export function formatSupabaseError(error: SupabaseErrorLike): string {
     || message.includes('submit_specialist_response_v2')
     || message.includes('submit_student_response_v3')
     || message.includes('submit_specialist_response_v3')
+    || message.includes('submit_specialist_response_v4')
   ) {
     return 'La base Supabase n’est pas à jour. Déployez toutes les migrations du dossier supabase/migrations.';
   }
   if (code === '22023' || message.includes('Invalid student') || message.includes('Invalid specialist')) {
-    return 'Les réponses sont incomplètes ou invalides. Vérifiez les 81 notes puis réessayez.';
+    return 'Les données envoyées sont incomplètes ou invalides. Vérifiez vos réponses puis réessayez.';
   }
   if (code === '23505' && message.includes('Submission id')) {
     return 'Cette soumission a déjà été utilisée avec d’autres données. Rechargez la page puis réessayez.';
@@ -98,6 +99,7 @@ export interface SpecialistResponse {
   actual_specialty: string;
   ratings: Record<string, number>;
   selected_values: string[];
+  questionnaire_completed: boolean;
   language: SupportedLanguage;
   current_specialty_view: string;
   specialty_changes_over_years: string;
@@ -169,8 +171,16 @@ function validateSharedResponse(
 }
 
 function validateSpecialistResponse(data: SpecialistResponse): string | null {
-  const sharedError = validateSharedResponse(data.ratings, data.selected_values, data.language);
-  if (sharedError) return sharedError;
+  if (!supportedLanguages.has(data.language)) return 'La langue du questionnaire est invalide.';
+  if (typeof data.questionnaire_completed !== 'boolean') {
+    return 'Le statut du questionnaire spécialiste est invalide.';
+  }
+  if (data.questionnaire_completed) {
+    const sharedError = validateSharedResponse(data.ratings, data.selected_values, data.language);
+    if (sharedError) return sharedError;
+  } else if (Object.keys(data.ratings).length !== 0 || data.selected_values.length !== 0) {
+    return 'Un questionnaire passé ne peut pas contenir de réponses partielles.';
+  }
   if (!specialtyNames.has(data.actual_specialty)) return 'La spécialité sélectionnée est invalide.';
   const validText = (value: string, maximum: number) => {
     const length = value.trim().length;
@@ -236,6 +246,7 @@ export async function submitSpecialistResponse(data: SpecialistResponse): Promis
     p_actual_specialty: data.actual_specialty,
     p_ratings: data.ratings as Json,
     p_selected_values: data.selected_values as Json,
+    p_questionnaire_completed: data.questionnaire_completed,
     p_language: data.language,
     p_current_specialty_view: data.current_specialty_view.trim(),
     p_specialty_changes_over_years: data.specialty_changes_over_years.trim(),
@@ -252,8 +263,8 @@ export async function submitSpecialistResponse(data: SpecialistResponse): Promis
     p_consent_version: DATA_VERSIONS.consent,
   };
   const { data: responseId, error } = await supabase.rpc(
-    'submit_specialist_response_v3',
-    asPostgresRoutineArgs<Database['public']['Functions']['submit_specialist_response_v3']['Args']>({
+    'submit_specialist_response_v4',
+    asPostgresRoutineArgs<Database['public']['Functions']['submit_specialist_response_v4']['Args']>({
       ...rpcArguments,
       p_specialty_config_version_id: data.specialty_config_version_id,
     }),
