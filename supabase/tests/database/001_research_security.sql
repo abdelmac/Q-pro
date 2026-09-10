@@ -353,7 +353,7 @@ SELECT extensions.ok(
   )
   AND NOT has_function_privilege(
     'authenticated',
-    'private.submit_specialist_response_v4(uuid,text,jsonb,jsonb,boolean,text,text,text,text,text,text,text,text,text,text,text,text,text,uuid)',
+    'private.submit_specialist_response_v4(uuid,text,jsonb,jsonb,boolean,text,text,text,text,text,text,text,text,text,text,text,text,uuid)',
     'EXECUTE'
   ),
   'clients cannot execute schema-2 private submission workers'
