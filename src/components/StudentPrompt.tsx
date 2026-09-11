@@ -1,72 +1,103 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { submitStudentResponse, type SupportedLanguage } from '@/lib/supabase';
 import { useLanguage } from '@/lib/LanguageContext';
-import { AlertCircle, ArrowRight, Loader2, GraduationCap } from 'lucide-react';
 import { useSpecialtyCatalog } from '@/lib/SpecialtyCatalogContext';
-import { STUDENT_STUDY_YEARS } from '@/lib/participantProfile';
+import ParticipantReflectionForm, {
+  PARTICIPANT_MEDICINE_VIEW_MAX_LENGTH,
+  PARTICIPANT_MEDICINE_VIEW_MIN_LENGTH,
+  type ParticipantReflectionDraft,
+} from './ParticipantReflectionForm';
+
+export type { ParticipantReflectionDraft } from './ParticipantReflectionForm';
 
 interface StudentPromptProps {
+  participantRole: 'student' | 'curious';
+  draft: ParticipantReflectionDraft;
+  onDraftChange: (draft: ParticipantReflectionDraft) => void;
   preferredSpecialty: string | null;
   ratings: Record<string, number>;
   selectedValues: string[];
   scores: Array<{ specialty: { name: string }; score: number }>;
   language: SupportedLanguage;
-  onDone: () => void;
+  onDone: (saved: boolean) => void;
+  onSubmittingChange?: (submitting: boolean) => void;
 }
 
-export default function StudentPrompt({ preferredSpecialty, ratings, selectedValues, scores, language, onDone }: StudentPromptProps) {
+export default function StudentPrompt({
+  participantRole,
+  draft,
+  onDraftChange,
+  preferredSpecialty,
+  ratings,
+  selectedValues,
+  scores,
+  language,
+  onDone,
+  onSubmittingChange,
+}: StudentPromptProps) {
   const { t } = useLanguage();
   const { version, source } = useSpecialtyCatalog();
-  const [studyYear, setStudyYear] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [submissionId] = useState(() => crypto.randomUUID());
+  const mountedRef = useRef(true);
 
-  const handleSubmit = async () => {
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      onSubmittingChange?.(false);
+    };
+  }, [onSubmittingChange]);
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const normalizedMedicineView = draft.medicineView.trim();
+    if (
+      normalizedMedicineView.length < PARTICIPANT_MEDICINE_VIEW_MIN_LENGTH
+      || normalizedMedicineView.length > PARTICIPANT_MEDICINE_VIEW_MAX_LENGTH
+    ) return;
+
     setSubmitting(true);
+    onSubmittingChange?.(true);
     setError(null);
-    const result = await submitStudentResponse({
-      submission_id: submissionId,
-      study_year: studyYear ? Number(studyYear) : null,
-      preferred_specialty: preferredSpecialty,
-      ratings,
-      selected_values: selectedValues,
-      client_scores: scores.map(({ specialty, score }) => ({ specialty: specialty.name, score })),
-      language,
-      specialty_config_version_id: source === 'remote' ? version.id : null,
-    });
-    setSubmitting(false);
-    if (result.success) onDone();
-    else setError(result.error ?? 'Unable to save your response.');
+    try {
+      const result = await submitStudentResponse({
+        submission_id: draft.submissionId,
+        participant_role: participantRole,
+        medicine_view: normalizedMedicineView,
+        study_year: participantRole === 'student' && draft.studyYear ? Number(draft.studyYear) : null,
+        preferred_specialty: preferredSpecialty,
+        ratings,
+        selected_values: selectedValues,
+        client_scores: scores.map(({ specialty, score }) => ({ specialty: specialty.name, score })),
+        language,
+        specialty_config_version_id: source === 'remote' ? version.id : null,
+      });
+      if (!mountedRef.current) return;
+      if (result.success) onDone(true);
+      else setError(result.error ?? t.specialistError);
+    } catch (submissionError) {
+      if (mountedRef.current) {
+        setError(submissionError instanceof Error ? submissionError.message : t.specialistError);
+      }
+    } finally {
+      if (mountedRef.current) {
+        setSubmitting(false);
+        onSubmittingChange?.(false);
+      }
+    }
   };
 
   return (
-    <main className="max-w-xl mx-auto px-6 py-16 animate-fade-up">
-      <div className="w-14 h-14 rounded-2xl bg-brand-50 flex items-center justify-center text-brand-600 mb-6">
-        <GraduationCap className="w-7 h-7" />
-      </div>
-      <h2 className="font-display text-3xl font-semibold text-ink-900 mb-3">{t.studentDataTitle}</h2>
-      <p className="text-ink-500 leading-relaxed mb-8">{t.studentDataDesc}</p>
-
-      <label htmlFor="study-year" className="text-sm font-semibold text-ink-700 mb-2 block">{t.studentStudyYear} <span className="font-normal text-ink-400">({t.specialtyOptional})</span></label>
-      <select
-        id="study-year"
-        value={studyYear}
-        onChange={(event) => setStudyYear(event.target.value)}
-        className="w-full px-4 py-3 rounded-xl bg-white border border-ink-200 text-sm text-ink-900 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 transition-all"
-      >
-        <option value="">{t.studentPreferNotToSay}</option>
-        {STUDENT_STUDY_YEARS.map((year) => (
-          <option key={year} value={year}>{t.studentYear(year)}</option>
-        ))}
-      </select>
-
-      {error && <div className="mt-5 p-3.5 rounded-xl bg-red-50 border border-red-200 flex items-center gap-2.5 text-sm text-red-700"><AlertCircle className="w-4 h-4 shrink-0" />{error}</div>}
-
-      <button onClick={handleSubmit} disabled={submitting} className="mt-8 w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full bg-brand-800 text-white font-semibold text-sm shadow-lift hover:bg-brand-900 transition-all disabled:opacity-40 disabled:cursor-not-allowed">
-        {submitting ? <><Loader2 className="w-4 h-4 animate-spin" />{t.studentSaving}</> : <>{t.studentContinue}<ArrowRight className="w-4 h-4" /></>}
-      </button>
-      <button onClick={onDone} disabled={submitting} className="w-full mt-3 py-3 text-sm font-medium text-ink-500 hover:text-ink-900 transition-colors">{t.studentSkip}</button>
-    </main>
+    <ParticipantReflectionForm
+      participantRole={participantRole}
+      draft={draft}
+      onDraftChange={onDraftChange}
+      submitting={submitting}
+      error={error}
+      copy={t}
+      onSubmit={(event) => void handleSubmit(event)}
+      onSkip={() => onDone(false)}
+    />
   );
 }

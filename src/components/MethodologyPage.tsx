@@ -1,9 +1,10 @@
 import { useLanguage } from '@/lib/LanguageContext';
 import {
-  ArrowLeft, BookOpen, Brain, Calculator, ClipboardList, Database,
+  BookOpen, Brain, Calculator, ClipboardList, Database,
   FlaskConical, AlertTriangle, FileText, ShieldAlert, Layers,
   Sliders, ShieldCheck, Code, Lightbulb, Heart, BarChart3,
 } from 'lucide-react';
+import PageBackButton from './PageBackButton';
 
 interface MethodologyPageProps {
   onBack: () => void;
@@ -41,10 +42,7 @@ export default function MethodologyPage({ onBack }: MethodologyPageProps) {
   return (
     <div className="min-h-screen">
       <header className="px-6 py-5 sm:px-10 sm:py-7 flex items-center justify-between border-b border-ink-100 bg-white/80 backdrop-blur sticky top-0 z-10">
-        <button onClick={onBack} className="inline-flex items-center gap-1.5 text-sm font-medium text-ink-500 hover:text-ink-900 transition-colors">
-          <ArrowLeft className="w-4 h-4" />
-          {t.methodologyBack}
-        </button>
+        <PageBackButton onClick={onBack} label={t.methodologyBack} />
       </header>
 
       <div className="max-w-3xl mx-auto px-6 py-10">

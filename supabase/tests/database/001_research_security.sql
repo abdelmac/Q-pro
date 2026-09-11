@@ -2,7 +2,7 @@ BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
 
-SELECT extensions.plan(127);
+SELECT extensions.plan(150);
 
 SELECT extensions.has_schema('private', 'private schema exists');
 SELECT extensions.has_table('public', 'student_responses', 'student table exists');
@@ -38,6 +38,42 @@ SELECT extensions.has_column(
 SELECT extensions.has_column(
   'public', 'student_responses', 'specialty_config_revision',
   'student rows store specialty catalog revisions'
+);
+SELECT extensions.has_column(
+  'public', 'student_responses', 'participant_role',
+  'participant rows store the canonical student or curious population'
+);
+SELECT extensions.has_column(
+  'public', 'student_responses', 'medicine_view',
+  'participant rows store the qualitative view of medicine'
+);
+SELECT extensions.has_column(
+  'public', 'student_responses', 'participant_reflection_version',
+  'participant rows store the qualitative prompt protocol version'
+);
+SELECT extensions.ok(
+  EXISTS (
+    SELECT 1
+    FROM pg_catalog.pg_constraint
+    WHERE conrelid = 'public.student_responses'::regclass
+      AND conname = 'student_responses_participant_role_check'
+      AND convalidated
+  ),
+  'participant roles are protected by a validated table constraint'
+);
+SELECT extensions.ok(
+  to_regclass('public.student_responses_participant_role_created_at_idx') IS NOT NULL,
+  'participant role and chronology filters have a dedicated index'
+);
+SELECT extensions.ok(
+  EXISTS (
+    SELECT 1
+    FROM pg_catalog.pg_constraint
+    WHERE conrelid = 'public.student_responses'::regclass
+      AND conname = 'student_responses_payload_v3_check'
+      AND convalidated
+  ),
+  'schema-3 participant reflection payloads are protected by a validated table constraint'
 );
 SELECT extensions.has_column(
   'public', 'specialist_responses', 'specialty_config_version_id',
@@ -327,6 +363,19 @@ SELECT extensions.ok(
 SELECT extensions.ok(
   has_function_privilege(
     'anon',
+    'public.submit_student_response_v4(uuid,text,text,integer,text,jsonb,jsonb,jsonb,text,text,text,text,text,text,text,uuid)',
+    'EXECUTE'
+  )
+  AND has_function_privilege(
+    'authenticated',
+    'public.submit_student_response_v4(uuid,text,text,integer,text,jsonb,jsonb,jsonb,text,text,text,text,text,text,text,uuid)',
+    'EXECUTE'
+  ),
+  'anonymous and authenticated clients can execute the schema-3 participant submission RPC'
+);
+SELECT extensions.ok(
+  has_function_privilege(
+    'anon',
     'public.submit_specialist_response_v3(uuid,text,jsonb,jsonb,text,text,text,text,text,text,text,text,text,text,text,text,uuid)',
     'EXECUTE'
   ),
@@ -344,6 +393,16 @@ SELECT extensions.ok(
   NOT has_function_privilege(
     'anon',
     'private.submit_student_response_v3(uuid,integer,text,jsonb,jsonb,jsonb,text,text,text,text,text,text,uuid)',
+    'EXECUTE'
+  )
+  AND NOT has_function_privilege(
+    'anon',
+    'private.submit_student_response_v4(uuid,text,text,integer,text,jsonb,jsonb,jsonb,text,text,text,text,text,text,text,uuid)',
+    'EXECUTE'
+  )
+  AND NOT has_function_privilege(
+    'authenticated',
+    'private.submit_student_response_v4(uuid,text,text,integer,text,jsonb,jsonb,jsonb,text,text,text,text,text,text,text,uuid)',
     'EXECUTE'
   )
   AND NOT has_function_privilege(
@@ -382,11 +441,13 @@ SELECT extensions.ok(
     FROM pg_catalog.pg_proc AS procedure
     WHERE procedure.oid IN (
       'public.submit_student_response_v3(uuid,integer,text,jsonb,jsonb,jsonb,text,text,text,text,text,text,uuid)'::regprocedure,
+      'public.submit_student_response_v4(uuid,text,text,integer,text,jsonb,jsonb,jsonb,text,text,text,text,text,text,text,uuid)'::regprocedure,
+      'private.submit_student_response_v4(uuid,text,text,integer,text,jsonb,jsonb,jsonb,text,text,text,text,text,text,text,uuid)'::regprocedure,
       'public.submit_specialist_response_v3(uuid,text,jsonb,jsonb,text,text,text,text,text,text,text,text,text,text,text,text,uuid)'::regprocedure,
       'public.submit_specialist_response_v4(uuid,text,jsonb,jsonb,boolean,text,text,text,text,text,text,text,text,text,text,text,text,uuid)'::regprocedure
     )
   ),
-  'schema-2 public submission wrappers are security definer with empty search paths'
+  'current submission wrappers and the participant worker are security definer with empty search paths'
 );
 SELECT extensions.ok(
   (
@@ -1133,6 +1194,334 @@ SELECT extensions.throws_ok(
   'Student study year must be between 1 and 6',
   'current student RPC rejects study year 7'
 );
+SELECT extensions.ok(
+  (
+    SELECT response.participant_role = 'student'
+      AND response.medicine_view IS NULL
+      AND response.participant_reflection_version IS NULL
+    FROM public.student_responses AS response
+    WHERE response.id = '10000000-0000-4000-8000-000000000004'::uuid
+  ),
+  'pre-v4 student RPCs retain the historical student role without inventing a reflection'
+);
+SELECT extensions.is(
+  public.submit_student_response_v4(
+    '10000000-0000-4000-8000-000000000010'::uuid,
+    'student',
+    '  Medicine combines scientific reasoning with responsibility for people.  ',
+    4,
+    'Cardiology',
+    current_setting('q_project_test.valid_ratings')::jsonb,
+    '["Prestige"]'::jsonb,
+    current_setting('q_project_test.valid_scores')::jsonb,
+    'en',
+    'q81-v1',
+    'career-values-v1',
+    'medical-specialties-v1',
+    'client-scoring-v2',
+    'research-consent-2026-09-11',
+    'medicine-view-v1',
+    (public.get_active_specialty_catalog() -> 'version' ->> 'id')::uuid
+  ),
+  '10000000-0000-4000-8000-000000000010'::uuid,
+  'student v4 accepts a complete student submission with a medicine reflection'
+);
+SELECT extensions.ok(
+  (
+    SELECT response.participant_role = 'student'
+      AND response.medicine_view =
+        'Medicine combines scientific reasoning with responsibility for people.'
+      AND response.participant_reflection_version = 'medicine-view-v1'
+      AND response.study_year = 4
+      AND response.submission_schema_version = 3
+      AND response.consent_version = 'research-consent-2026-09-11'
+    FROM public.student_responses AS response
+    WHERE response.id = '10000000-0000-4000-8000-000000000010'::uuid
+  ),
+  'student v4 trims the reflection and stores its role, schema, prompt, and consent provenance'
+);
+SELECT extensions.is(
+  public.submit_student_response_v4(
+    '10000000-0000-4000-8000-000000000010'::uuid,
+    'student',
+    '  Medicine combines scientific reasoning with responsibility for people.  ',
+    4,
+    'Cardiology',
+    current_setting('q_project_test.valid_ratings')::jsonb,
+    '["Prestige"]'::jsonb,
+    current_setting('q_project_test.valid_scores')::jsonb,
+    'en',
+    'q81-v1',
+    'career-values-v1',
+    'medical-specialties-v1',
+    'client-scoring-v2',
+    'research-consent-2026-09-11',
+    'medicine-view-v1',
+    (public.get_active_specialty_catalog() -> 'version' ->> 'id')::uuid
+  ),
+  '10000000-0000-4000-8000-000000000010'::uuid,
+  'replaying an identical student v4 payload is idempotent'
+);
+SELECT extensions.throws_ok(
+  $$
+    SELECT public.submit_student_response_v4(
+      '10000000-0000-4000-8000-000000000010'::uuid,
+      'student',
+      'Medicine is a different reflection for the same identifier.',
+      4,
+      'Cardiology',
+      current_setting('q_project_test.valid_ratings')::jsonb,
+      '["Prestige"]'::jsonb,
+      current_setting('q_project_test.valid_scores')::jsonb,
+      'en',
+      'q81-v1',
+      'career-values-v1',
+      'medical-specialties-v1',
+      'client-scoring-v2',
+      'research-consent-2026-09-11',
+      'medicine-view-v1',
+      (public.get_active_specialty_catalog() -> 'version' ->> 'id')::uuid
+    )
+  $$,
+  '23505',
+  'Submission id already exists with a different payload',
+  'a student v4 id cannot be replayed with changed qualitative text'
+);
+SELECT extensions.is(
+  public.submit_student_response_v4(
+    '10000000-0000-4000-8000-000000000011'::uuid,
+    'curious',
+    '  Medicine seems both intellectually demanding and deeply human.  ',
+    NULL::integer,
+    NULL::text,
+    current_setting('q_project_test.valid_ratings')::jsonb,
+    '["Working with people"]'::jsonb,
+    current_setting('q_project_test.valid_scores')::jsonb,
+    'fr',
+    'q81-v1',
+    'career-values-v1',
+    'medical-specialties-v1',
+    'client-scoring-v2',
+    'research-consent-2026-09-11',
+    'medicine-view-v1',
+    (public.get_active_specialty_catalog() -> 'version' ->> 'id')::uuid
+  ),
+  '10000000-0000-4000-8000-000000000011'::uuid,
+  'student v4 accepts a distinct medicine-explorer population'
+);
+SELECT extensions.ok(
+  (
+    SELECT response.participant_role = 'curious'
+      AND response.study_year IS NULL
+      AND response.medicine_view =
+        'Medicine seems both intellectually demanding and deeply human.'
+      AND response.participant_reflection_version = 'medicine-view-v1'
+      AND response.submission_schema_version = 3
+    FROM public.student_responses AS response
+    WHERE response.id = '10000000-0000-4000-8000-000000000011'::uuid
+  ),
+  'medicine-explorer rows remain explicitly separated from the student cohort'
+);
+SELECT extensions.throws_ok(
+  $$
+    SELECT public.submit_student_response_v4(
+      '10000000-0000-4000-8000-000000000012'::uuid,
+      'curious',
+      'Medicine is a field I am currently exploring.',
+      2,
+      NULL,
+      current_setting('q_project_test.valid_ratings')::jsonb,
+      '["Prestige"]'::jsonb,
+      current_setting('q_project_test.valid_scores')::jsonb,
+      'en',
+      'q81-v1',
+      'career-values-v1',
+      'medical-specialties-v1',
+      'client-scoring-v2',
+      'research-consent-2026-09-11',
+      'medicine-view-v1',
+      (public.get_active_specialty_catalog() -> 'version' ->> 'id')::uuid
+    )
+  $$,
+  '22023',
+  'Invalid participant research submission',
+  'a medicine explorer cannot be assigned a medical study year'
+);
+SELECT extensions.throws_ok(
+  $$
+    SELECT public.submit_student_response_v4(
+      '10000000-0000-4000-8000-000000000018'::uuid,
+      'student',
+      'Medicine combines scientific knowledge with patient care.',
+      7,
+      NULL,
+      current_setting('q_project_test.valid_ratings')::jsonb,
+      '["Prestige"]'::jsonb,
+      current_setting('q_project_test.valid_scores')::jsonb,
+      'en',
+      'q81-v1',
+      'career-values-v1',
+      'medical-specialties-v1',
+      'client-scoring-v2',
+      'research-consent-2026-09-11',
+      'medicine-view-v1',
+      (public.get_active_specialty_catalog() -> 'version' ->> 'id')::uuid
+    )
+  $$,
+  '22023',
+  'Invalid participant research submission',
+  'student v4 enforces the current medical study-year range from one through six'
+);
+SELECT extensions.throws_ok(
+  $$
+    SELECT public.submit_student_response_v4(
+      '10000000-0000-4000-8000-000000000013'::uuid,
+      'specialist',
+      'Medicine is a field that combines knowledge and service.',
+      NULL,
+      NULL,
+      current_setting('q_project_test.valid_ratings')::jsonb,
+      '["Prestige"]'::jsonb,
+      current_setting('q_project_test.valid_scores')::jsonb,
+      'en',
+      'q81-v1',
+      'career-values-v1',
+      'medical-specialties-v1',
+      'client-scoring-v2',
+      'research-consent-2026-09-11',
+      'medicine-view-v1',
+      (public.get_active_specialty_catalog() -> 'version' ->> 'id')::uuid
+    )
+  $$,
+  '22023',
+  'Invalid participant research submission',
+  'student v4 rejects a role outside the student and curious populations'
+);
+SELECT extensions.throws_ok(
+  $$
+    SELECT public.submit_student_response_v4(
+      '10000000-0000-4000-8000-000000000014'::uuid,
+      'student',
+      '  ',
+      1,
+      NULL,
+      current_setting('q_project_test.valid_ratings')::jsonb,
+      '["Prestige"]'::jsonb,
+      current_setting('q_project_test.valid_scores')::jsonb,
+      'en',
+      'q81-v1',
+      'career-values-v1',
+      'medical-specialties-v1',
+      'client-scoring-v2',
+      'research-consent-2026-09-11',
+      'medicine-view-v1',
+      (public.get_active_specialty_catalog() -> 'version' ->> 'id')::uuid
+    )
+  $$,
+  '22023',
+  'Invalid participant research submission',
+  'student v4 rejects a blank qualitative reflection after trimming'
+);
+SELECT extensions.throws_ok(
+  $$
+    SELECT public.submit_student_response_v4(
+      '10000000-0000-4000-8000-000000000019'::uuid,
+      'student',
+      E'\n\t\n',
+      1,
+      NULL,
+      current_setting('q_project_test.valid_ratings')::jsonb,
+      '["Prestige"]'::jsonb,
+      current_setting('q_project_test.valid_scores')::jsonb,
+      'en',
+      'q81-v1',
+      'career-values-v1',
+      'medical-specialties-v1',
+      'client-scoring-v2',
+      'research-consent-2026-09-11',
+      'medicine-view-v1',
+      (public.get_active_specialty_catalog() -> 'version' ->> 'id')::uuid
+    )
+  $$,
+  '22023',
+  'Invalid participant research submission',
+  'student v4 rejects reflections made only of line breaks and tabs'
+);
+SELECT extensions.throws_ok(
+  $$
+    SELECT public.submit_student_response_v4(
+      '10000000-0000-4000-8000-000000000015'::uuid,
+      'student',
+      repeat('x', 2001),
+      1,
+      NULL,
+      current_setting('q_project_test.valid_ratings')::jsonb,
+      '["Prestige"]'::jsonb,
+      current_setting('q_project_test.valid_scores')::jsonb,
+      'en',
+      'q81-v1',
+      'career-values-v1',
+      'medical-specialties-v1',
+      'client-scoring-v2',
+      'research-consent-2026-09-11',
+      'medicine-view-v1',
+      (public.get_active_specialty_catalog() -> 'version' ->> 'id')::uuid
+    )
+  $$,
+  '22023',
+  'Invalid participant research submission',
+  'student v4 rejects a qualitative reflection longer than 2000 characters'
+);
+SELECT extensions.throws_ok(
+  $$
+    SELECT public.submit_student_response_v4(
+      '10000000-0000-4000-8000-000000000016'::uuid,
+      'student',
+      'Medicine requires both scientific and interpersonal skills.',
+      1,
+      NULL,
+      current_setting('q_project_test.valid_ratings')::jsonb,
+      '["Prestige"]'::jsonb,
+      current_setting('q_project_test.valid_scores')::jsonb,
+      'en',
+      'q81-v1',
+      'career-values-v1',
+      'medical-specialties-v1',
+      'client-scoring-v2',
+      'research-consent-2026-09-11',
+      'medicine-view-v0',
+      (public.get_active_specialty_catalog() -> 'version' ->> 'id')::uuid
+    )
+  $$,
+  '22023',
+  'Invalid participant research submission',
+  'student v4 rejects an unknown participant-reflection protocol version'
+);
+SELECT extensions.throws_ok(
+  $$
+    SELECT public.submit_student_response_v4(
+      '10000000-0000-4000-8000-000000000017'::uuid,
+      'student',
+      'Medicine requires both scientific and interpersonal skills.',
+      1,
+      NULL,
+      current_setting('q_project_test.valid_ratings')::jsonb,
+      '["Prestige"]'::jsonb,
+      current_setting('q_project_test.valid_scores')::jsonb,
+      'en',
+      'q81-v1',
+      'career-values-v1',
+      'medical-specialties-v1',
+      'client-scoring-v2',
+      'research-consent-2026-09-04',
+      'medicine-view-v1',
+      (public.get_active_specialty_catalog() -> 'version' ->> 'id')::uuid
+    )
+  $$,
+  '22023',
+  'Invalid participant research submission',
+  'student v4 rejects consent that predates collection of the free-text reflection'
+);
 SELECT extensions.is(
   public.submit_specialist_response_v3(
     '20000000-0000-4000-8000-000000000004'::uuid,
@@ -1571,6 +1960,17 @@ SELECT extensions.is(
 );
 
 RESET ROLE;
+
+SELECT extensions.throws_ok(
+  $$
+    UPDATE public.student_responses
+    SET participant_reflection_version = NULL
+    WHERE id = '10000000-0000-4000-8000-000000000010'::uuid
+  $$,
+  '23514',
+  'new row for relation "student_responses" violates check constraint "student_responses_payload_v3_check"',
+  'the table constraint rejects a schema-3 row without reflection provenance even for a privileged writer'
+);
 
 -- Raise on any failed assertion so direct SQL runners fail just like pg_prove.
 SELECT * FROM extensions.finish(true);

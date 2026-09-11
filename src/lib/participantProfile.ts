@@ -9,7 +9,7 @@ export type PostQuestionnaireDestination = 'student' | 'specialist' | 'results';
 export function getPostQuestionnaireDestination(
   role: ParticipantRole,
 ): PostQuestionnaireDestination {
-  if (role === 'student') return 'student';
+  if (role === 'student' || role === 'curious') return 'student';
   if (role === 'specialist') return 'specialist';
   return 'results';
 }

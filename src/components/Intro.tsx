@@ -2,19 +2,21 @@ import { useLanguage } from '@/lib/LanguageContext';
 import type { ParticipantRole } from '@/lib/participantProfile';
 import { FEATURE_FLAGS } from '@/config/features';
 import LanguageSwitcher from './LanguageSwitcher';
+import PageBackButton from './PageBackButton';
 import { Stethoscope, Brain, HeartPulse, Sparkles, ArrowRight, Compass, BookOpen, BarChart3, GraduationCap, RefreshCw } from 'lucide-react';
 
 interface IntroProps {
   onStart: () => void;
   totalQuestions: number;
   participantRole: ParticipantRole;
+  onBack: () => void;
   onChangeRole: () => void;
   onOpenExplorer: () => void;
   onOpenMethodology: () => void;
   onOpenDashboard: () => void;
 }
 
-export default function Intro({ onStart, totalQuestions, participantRole, onChangeRole, onOpenExplorer, onOpenMethodology, onOpenDashboard }: IntroProps) {
+export default function Intro({ onStart, totalQuestions, participantRole, onBack, onChangeRole, onOpenExplorer, onOpenMethodology, onOpenDashboard }: IntroProps) {
   const { t } = useLanguage();
   const isSpecialist = participantRole === 'specialist';
   const isCurious = participantRole === 'curious';
@@ -24,16 +26,19 @@ export default function Intro({ onStart, totalQuestions, participantRole, onChan
 
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="px-6 py-5 sm:px-10 sm:py-7 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center text-white shadow-soft">
-            <Stethoscope className="w-5 h-5" strokeWidth={2.2} />
+      <header className="flex items-center justify-between gap-2 px-3 py-5 sm:px-10 sm:py-7">
+        <div className="flex items-center gap-2">
+          <PageBackButton onClick={onBack} label={t.back} />
+          <div className="hidden items-center gap-2.5 lg:flex">
+            <div className="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center text-white shadow-soft">
+              <Stethoscope className="w-5 h-5" strokeWidth={2.2} />
+            </div>
+            <span className="font-display text-lg font-semibold tracking-tight text-ink-900">
+              {t.appName}
+            </span>
           </div>
-          <span className="hidden font-display text-lg font-semibold tracking-tight text-ink-900 sm:inline">
-            {t.appName}
-          </span>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
           <button
             type="button"
             onClick={onChangeRole}
@@ -41,8 +46,8 @@ export default function Intro({ onStart, totalQuestions, participantRole, onChan
             className="inline-flex items-center gap-2 rounded-full border border-ink-200 bg-white px-3 py-2.5 text-sm font-medium text-ink-700 transition-colors hover:border-brand-300 hover:text-brand-800"
           >
             <RoleIcon className="h-4 w-4 text-brand-600" />
-            <span>{roleLabel}</span>
-            <RefreshCw className="h-3.5 w-3.5 text-ink-400" aria-hidden="true" />
+            <span className="hidden sm:inline">{roleLabel}</span>
+            <RefreshCw className="hidden h-3.5 w-3.5 text-ink-400 sm:block" aria-hidden="true" />
           </button>
           <LanguageSwitcher />
         </div>

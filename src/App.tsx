@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState, useMemo, useCallback, useEffect } from 'react';
+import { lazy, Suspense, useState, useMemo, useCallback, useEffect, useReducer } from 'react';
 import { RATING_SECTIONS, ALL_QUESTION_IDS } from '@/data/questions';
 import { translateSection } from '@/data/i18n';
 import {
@@ -21,13 +21,24 @@ import Results from '@/components/Results';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import SpecialistPrompt from '@/components/SpecialistPrompt';
 import SpecialistQuestionnaireChoice from '@/components/SpecialistQuestionnaireChoice';
-import StudentPrompt from '@/components/StudentPrompt';
+import StudentPrompt, { type ParticipantReflectionDraft } from '@/components/StudentPrompt';
 import QProfile from '@/components/QProfile';
 import SpecialtyExplorer from '@/components/SpecialtyExplorer';
 import SpecialtyDetail from '@/components/SpecialtyDetail';
 import SpecialtyComparison from '@/components/SpecialtyComparison';
 import MethodologyPage from '@/components/MethodologyPage';
-import { ArrowLeft, ArrowRight, Stethoscope } from 'lucide-react';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
+import PageBackButton from '@/components/PageBackButton';
+import {
+  createAppNavigationReducer,
+  createAppNavigationState,
+  getCurrentAppLocation,
+  navigateBack,
+  navigateTo,
+  replaceNavigation,
+  resetNavigation,
+  type AppLocation,
+} from '@/lib/appNavigation';
 import {
   getPostQuestionnaireDestination,
   INITIAL_PARTICIPANT_ROLE,
@@ -36,7 +47,6 @@ import {
 
 const Dashboard = lazy(() => import('@/components/Dashboard'));
 
-type Phase = 'intro' | 'specialist-choice' | 'quiz' | 'qprofile' | 'student' | 'results' | 'specialist' | 'dashboard' | 'explorer' | 'detail' | 'methodology' | 'comparison';
 type SpecialistQuestionnaireMode = 'completed' | 'skipped' | null;
 
 const QUIZ_STEPS = [
@@ -45,11 +55,28 @@ const QUIZ_STEPS = [
   ...RATING_SECTIONS.map((s) => ({ type: 'rating' as const, label: s.title, sectionId: s.id })),
 ];
 
+const appNavigationReducer = createAppNavigationReducer({
+  maxQuizStepIndex: QUIZ_STEPS.length - 1,
+});
+
+function createParticipantReflectionDraft(): ParticipantReflectionDraft {
+  return {
+    submissionId: crypto.randomUUID(),
+    studyYear: '',
+    medicineView: '',
+  };
+}
+
 function AppContent() {
   const { t, lang } = useLanguage();
   const { specialties, source: catalogSource, isLoading: catalogLoading, error: catalogError, refresh: refreshCatalog } = useSpecialtyCatalog();
-  const [phase, setPhase] = useState<Phase>('intro');
-  const [stepIndex, setStepIndex] = useState(0);
+  const [navigation, dispatchNavigation] = useReducer(
+    appNavigationReducer,
+    undefined,
+    () => createAppNavigationState(),
+  );
+  const location = getCurrentAppLocation(navigation);
+  const phase = location.phase;
   const [preferredSpecialty, setPreferredSpecialty] = useState<string | null>(null);
   const [actualSpecialty, setActualSpecialty] = useState<string | null>(null);
   const [selectedValues, setSelectedValues] = useState<string[]>([]);
@@ -57,8 +84,11 @@ function AppContent() {
   const [scores, setScores] = useState<SpecialtyScore[]>([]);
   const [participantRole, setParticipantRole] = useState<ParticipantRole | null>(INITIAL_PARTICIPANT_ROLE);
   const [specialistQuestionnaireMode, setSpecialistQuestionnaireMode] = useState<SpecialistQuestionnaireMode>(null);
+  const [participantReflectionDraft, setParticipantReflectionDraft] = useState<ParticipantReflectionDraft>(
+    createParticipantReflectionDraft,
+  );
+  const [contributionSubmitting, setContributionSubmitting] = useState(false);
   const [priorities, setPriorities] = useState<PriorityWeights>(DEFAULT_PRIORITY_WEIGHTS);
-  const [explorerSpecialty, setExplorerSpecialty] = useState<string | null>(null);
   const [catalogGateMessage, setCatalogGateMessage] = useState<string | null>(null);
   const isSpecialist = participantRole === 'specialist';
 
@@ -68,6 +98,10 @@ function AppContent() {
     () => isSpecialist ? QUIZ_STEPS.filter((step) => step.type !== 'specialty') : QUIZ_STEPS,
     [isSpecialist],
   );
+  const stepIndex = location.phase === 'quiz'
+    ? Math.min(location.stepIndex, Math.max(0, quizSteps.length - 1))
+    : 0;
+  const explorerSpecialty = location.phase === 'detail' ? location.specialtyName : null;
   // The intro count applies to student/curious orientation. Specialists see
   // the duration and scope of each optional path on their dedicated choice.
   const totalQuestions = ALL_QUESTION_IDS.length + 2;
@@ -76,6 +110,18 @@ function AppContent() {
     () => calculateTraits(ratings, selectedValues),
     [ratings, selectedValues]
   );
+
+  const goTo = useCallback((nextLocation: AppLocation) => {
+    dispatchNavigation(navigateTo(nextLocation));
+  }, []);
+
+  const goBack = useCallback(() => {
+    dispatchNavigation(navigateBack());
+  }, []);
+
+  const replaceCurrentPage = useCallback((nextLocation: AppLocation) => {
+    dispatchNavigation(replaceNavigation(nextLocation));
+  }, []);
 
   const startQuiz = () => {
     if (participantRole === null) return;
@@ -90,8 +136,7 @@ function AppContent() {
     }
     setCatalogGateMessage(null);
     setSpecialistQuestionnaireMode(null);
-    setPhase(isSpecialist ? 'specialist-choice' : 'quiz');
-    setStepIndex(0);
+    goTo(isSpecialist ? { phase: 'specialist-choice' } : { phase: 'quiz', stepIndex: 0 });
   };
 
   const answerSpecialistQuestionnaire = () => {
@@ -99,8 +144,7 @@ function AppContent() {
     setSelectedValues([]);
     setRatings({});
     setScores([]);
-    setStepIndex(0);
-    setPhase('quiz');
+    goTo({ phase: 'quiz', stepIndex: 0 });
   };
 
   const skipSpecialistQuestionnaire = useCallback(() => {
@@ -108,12 +152,9 @@ function AppContent() {
     const hasPartialAnswers = selectedValues.length > 0 || Object.keys(ratings).length > 0;
     if (hasPartialAnswers && !window.confirm(t.specialistSkipQuestionnaireConfirm)) return;
     setSpecialistQuestionnaireMode('skipped');
-    setSelectedValues([]);
-    setRatings({});
     setScores([]);
-    setStepIndex(0);
-    setPhase('specialist');
-  }, [isSpecialist, ratings, selectedValues.length, t.specialistSkipQuestionnaireConfirm]);
+    goTo({ phase: 'specialist' });
+  }, [goTo, isSpecialist, ratings, selectedValues.length, t.specialistSkipQuestionnaireConfirm]);
 
   const toggleValue = (value: string) => {
     setSelectedValues((prev) =>
@@ -126,7 +167,7 @@ function AppContent() {
   };
 
   const computeAndShowQProfile = () => {
-    setPhase('qprofile');
+    goTo({ phase: 'qprofile' });
   };
 
   const computeAndShowResults = () => {
@@ -137,36 +178,39 @@ function AppContent() {
       preferredSpecialty: isSpecialist ? null : preferredSpecialty,
     }, priorities, specialties);
     setScores(result);
-    setPhase(getPostQuestionnaireDestination(participantRole));
+    goTo({ phase: getPostQuestionnaireDestination(participantRole) });
+  };
+
+  const clearAssessment = () => {
+    setPreferredSpecialty(null);
+    setActualSpecialty(null);
+    setSelectedValues([]);
+    setRatings({});
+    setScores([]);
+    setPriorities(DEFAULT_PRIORITY_WEIGHTS);
+    setSpecialistQuestionnaireMode(null);
+    setParticipantReflectionDraft(createParticipantReflectionDraft());
+    setContributionSubmitting(false);
+    setCatalogGateMessage(null);
   };
 
   const restart = () => {
-    setPreferredSpecialty(null);
-    setActualSpecialty(null);
-    setSelectedValues([]);
-    setRatings({});
-    setScores([]);
-    setStepIndex(0);
-    setPriorities(DEFAULT_PRIORITY_WEIGHTS);
-    setExplorerSpecialty(null);
+    clearAssessment();
     setParticipantRole(null);
-    setSpecialistQuestionnaireMode(null);
-    setPhase('intro');
+    dispatchNavigation(resetNavigation());
   };
 
   const changeParticipantRole = () => {
-    setPreferredSpecialty(null);
-    setActualSpecialty(null);
-    setSelectedValues([]);
-    setRatings({});
-    setScores([]);
-    setStepIndex(0);
-    setPriorities(DEFAULT_PRIORITY_WEIGHTS);
-    setExplorerSpecialty(null);
-    setCatalogGateMessage(null);
+    clearAssessment();
     setParticipantRole(null);
-    setSpecialistQuestionnaireMode(null);
-    setPhase('intro');
+    dispatchNavigation(resetNavigation());
+  };
+
+  const selectParticipantRole = (role: ParticipantRole) => {
+    clearAssessment();
+    setParticipantRole(role);
+    dispatchNavigation(resetNavigation());
+    dispatchNavigation(navigateTo({ phase: 'intro' }));
   };
 
   const currentStep = quizSteps[stepIndex];
@@ -187,25 +231,22 @@ function AppContent() {
       if (isSpecialist) computeAndShowResults();
       else computeAndShowQProfile();
     } else {
-      setStepIndex((i) => i + 1);
+      goTo({ phase: 'quiz', stepIndex: stepIndex + 1 });
     }
   };
 
-  const handleBack = useCallback(() => {
-    if (stepIndex === 0) {
-      setPhase(isSpecialist ? 'specialist-choice' : 'intro');
-    } else {
-      setStepIndex((i) => i - 1);
-    }
-  }, [isSpecialist, stepIndex]);
+  const handleBack = goBack;
 
   // Prevent accidental data loss
   const handleBeforeUnload = useCallback((e: BeforeUnloadEvent) => {
-    if (Object.keys(ratings).length > 0 && phase !== 'results' && phase !== 'intro') {
+    const hasDraft = Object.keys(ratings).length > 0
+      || selectedValues.length > 0
+      || participantReflectionDraft.medicineView.trim().length > 0;
+    if (hasDraft && phase !== 'results' && phase !== 'intro' && phase !== 'role') {
       e.preventDefault();
       e.returnValue = '';
     }
-  }, [ratings, phase]);
+  }, [participantReflectionDraft.medicineView, phase, ratings, selectedValues.length]);
 
   useEffect(() => {
     window.addEventListener('beforeunload', handleBeforeUnload);
@@ -215,19 +256,19 @@ function AppContent() {
   // App navigation is state-based, so the browser otherwise preserves the
   // previous document offset when a new screen or questionnaire step renders.
   useScrollToPageTop(getAppNavigationScrollKey(
-    participantRole === null ? 'role' : phase,
+    phase,
     stepIndex,
     explorerSpecialty,
   ));
 
-  if (participantRole === null) {
-    return <RoleSelection onSelectRole={setParticipantRole} />;
+  if (phase === 'role' || participantRole === null) {
+    return <RoleSelection onSelectRole={selectParticipantRole} />;
   }
 
   if (phase === 'intro') {
     return (
       <>
-        <Intro onStart={startQuiz} totalQuestions={totalQuestions} participantRole={participantRole} onChangeRole={changeParticipantRole} onOpenExplorer={() => setPhase('explorer')} onOpenMethodology={() => setPhase('methodology')} onOpenDashboard={() => setPhase('dashboard')} />
+        <Intro onStart={startQuiz} totalQuestions={totalQuestions} participantRole={participantRole} onBack={goBack} onChangeRole={changeParticipantRole} onOpenExplorer={() => goTo({ phase: 'explorer' })} onOpenMethodology={() => goTo({ phase: 'methodology' })} onOpenDashboard={() => goTo({ phase: 'dashboard' })} />
         {(catalogGateMessage || (catalogError && catalogSource !== 'remote')) && (
           <div role="alert" className="fixed bottom-5 left-1/2 z-50 w-[min(92vw,680px)] -translate-x-1/2 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 shadow-lift">
             <p className="font-semibold">{catalogGateMessage ?? (lang === 'fr' ? 'Catalogue publié indisponible.' : 'Published catalog unavailable.')}</p>
@@ -246,7 +287,7 @@ function AppContent() {
       <SpecialistQuestionnaireChoice
         onAnswerQuestionnaire={answerSpecialistQuestionnaire}
         onSkipQuestionnaire={skipSpecialistQuestionnaire}
-        onBack={() => setPhase('intro')}
+        onBack={goBack}
       />
     );
   }
@@ -255,12 +296,7 @@ function AppContent() {
     return (
       <div className="min-h-screen bg-accent-50">
         <header className="px-6 py-5 sm:px-10 sm:py-7 flex items-center justify-between border-b border-ink-100 bg-white/80 backdrop-blur sticky top-0 z-10">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center text-white shadow-soft">
-              <Stethoscope className="w-5 h-5" strokeWidth={2.2} />
-            </div>
-            <span className="font-display text-lg font-semibold tracking-tight text-ink-900">{t.appName}</span>
-          </div>
+          <PageBackButton onClick={goBack} label={t.back} />
           <LanguageSwitcher />
         </header>
         <QProfile
@@ -278,11 +314,12 @@ function AppContent() {
         scores={scores}
         preferredSpecialty={isSpecialist ? null : preferredSpecialty}
         onRestart={restart}
+        onBack={goBack}
         participantRole={participantRole}
-        onContributeData={() => setPhase('specialist')}
-        onOpenExplorer={() => setPhase('explorer')}
-        onOpenComparison={() => setPhase('comparison')}
-        onOpenMethodology={() => setPhase('methodology')}
+        onContributeData={() => goTo({ phase: 'specialist' })}
+        onOpenExplorer={() => goTo({ phase: 'explorer' })}
+        onOpenComparison={() => goTo({ phase: 'comparison' })}
+        onOpenMethodology={() => goTo({ phase: 'methodology' })}
       />
     );
   }
@@ -291,16 +328,27 @@ function AppContent() {
     return (
       <div className="min-h-screen">
         <header className="px-6 py-5 sm:px-10 sm:py-7 flex items-center justify-between border-b border-ink-100 bg-white/80 backdrop-blur sticky top-0 z-10">
-          <span className="font-display text-lg font-semibold tracking-tight text-ink-900">{t.appName}</span>
+          <PageBackButton onClick={goBack} label={t.back} disabled={contributionSubmitting} />
           <LanguageSwitcher />
         </header>
         <StudentPrompt
+          participantRole={participantRole === 'curious' ? 'curious' : 'student'}
+          draft={participantReflectionDraft}
+          onDraftChange={setParticipantReflectionDraft}
           preferredSpecialty={preferredSpecialty}
           ratings={ratings}
           selectedValues={selectedValues}
           scores={scores}
           language={lang}
-          onDone={() => setPhase('results')}
+          onSubmittingChange={setContributionSubmitting}
+          onDone={(saved) => {
+            if (saved) {
+              setParticipantReflectionDraft(createParticipantReflectionDraft());
+              replaceCurrentPage({ phase: 'results' });
+            } else {
+              goTo({ phase: 'results' });
+            }
+          }}
         />
       </div>
     );
@@ -310,21 +358,17 @@ function AppContent() {
     return (
       <div className="min-h-screen">
         <header className="px-6 py-5 sm:px-10 sm:py-7 flex items-center justify-between border-b border-ink-100 bg-white/80 backdrop-blur sticky top-0 z-10">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center text-white shadow-soft">
-              <Stethoscope className="w-5 h-5" strokeWidth={2.2} />
-            </div>
-            <span className="font-display text-lg font-semibold tracking-tight text-ink-900">{t.appName}</span>
-          </div>
+          <PageBackButton onClick={goBack} label={t.back} disabled={contributionSubmitting} />
           <LanguageSwitcher />
         </header>
         <SpecialistPrompt
           initialSpecialty={isSpecialist ? actualSpecialty : null}
-          ratings={ratings}
-          selectedValues={selectedValues}
+          ratings={specialistQuestionnaireMode === 'skipped' ? {} : ratings}
+          selectedValues={specialistQuestionnaireMode === 'skipped' ? [] : selectedValues}
           questionnaireCompleted={specialistQuestionnaireMode !== 'skipped'}
           language={lang}
-          onDone={() => setPhase(specialistQuestionnaireMode === 'skipped' ? 'explorer' : 'results')}
+          onSubmittingChange={setContributionSubmitting}
+          onDone={() => replaceCurrentPage({ phase: specialistQuestionnaireMode === 'skipped' ? 'explorer' : 'results' })}
         />
       </div>
     );
@@ -332,8 +376,8 @@ function AppContent() {
 
   if (phase === 'dashboard') {
     return (
-      <Suspense fallback={<main className="min-h-screen bg-accent-50 flex items-center justify-center text-sm text-ink-500">{lang === 'fr' ? 'Chargement du dashboard…' : 'Loading dashboard…'}</main>}>
-        <Dashboard onBack={() => setPhase('intro')} />
+      <Suspense fallback={<main className="relative flex min-h-screen items-center justify-center bg-accent-50 px-6 text-sm text-ink-500"><PageBackButton onClick={goBack} label={t.back} className="absolute left-4 top-4" />{lang === 'fr' ? 'Chargement du dashboard…' : lang === 'ro' ? 'Se încarcă dashboardul…' : 'Loading dashboard…'}</main>}>
+        <Dashboard onBack={goBack} />
       </Suspense>
     );
   }
@@ -344,10 +388,9 @@ function AppContent() {
       <SpecialtyExplorer
         scores={scoreForExplorer}
         onSelectSpecialty={(name) => {
-          setExplorerSpecialty(name);
-          setPhase('detail');
+          goTo({ phase: 'detail', specialtyName: name });
         }}
-        onBack={() => setPhase(scores.length > 0 ? 'results' : 'intro')}
+        onBack={goBack}
       />
     );
   }
@@ -358,20 +401,20 @@ function AppContent() {
       <SpecialtyDetail
         specialtyName={explorerSpecialty}
         score={score}
-        onBack={() => setPhase('explorer')}
+        onBack={goBack}
       />
     );
   }
 
   if (phase === 'methodology') {
-    return <MethodologyPage onBack={() => setPhase(scores.length > 0 ? 'results' : 'intro')} />;
+    return <MethodologyPage onBack={goBack} />;
   }
 
   if (phase === 'comparison') {
     return (
       <SpecialtyComparison
         studentTraits={studentTraits}
-        onBack={() => setPhase('results')}
+        onBack={goBack}
       />
     );
   }
@@ -385,13 +428,7 @@ function AppContent() {
       <header className="px-6 py-4 sm:px-10 sm:py-5 border-b border-ink-100 bg-white/80 backdrop-blur sticky top-0 z-10">
         <div className="max-w-3xl mx-auto">
           <div className="flex items-center justify-between mb-4">
-            <button
-              onClick={handleBack}
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-ink-500 hover:text-ink-900 transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              {stepIndex === 0 ? t.home : t.back}
-            </button>
+            <PageBackButton onClick={handleBack} label={t.back} />
             <div className="flex items-center gap-3">
               {isSpecialist && (
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-brand-50 border border-brand-100 text-brand-700 text-xs font-semibold">

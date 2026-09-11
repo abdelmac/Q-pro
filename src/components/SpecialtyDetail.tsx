@@ -2,8 +2,8 @@ import { useLanguage } from '@/lib/LanguageContext';
 import { getSpecialtyNarrative, hasSpecialistAuthoredNarrative } from '@/data/specialtyNarratives';
 import { translateSpecialtyName, translateCategory } from '@/data/i18n';
 import { useSpecialtyCatalog } from '@/lib/SpecialtyCatalogContext';
-import { ArrowLeft } from 'lucide-react';
 import SpecialtyBibliography from './SpecialtyBibliography';
+import PageBackButton from './PageBackButton';
 
 interface SpecialtyDetailProps {
   specialtyName: string;
@@ -30,10 +30,7 @@ export default function SpecialtyDetail({ specialtyName, score, onBack }: Specia
   return (
     <div className="min-h-screen">
       <header className="px-6 py-5 sm:px-10 sm:py-7 flex items-center justify-between border-b border-ink-100 bg-white/80 backdrop-blur sticky top-0 z-10">
-        <button onClick={onBack} className="inline-flex items-center gap-1.5 text-sm font-medium text-ink-500 hover:text-ink-900 transition-colors">
-          <ArrowLeft className="w-4 h-4" />
-          {t.explorerBackToExplorer}
-        </button>
+        <PageBackButton onClick={onBack} label={t.explorerBackToExplorer} />
       </header>
 
       <div className="max-w-3xl mx-auto px-6 py-10">

@@ -21,6 +21,10 @@ import CalibrationAnalysis from '@/components/CalibrationAnalysis';
 import DashboardSidebar from '@/components/DashboardSidebar';
 import {
   isCohortView,
+  participantRoleLabel,
+  participantRoleSupportsStudyYear,
+  popDashboardViewHistory,
+  pushDashboardViewHistory,
   type CohortView,
   type DashboardView,
 } from '@/lib/dashboardNavigation';
@@ -52,7 +56,13 @@ const IDLE_SIGN_OUT_MS = 30 * 60 * 1000;
 
 type StudentListRow = Pick<
   Database['public']['Tables']['student_responses']['Row'],
-  'id' | 'study_year' | 'preferred_specialty' | 'language' | 'created_at'
+  | 'id'
+  | 'participant_role'
+  | 'study_year'
+  | 'preferred_specialty'
+  | 'medicine_view'
+  | 'language'
+  | 'created_at'
 >;
 type SpecialistListRow = Pick<
   Database['public']['Tables']['specialist_responses']['Row'],
@@ -76,11 +86,13 @@ type SpecialistListRow = Pick<
 type AccessState = 'checking' | 'signed_out' | 'checking_access' | 'authorized';
 type CompletenessFilter = 'all' | 'complete' | 'partial';
 type QuestionnaireFilter = 'all' | 'completed' | 'skipped';
+type ParticipantRoleFilter = 'all' | 'student' | 'curious';
 type DataVersionFilter = 'current' | 'all' | 'legacy';
 type ExportKind = 'raw' | 'long' | 'analytic' | 'json';
 
 interface DashboardCounts {
   students: number;
+  curious: number;
   specialists: number;
   studentsWithYear: number;
   specialistsComplete: number;
@@ -95,6 +107,7 @@ interface PortalProfile {
 
 const EMPTY_COUNTS: DashboardCounts = {
   students: 0,
+  curious: 0,
   specialists: 0,
   studentsWithYear: 0,
   specialistsComplete: 0,
@@ -174,8 +187,10 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
   const [students, setStudents] = useState<StudentListRow[]>([]);
   const [specialists, setSpecialists] = useState<SpecialistListRow[]>([]);
   const [view, setView] = useState<DashboardView>('specialists');
+  const [viewHistory, setViewHistory] = useState<DashboardView[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [yearFilter, setYearFilter] = useState('all');
+  const [participantRoleFilter, setParticipantRoleFilter] = useState<ParticipantRoleFilter>('all');
   const [studentSpecialtyFilter, setStudentSpecialtyFilter] = useState('all');
   const [specialtyFilter, setSpecialtyFilter] = useState('all');
   const [questionnaireFilter, setQuestionnaireFilter] = useState<QuestionnaireFilter>('all');
@@ -235,9 +250,9 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
     const rangeEnd = rangeStart + PAGE_SIZE - 1;
 
     const globalCounts = Promise.all([
-      supabase.from('student_responses').select('id', { count: 'exact', head: true }),
+      supabase.from('student_responses').select('id', { count: 'exact', head: true }).eq('participant_role', 'student'),
       supabase.from('specialist_responses').select('id', { count: 'exact', head: true }),
-      supabase.from('student_responses').select('id', { count: 'exact', head: true }).not('study_year', 'is', null),
+      supabase.from('student_responses').select('id', { count: 'exact', head: true }).eq('participant_role', 'student').not('study_year', 'is', null),
       supabase.from('specialist_responses').select('id', { count: 'exact', head: true })
         .eq('submission_schema_version', DATA_VERSIONS.submissionSchema)
         .not('current_specialty_view', 'is', null)
@@ -246,6 +261,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
         .not('would_choose_again_code', 'is', null)
         .not('student_self_question', 'is', null)
         .or('would_choose_again_code.eq.yes,and(would_choose_again_code.eq.no,would_not_choose_again_reason.not.is.null)'),
+      supabase.from('student_responses').select('id', { count: 'exact', head: true }).eq('participant_role', 'curious'),
     ]);
 
     try {
@@ -305,7 +321,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
         const queryError = rowResult.error ?? countResults.find(({ error: countError }) => countError)?.error;
         if (requestId !== loadRequest.current) return;
         if (queryError) {
-          setError(formatSupabaseError(queryError));
+          setError(formatSupabaseError(queryError, lang));
           return;
         }
         setSpecialists(rowResult.data ?? []);
@@ -315,27 +331,30 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
           specialists: countResults[1].count ?? 0,
           studentsWithYear: countResults[2].count ?? 0,
           specialistsComplete: countResults[3].count ?? 0,
+          curious: countResults[4].count ?? 0,
         });
       } else {
         let query = supabase
           .from('student_responses')
-          .select('id, study_year, preferred_specialty, language, created_at', { count: 'exact' })
+          .select('id, participant_role, study_year, preferred_specialty, medicine_view, language, created_at', { count: 'exact' })
           .order('created_at', { ascending: false })
           .order('id', { ascending: false })
           .range(rangeStart, rangeEnd);
+        if (participantRoleFilter !== 'all') query = query.eq('participant_role', participantRoleFilter);
         if (yearFilter !== 'all') query = query.eq('study_year', Number(yearFilter));
         if (studentSpecialtyFilter !== 'all') query = query.eq('preferred_specialty', studentSpecialtyFilter);
         if (languageFilter !== 'all') query = query.eq('language', languageFilter);
         if (dataVersionFilter === 'current') {
           query = query
-            .eq('submission_schema_version', DATA_VERSIONS.submissionSchema)
+            .eq('submission_schema_version', DATA_VERSIONS.studentSubmissionSchema)
             .eq('questionnaire_version', DATA_VERSIONS.questionnaire)
             .eq('value_catalog_version', DATA_VERSIONS.valueCatalog)
             .eq('specialty_catalog_version', DATA_VERSIONS.specialtyCatalog)
             .eq('scoring_version', DATA_VERSIONS.scoring)
-            .eq('consent_version', DATA_VERSIONS.consent);
+            .eq('consent_version', DATA_VERSIONS.studentConsent)
+            .eq('participant_reflection_version', DATA_VERSIONS.participantReflection);
         } else if (dataVersionFilter === 'legacy') {
-          query = query.lt('submission_schema_version', DATA_VERSIONS.submissionSchema);
+          query = query.lt('submission_schema_version', DATA_VERSIONS.studentSubmissionSchema);
         }
         query = applyDateFilters(query, dateFrom, dateTo);
 
@@ -343,7 +362,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
         const queryError = rowResult.error ?? countResults.find(({ error: countError }) => countError)?.error;
         if (requestId !== loadRequest.current) return;
         if (queryError) {
-          setError(formatSupabaseError(queryError));
+          setError(formatSupabaseError(queryError, lang));
           return;
         }
         setStudents(rowResult.data ?? []);
@@ -353,6 +372,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
           specialists: countResults[1].count ?? 0,
           studentsWithYear: countResults[2].count ?? 0,
           specialistsComplete: countResults[3].count ?? 0,
+          curious: countResults[4].count ?? 0,
         });
       }
     } catch (loadError) {
@@ -370,11 +390,13 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
     chooseAgainFilter,
     completenessFilter,
     yearFilter,
+    participantRoleFilter,
     studentSpecialtyFilter,
     languageFilter,
     dataVersionFilter,
     dateFrom,
     dateTo,
+    lang,
   ]);
 
   useEffect(() => {
@@ -404,6 +426,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
         setCounts(EMPTY_COUNTS);
         setPage(0);
         setView('specialists');
+        setViewHistory([]);
         setSidebarOpen(false);
         setPortalProfile(null);
         setAccessState('signed_out');
@@ -416,7 +439,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
       if (!active) return;
       if (accessError || !profile) {
         setError(accessError
-          ? formatSupabaseError(accessError)
+          ? formatSupabaseError(accessError, lang)
           : 'This account is not authorized to access research data.');
         await client.auth.signOut();
         setAccessState('signed_out');
@@ -442,7 +465,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
       if (authTimer !== undefined) window.clearTimeout(authTimer);
       authListener.subscription.unsubscribe();
     };
-  }, []);
+  }, [lang]);
 
   useEffect(() => {
     if (accessState === 'authorized' && isCohortView(view)) void loadData();
@@ -613,19 +636,21 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
       if (cursor) {
         query = query.or(`created_at.lt.${cursor.createdAt},and(created_at.eq.${cursor.createdAt},id.lt.${cursor.id})`);
       }
+      if (participantRoleFilter !== 'all') query = query.eq('participant_role', participantRoleFilter);
       if (yearFilter !== 'all') query = query.eq('study_year', Number(yearFilter));
       if (studentSpecialtyFilter !== 'all') query = query.eq('preferred_specialty', studentSpecialtyFilter);
       if (languageFilter !== 'all') query = query.eq('language', languageFilter);
       if (dataVersionFilter === 'current') {
         query = query
-          .eq('submission_schema_version', DATA_VERSIONS.submissionSchema)
+          .eq('submission_schema_version', DATA_VERSIONS.studentSubmissionSchema)
           .eq('questionnaire_version', DATA_VERSIONS.questionnaire)
           .eq('value_catalog_version', DATA_VERSIONS.valueCatalog)
           .eq('specialty_catalog_version', DATA_VERSIONS.specialtyCatalog)
           .eq('scoring_version', DATA_VERSIONS.scoring)
-          .eq('consent_version', DATA_VERSIONS.consent);
+          .eq('consent_version', DATA_VERSIONS.studentConsent)
+          .eq('participant_reflection_version', DATA_VERSIONS.participantReflection);
       } else if (dataVersionFilter === 'legacy') {
-        query = query.lt('submission_schema_version', DATA_VERSIONS.submissionSchema);
+        query = query.lt('submission_schema_version', DATA_VERSIONS.studentSubmissionSchema);
       }
       query = applyDateFilters(query, dateFrom, dateTo);
       const { data, error: queryError } = await query;
@@ -637,7 +662,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
       cursor = { createdAt: last.created_at, id: last.id };
     }
     return allRows;
-  }, [yearFilter, studentSpecialtyFilter, languageFilter, dataVersionFilter, dateFrom, dateTo]);
+  }, [participantRoleFilter, yearFilter, studentSpecialtyFilter, languageFilter, dataVersionFilter, dateFrom, dateTo]);
 
   const openDetail = async (kind: CohortView, id: string) => {
     if (!supabase) return;
@@ -658,7 +683,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
       }
     } catch (detailError) {
       if (requestId === detailRequest.current) {
-        setError(formatSupabaseError(detailError instanceof Error ? detailError.message : detailError as { message: string }));
+        setError(formatSupabaseError(detailError instanceof Error ? detailError.message : detailError as { message: string }, lang));
       }
     } finally {
       if (requestId === detailRequest.current) setDetailLoadingId(null);
@@ -674,7 +699,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
       if (requestId === analysisRequest.current) setAnalysisRows(rows);
     } catch (analysisError) {
       if (requestId === analysisRequest.current) {
-        setError(formatSupabaseError(analysisError instanceof Error ? analysisError.message : analysisError as { message: string }));
+        setError(formatSupabaseError(analysisError instanceof Error ? analysisError.message : analysisError as { message: string }, lang));
       }
     } finally {
       if (requestId === analysisRequest.current) setAnalysisLoading(false);
@@ -719,7 +744,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
       }
     } catch (exportError) {
       if (requestId === exportRequest.current) {
-        setError(formatSupabaseError(exportError instanceof Error ? exportError.message : exportError as { message: string }));
+        setError(formatSupabaseError(exportError instanceof Error ? exportError.message : exportError as { message: string }, lang));
       }
     } finally {
       if (requestId === exportRequest.current) setExporting(null);
@@ -728,6 +753,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
 
   const resetFilters = () => {
     const alreadyReset = yearFilter === 'all'
+      && participantRoleFilter === 'all'
       && studentSpecialtyFilter === 'all'
       && specialtyFilter === 'all'
       && questionnaireFilter === 'all'
@@ -740,6 +766,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
       && page === 0;
     if (alreadyReset) return;
     setYearFilter('all');
+    setParticipantRoleFilter('all');
     setStudentSpecialtyFilter('all');
     setSpecialtyFilter('all');
     setQuestionnaireFilter('all');
@@ -803,8 +830,24 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
     if (sidebarOpen) closeMobileSidebar();
     if (view === nextView) return;
     setError(null);
+    setViewHistory((history) => pushDashboardViewHistory(history, view, nextView));
     setView(nextView);
     resetPageAndAnalysis();
+  };
+
+  const goToPreviousDashboardPage = () => {
+    if (detailedResponse) {
+      setDetailedResponse(null);
+      return;
+    }
+    const { previousView, remainingHistory } = popDashboardViewHistory(viewHistory);
+    if (previousView) {
+      setViewHistory(remainingHistory);
+      setView(previousView);
+      resetPageAndAnalysis();
+      return;
+    }
+    void leaveDashboard();
   };
 
   const viewCopy: Record<DashboardView, { title: string; description: string }> = {
@@ -817,12 +860,12 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
           : 'Qualitative interviews, raw responses, and governed calibration analysis.',
     },
     students: {
-      title: french ? 'Cohorte des étudiants' : romanian ? 'Cohorta studenților' : 'Student cohort',
+      title: french ? 'Étudiants & découverte de la médecine' : romanian ? 'Studenți și explorarea medicinei' : 'Students & medicine explorers',
       description: french
-        ? 'Réponses anonymes, préférences déclarées et classements calculés dans le navigateur.'
+        ? 'Réponses anonymes, regards sur la médecine, préférences déclarées et classements calculés dans le navigateur, avec séparation explicite des deux publics.'
         : romanian
-          ? 'Răspunsuri anonime, preferințe declarate și clasamente calculate în browser.'
-          : 'Anonymous responses, stated preferences, and browser-computed rankings.',
+          ? 'Răspunsuri anonime, perspective asupra medicinei, preferințe declarate și clasamente calculate în browser, cu separarea explicită a celor două grupuri.'
+          : 'Anonymous responses, views of medicine, stated preferences, and browser-computed rankings, with the two audiences kept explicit.',
     },
     algorithm: {
       title: french ? 'Algorithme & calibration' : romanian ? 'Algoritm și calibrare' : 'Algorithm & calibration',
@@ -849,7 +892,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
   if (accessState !== 'authorized') return (
     <main className="min-h-screen bg-accent-50 flex items-center justify-center px-6">
       <form onSubmit={signIn} className="w-full max-w-md p-8 rounded-2xl bg-white border border-ink-100 shadow-soft">
-        <button type="button" onClick={() => void leaveDashboard()} className="inline-flex items-center gap-2 text-sm text-ink-500 hover:text-ink-900 mb-8"><ArrowLeft className="w-4 h-4" />{french ? 'Retour' : 'Back'}</button>
+        <button type="button" onClick={() => void leaveDashboard()} disabled={loading || accessState === 'checking_access'} className="mb-8 inline-flex min-h-11 items-center gap-2 rounded-full px-3 text-sm text-ink-500 hover:bg-ink-100 hover:text-ink-900 disabled:cursor-not-allowed disabled:opacity-40"><ArrowLeft className="w-4 h-4" />{french ? 'Retour' : romanian ? 'Înapoi' : 'Back'}</button>
         <div className="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center mb-5"><BarChart3 /></div>
         <h1 className="font-display text-3xl font-semibold text-ink-900 mb-2">{french ? 'Portail spécialistes & administration' : 'Specialist & admin portal'}</h1>
         <p className="text-sm text-ink-500 mb-6">{french ? 'Connectez-vous avec un compte Supabase autorisé pour consulter les cohortes et, selon votre rôle, calibrer le catalogue.' : 'Sign in with an authorized Supabase account to review cohorts and, according to your role, calibrate the catalog.'}</p>
@@ -931,6 +974,20 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
                   >
                     <Menu className="h-5 w-5" aria-hidden="true" />
                   </button>
+                  <button
+                    type="button"
+                    data-dashboard-back="true"
+                    onClick={goToPreviousDashboardPage}
+                    aria-label={french ? 'Revenir à l’onglet ou à la page précédente' : romanian ? 'Înapoi la fila sau pagina anterioară' : 'Back to the previous tab or page'}
+                    className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-xl border border-ink-200 bg-white px-3 text-sm font-semibold text-ink-700 shadow-soft transition-colors hover:border-brand-300 hover:text-brand-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+                  >
+                    <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+                    <span className="hidden sm:inline">
+                      {viewHistory.length > 0
+                        ? (french ? 'Onglet précédent' : romanian ? 'Fila anterioară' : 'Previous tab')
+                        : (french ? 'Page précédente' : romanian ? 'Pagina anterioară' : 'Previous page')}
+                    </span>
+                  </button>
                   <div className="min-w-0">
                     <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-700">
                       {french ? 'Portail spécialistes & administration' : romanian ? 'Portal pentru specialiști și administrare' : 'Specialist & admin portal'}
@@ -955,11 +1012,12 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
 
         {error && <p className="mb-5 rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-700">{error}</p>}
 
-        {isCohortView(view) && <div className="mb-8 grid grid-cols-2 gap-4 xl:grid-cols-4">
+        {isCohortView(view) && <div className="mb-8 grid grid-cols-2 gap-4 xl:grid-cols-5">
           <Stat label={french ? 'Spécialistes' : 'Specialists'} value={counts.specialists} icon={<Stethoscope className="h-5 w-5" />} />
           <Stat label={french ? 'Entretiens actuels complets' : 'Complete current interviews'} value={counts.specialistsComplete} icon={<CheckCircle2 className="h-5 w-5" />} />
-          <Stat label={french ? 'Étudiants' : 'Students'} value={counts.students} icon={<Users className="h-5 w-5" />} />
-          <Stat label={french ? 'Étudiants avec année' : 'Students with study year'} value={counts.studentsWithYear} icon={<GraduationCap className="h-5 w-5" />} />
+          <Stat label={french ? 'Étudiants' : romanian ? 'Studenți' : 'Students'} value={counts.students} icon={<Users className="h-5 w-5" />} />
+          <Stat label={french ? 'Explorateurs' : romanian ? 'Persoane care explorează' : 'Medicine explorers'} value={counts.curious} icon={<Users className="h-5 w-5" />} />
+          <Stat label={french ? 'Étudiants avec année' : romanian ? 'Studenți cu anul declarat' : 'Students with study year'} value={counts.studentsWithYear} icon={<GraduationCap className="h-5 w-5" />} />
         </div>}
 
         {isCohortView(view) && <div className="mb-5 flex flex-wrap items-center justify-end gap-2">
@@ -1012,12 +1070,24 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
               </>
             ) : (
               <>
-                <FilterSelect label={french ? 'Année d’étude' : 'Study year'} value={yearFilter} onChange={(value) => { setYearFilter(value); resetPageAndAnalysis(); }}>
-                  <option value="all">{french ? 'Toutes les années' : 'All study years'}</option>
-                  {STUDENT_STUDY_YEARS.map((year) => <option key={year} value={year}>{french ? 'Année' : 'Year'} {year}</option>)}
+                <FilterSelect label={french ? 'Public' : romanian ? 'Public' : 'Audience'} value={participantRoleFilter} onChange={(value) => {
+                  const nextRole = value as ParticipantRoleFilter;
+                  setParticipantRoleFilter(nextRole);
+                  if (!participantRoleSupportsStudyYear(nextRole)) setYearFilter('all');
+                  resetPageAndAnalysis();
+                }}>
+                  <option value="all">{french ? 'Étudiants et explorateurs' : romanian ? 'Studenți și exploratori' : 'Students and explorers'}</option>
+                  <option value="student">{participantRoleLabel('student', lang)}</option>
+                  <option value="curious">{participantRoleLabel('curious', lang)}</option>
                 </FilterSelect>
-                <FilterSelect label={french ? 'Spécialité préférée' : 'Preferred specialty'} value={studentSpecialtyFilter} onChange={(value) => { setStudentSpecialtyFilter(value); resetPageAndAnalysis(); }}>
-                  <option value="all">{french ? 'Toutes les préférences' : 'All preferences'}</option>
+                {participantRoleSupportsStudyYear(participantRoleFilter) && (
+                  <FilterSelect label={french ? 'Année d’étude' : romanian ? 'Anul de studiu' : 'Study year'} value={yearFilter} onChange={(value) => { setYearFilter(value); resetPageAndAnalysis(); }}>
+                    <option value="all">{french ? 'Toutes les années' : romanian ? 'Toți anii de studiu' : 'All study years'}</option>
+                    {STUDENT_STUDY_YEARS.map((year) => <option key={year} value={year}>{french ? 'Année' : romanian ? 'Anul' : 'Year'} {year}</option>)}
+                  </FilterSelect>
+                )}
+                <FilterSelect label={french ? 'Spécialité préférée' : romanian ? 'Specialitatea preferată' : 'Preferred specialty'} value={studentSpecialtyFilter} onChange={(value) => { setStudentSpecialtyFilter(value); resetPageAndAnalysis(); }}>
+                  <option value="all">{french ? 'Toutes les préférences' : romanian ? 'Toate preferințele' : 'All preferences'}</option>
                   {specialties.map(({ name }) => <option key={name} value={name}>{translateSpecialtyName(name, lang)}</option>)}
                 </FilterSelect>
               </>
@@ -1084,7 +1154,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
         </section>
       </div>
 
-      {detailedResponse && <ResearchResponseDetail response={detailedResponse} lang={lang} onClose={() => setDetailedResponse(null)} />}
+      {detailedResponse && <ResearchResponseDetail response={detailedResponse} lang={lang} onClose={goToPreviousDashboardPage} />}
     </main>
   );
 }
@@ -1155,7 +1225,7 @@ function AnswerPreview({ value }: { value: string | null }) {
     : <span className="text-ink-400">—</span>;
 }
 
-function StudentTable({
+export function StudentTable({
   rows,
   lang,
   french,
@@ -1171,18 +1241,22 @@ function StudentTable({
   onOpen: (id: string) => void;
 }) {
   return (
-    <table className="w-full min-w-[780px] text-left text-sm">
+    <table className="w-full min-w-[1220px] text-left text-sm">
       <thead className="bg-ink-50 text-xs text-ink-500"><tr>
-        <th className="px-5 py-3 font-semibold">{french ? 'Année d’étude' : 'Study year'}</th>
-        <th className="px-4 py-3 font-semibold">{french ? 'Spécialité préférée' : 'Preferred specialty'}</th>
-        <th className="px-4 py-3 font-semibold">{french ? 'Langue' : 'Language'}</th>
+        <th className="px-5 py-3 font-semibold">{french ? 'Public' : lang === 'ro' ? 'Public' : 'Audience'}</th>
+        <th className="px-4 py-3 font-semibold">{french ? 'Année d’étude' : lang === 'ro' ? 'Anul de studiu' : 'Study year'}</th>
+        <th className="px-4 py-3 font-semibold">{french ? 'Spécialité préférée' : lang === 'ro' ? 'Specialitatea preferată' : 'Preferred specialty'}</th>
+        <th className="px-4 py-3 font-semibold">{french ? 'Regard sur la médecine' : lang === 'ro' ? 'Perspectiva asupra medicinei' : 'View of medicine'}</th>
+        <th className="px-4 py-3 font-semibold">{french ? 'Langue' : lang === 'ro' ? 'Limba' : 'Language'}</th>
         <th className="px-4 py-3 font-semibold">{french ? 'Date' : 'Date'}</th>
         <th className="px-4 py-3"><span className="sr-only">{french ? 'Détails' : 'Details'}</span></th>
       </tr></thead>
       <tbody>{rows.map((row) => (
         <tr key={row.id} className="border-t border-ink-100 hover:bg-ink-50/60">
-          <td className="px-5 py-3">{row.study_year ?? '—'}</td>
+          <td className="px-5 py-3"><Badge tone={row.participant_role === 'curious' ? 'amber' : 'green'}>{participantRoleLabel(row.participant_role, lang)}</Badge></td>
+          <td className="px-4 py-3">{row.study_year ?? '—'}</td>
           <td className="px-4 py-3 font-medium text-ink-900">{row.preferred_specialty ? translateSpecialtyName(row.preferred_specialty, lang) : '—'}</td>
+          <td className="px-4 py-3"><AnswerPreview value={row.medicine_view} /></td>
           <td className="px-4 py-3 uppercase">{row.language}</td>
           <td className="px-4 py-3 text-ink-500">{new Date(row.created_at).toLocaleDateString(locale)}</td>
           <td className="px-4 py-3"><DetailButton french={french} loading={loadingId === row.id} onClick={() => onOpen(row.id)} /></td>

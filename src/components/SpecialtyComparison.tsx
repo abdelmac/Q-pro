@@ -3,8 +3,9 @@ import { useSpecialtyCatalog } from '@/lib/SpecialtyCatalogContext';
 import { translateSpecialtyName, translateCategory } from '@/data/i18n';
 import { getSpecialtyAxisValue, getStudentAxisValue } from '@/lib/scoring';
 import { COMPARISON_AXES } from '@/data/dimensions';
-import { ArrowLeft, X, Plus, Check } from 'lucide-react';
+import { X, Plus, Check } from 'lucide-react';
 import { useState, useMemo } from 'react';
+import PageBackButton from './PageBackButton';
 
 interface SpecialtyComparisonProps {
   studentTraits: Record<string, number>;
@@ -38,10 +39,7 @@ export default function SpecialtyComparison({ studentTraits, onBack }: Specialty
   return (
     <div className="min-h-screen">
       <header className="px-6 py-5 sm:px-10 sm:py-7 flex items-center justify-between border-b border-ink-100 bg-white/80 backdrop-blur sticky top-0 z-10">
-        <button onClick={onBack} className="inline-flex items-center gap-1.5 text-sm font-medium text-ink-500 hover:text-ink-900 transition-colors">
-          <ArrowLeft className="w-4 h-4" />
-          {t.comparisonBack}
-        </button>
+        <PageBackButton onClick={onBack} label={t.comparisonBack} />
       </header>
 
       <div className="max-w-4xl mx-auto px-6 py-10">

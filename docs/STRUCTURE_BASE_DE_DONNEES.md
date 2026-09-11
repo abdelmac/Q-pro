@@ -2,9 +2,9 @@
 
 ## Structure de la base de données et portail Specialist/Admin
 
-**Version documentaire :** 10 septembre 2026
+**Version documentaire :** 11 septembre 2026
 
-**Migrations de référence :** `supabase/migrations/20260831120000_specialist_admin_portal.sql`, `supabase/migrations/20260904193000_accuracy_and_qualitative_specialist_v2.sql`, `supabase/migrations/20260906090000_limit_student_study_year_to_six.sql` et `supabase/migrations/20260910090000_optional_specialist_questionnaire.sql`
+**Migrations de référence :** `supabase/migrations/20260831120000_specialist_admin_portal.sql`, `supabase/migrations/20260904193000_accuracy_and_qualitative_specialist_v2.sql`, `supabase/migrations/20260906090000_limit_student_study_year_to_six.sql`, `supabase/migrations/20260910090000_optional_specialist_questionnaire.sql` et `supabase/migrations/20260911090000_participant_medicine_reflection.sql`
 
 **Périmètre :** Supabase Auth, PostgreSQL, collecte de recherche, catalogue éditable des spécialités, sécurité, versionnement et provenance scientifique.
 
@@ -34,7 +34,7 @@ Ce document décrit la structure fonctionnelle et technique de la base Q Project
 
 Q Project utilise Supabase pour deux familles de données strictement séparées :
 
-- les **réponses anonymes de recherche** des étudiants et des spécialistes ;
+- les **réponses anonymes de recherche** des étudiants, des personnes qui explorent la médecine et des spécialistes ;
 - la **configuration versionnée du moteur de matching**, comprenant les descriptions, les résumés cliniques et les profils de traits des spécialités.
 
 Le portail administratif ne modifie jamais les réponses de recherche. Il permet à des comptes autorisés de préparer un brouillon du catalogue, de documenter les changements et de publier une nouvelle version sans modifier le code TypeScript.
@@ -48,13 +48,14 @@ Les principes structurants sont les suivants :
 - Doctor et Professor peuvent modifier un brouillon ;
 - seul Professor peut publier ou demander la restauration d’une version historique ;
 - une version publiée est un instantané immuable ;
-- chaque nouvelle soumission de schéma 2, envoyée par la RPC étudiante v3 ou spécialiste v4, enregistre la version exacte du catalogue utilisée ;
+- chaque nouvelle soumission, envoyée par la RPC participant v4 ou spécialiste v4, enregistre la version exacte du catalogue utilisée ;
 - toute nouvelle réponse étudiante limite l’année d’études facultative aux années 1 à 6 ;
+- le rôle `student` ou `curious` est enregistré explicitement, avec un verbatim obligatoire sur la perception de la médecine lorsque le participant consent à sauvegarder sa contribution ;
 - l'entretien spécialiste de schéma 2 collecte toujours cinq réponses qualitatives ; les 81 items et les valeurs professionnelles sont facultatifs et leur complétion est enregistrée explicitement ;
 - les anciennes colonnes et les anciennes RPC restent présentes afin de conserver l'historique sans le mélanger au protocole courant ;
 - les indicateurs Top-k sont descriptifs et ne modifient jamais automatiquement les poids.
 
-La migration `20260831120000_specialist_admin_portal.sql` ajoute la couche éditoriale sans supprimer les fonctions v1 historiques. La migration `20260904193000_accuracy_and_qualitative_specialist_v2.sql` ajoute le schéma de soumission 2 et les RPC v3, publie un nouvel instantané immuable qui complète les traits clés mesurés manquants, et laisse volontairement `prevention_orientation` non mesuré. La migration `20260906090000_limit_student_study_year_to_six.sql` impose la plage 1–6 à toute nouvelle écriture étudiante, y compris via les anciennes RPC encore exécutables, sans réécrire les données historiques. Enfin, `20260910090000_optional_specialist_questionnaire.sql` ajoute l'état explicite `questionnaire_completed` et la RPC spécialiste v4. Les appels antérieurs restent disponibles pour la compatibilité ; les nouvelles collectes utilisent v3 pour les étudiants et v4 pour les spécialistes.
+La migration `20260831120000_specialist_admin_portal.sql` ajoute la couche éditoriale sans supprimer les fonctions v1 historiques. La migration `20260904193000_accuracy_and_qualitative_specialist_v2.sql` ajoute le schéma de soumission 2 et les RPC v3, publie un nouvel instantané immuable qui complète les traits clés mesurés manquants, et laisse volontairement `prevention_orientation` non mesuré. La migration `20260906090000_limit_student_study_year_to_six.sql` impose la plage 1–6 à toute nouvelle écriture étudiante, y compris via les anciennes RPC encore exécutables, sans réécrire les données historiques. `20260910090000_optional_specialist_questionnaire.sql` ajoute l'état explicite `questionnaire_completed` et la RPC spécialiste v4. Enfin, `20260911090000_participant_medicine_reflection.sql` distingue étudiants et explorateurs, ajoute leur verbatim sur la médecine et introduit la RPC participant v4 de schéma 3. Les appels antérieurs restent disponibles pour la compatibilité.
 
 ## 2. Architecture générale
 
@@ -64,7 +65,7 @@ La migration `20260831120000_specialist_admin_portal.sql` ajoute la couche édit
 │                                                                     │
 │  Questionnaire public             Dashboard sécurisé                │
 │  - catalogue actif                - réponses de recherche            │
-│  - étudiant v3 / spécialiste v4   - réponses qualitatives            │
+│  - participant v4 / spécialiste v4- réponses qualitatives            │
 │                                    - publication / historique        │
 └───────────────┬───────────────────────────────┬─────────────────────┘
                 │ clé publique                  │ session Auth JWT
@@ -90,18 +91,19 @@ La migration `20260831120000_specialist_admin_portal.sql` ajoute la couche édit
 
 1. L’application charge l’unique catalogue publié avec `get_active_specialty_catalog()`.
 2. Le moteur construit le profil et le classement dans le navigateur.
-3. La soumission v3 étudiante ou v4 spécialiste transmet l’identifiant UUID de la version publiée utilisée et crée une ligne de `submission_schema_version = 2`.
+3. La soumission v4 étudiant/explorateur transmet l’identifiant UUID de la version publiée utilisée et crée une ligne de `submission_schema_version = 3`; la soumission spécialiste v4 conserve le schéma 2.
 4. PostgreSQL vérifie que cet UUID correspond bien à un instantané publié.
 5. La réponse et la révision du catalogue sont enregistrées ensemble.
-6. Le spécialiste choisit soit le profil quantitatif complet (81 notes et 1 à 4 valeurs), soit l'accès direct aux cinq questions qualitatives. Un abandon quantitatif efface les réponses partielles ; aucun profil incomplet n'est enregistré.
+6. Le spécialiste choisit soit le profil quantitatif complet (81 notes et 1 à 4 valeurs), soit l'accès direct aux cinq questions qualitatives. En cas de passage direct, les éventuelles réponses partielles ne sont pas envoyées à la base ; aucun profil incomplet n'est enregistré.
 7. Pour le parcours quantitatif spécialiste, la spécialité réelle n'est demandée qu'après les 81 notes afin de réduire le biais d'ancrage. Pour le parcours direct, elle est demandée avec l'entretien qualitatif.
-8. Le profil « découverte de la médecine » calcule son profil et son classement uniquement dans le navigateur, puis accède directement aux résultats. Il ne passe par aucun formulaire de recherche et n'est inséré ni dans `student_responses` ni dans `specialist_responses`, afin de préserver la séparation des cohortes.
+8. Après le profil de traits, l’étudiant et la personne qui explore la médecine peuvent répondre à « Que pensez-vous de la médecine ? ». Le texte d'information précise les données enregistrées et l'action d'enregistrement vaut consentement ; le bouton permettant de passer cette collecte reste disponible.
+9. Les deux publics sont stockés dans `student_responses` avec un discriminant canonique `participant_role`. Le rôle `curious` interdit toute année d’études afin de ne pas présenter ces personnes comme étudiantes et les analyses du dashboard peuvent filtrer les cohortes séparément.
 
 ### 2.2 Flux administratif
 
 1. Supabase Auth authentifie le compte.
 2. `current_user_portal_profile()` résout son autorisation et son rôle.
-3. Les données de recherche, y compris le verbatim qualitatif des spécialistes et les exports, restent accessibles uniquement aux chercheurs allowlistés.
+3. Les données de recherche, y compris les verbatims qualitatifs des participants et des spécialistes ainsi que les exports, restent accessibles uniquement aux chercheurs allowlistés.
 4. Doctor ou Professor ouvre le brouillon, le modifie et fournit une justification.
 5. Le verrou optimiste empêche l’écrasement silencieux d’un changement concurrent.
 6. Professor publie atomiquement la version complète.
@@ -286,18 +288,20 @@ Le journal permet de déterminer qui a changé quoi, quand, avec quelle justific
 
 ### 5.7 `public.student_responses`
 
-Réponses anonymes des étudiants.
+Réponses anonymes des étudiants et des personnes qui explorent la médecine. Le nom historique de la table est conservé pour éviter une migration destructive.
 
 | Groupe | Colonnes | Description |
 |---|---|---|
 | Identité technique | `id`, `created_at` | UUID de soumission et horodatage. Aucun lien vers Auth. |
-| Contexte | `study_year`, `preferred_specialty`, `language` | Métadonnées facultatives et langue. Pour toute nouvelle réponse, `study_year` vaut `NULL` ou un entier de 1 à 6. |
+| Population | `participant_role` | Discriminant obligatoire `student` ou `curious`. Les lignes historiques sont reprises comme `student`, puisque l’ancien parcours ne stockait que cette population. |
+| Contexte | `study_year`, `preferred_specialty`, `language` | Métadonnées facultatives et langue. Pour une réponse `student`, `study_year` vaut `NULL` ou un entier de 1 à 6 ; pour `curious`, il doit être `NULL`. |
+| Regard sur la médecine | `medicine_view` | Verbatim de 3 à 2 000 caractères, normalisé uniquement aux extrémités et conservé fidèlement. Il est obligatoire pour toute nouvelle soumission v4 consentie. |
 | Données brutes | `ratings`, `selected_values` | 81 notes et 1 à 4 valeurs professionnelles. |
 | Résultat client | `client_scores` | Classement calculé dans le navigateur, non vérifié. |
-| Versions scientifiques | `submission_schema_version`, `questionnaire_version`, `value_catalog_version`, `specialty_catalog_version`, `scoring_version`, `consent_version` | Versions nécessaires à l’interprétation. |
-| Provenance du catalogue | `specialty_config_version_id`, `specialty_config_revision` | Instantané publié exact utilisé par les soumissions v2 et v3 ; obligatoire pour le schéma 2. |
+| Versions scientifiques | `submission_schema_version`, `questionnaire_version`, `value_catalog_version`, `specialty_catalog_version`, `scoring_version`, `consent_version`, `participant_reflection_version` | Versions nécessaires à l’interprétation du questionnaire et de la question libre. |
+| Provenance du catalogue | `specialty_config_version_id`, `specialty_config_revision` | Instantané publié exact utilisé par les soumissions v2, v3 et v4 ; obligatoire pour les schémas 2 et 3. |
 
-La paire de provenance est soit entièrement absente, soit entièrement présente. Une clé étrangère composite pointe vers `(id, revision)` de `private.specialty_catalog_versions`. La contrainte 1–6 est ajoutée en mode `NOT VALID` : elle bloque les nouvelles valeurs hors plage, tandis que les éventuelles lignes historiques 7–12 restent intactes et auditables.
+La paire de provenance est soit entièrement absente, soit entièrement présente. Une clé étrangère composite pointe vers `(id, revision)` de `private.specialty_catalog_versions`. La contrainte 1–6 est ajoutée en mode `NOT VALID` : elle bloque les nouvelles valeurs hors plage, tandis que les éventuelles lignes historiques 7–12 restent intactes et auditables. Les deux rôles peuvent être analysés quantitativement, mais doivent rester filtrables et ne doivent pas être décrits comme une cohorte étudiante unique.
 
 ### 5.8 `public.specialist_responses`
 
@@ -318,15 +322,16 @@ Réponses anonymes des médecins spécialistes utilisées pour étudier la calib
 
 Comme pour les étudiants, la paire `(specialty_config_version_id, specialty_config_revision)` est cohérente et contrôlée par une clé étrangère composite. La suppression de l'ancien formulaire ne supprime donc aucune colonne ni aucune réponse historique : elle sépare le protocole courant de l'ancien par `submission_schema_version` et les versions scientifiques.
 
-Pour le protocole courant, les versions enregistrées sont :
+Pour les protocoles courants, les versions enregistrées sont :
 
-- `submission_schema_version = 2` ;
+- `submission_schema_version = 3` pour les étudiants et explorateurs, `2` pour les spécialistes ;
 - `questionnaire_version = q81-v1` ;
 - `value_catalog_version = career-values-v1` ;
 - `specialty_catalog_version = medical-specialties-v1` ;
-- `scoring_version = client-scoring-v2` pour les étudiants ;
+- `scoring_version = client-scoring-v2` pour les étudiants et explorateurs ;
 - `calibration_version = calibration-v2-qualitative` pour les spécialistes ;
-- `consent_version = research-consent-2026-09-04`.
+- `participant_reflection_version = medicine-view-v1` et `consent_version = research-consent-2026-09-11` pour les étudiants et explorateurs ;
+- `consent_version = research-consent-2026-09-04` pour les spécialistes.
 
 Le libellé stable `medical-specialties-v1` désigne le format canonique du catalogue. La provenance de son contenu effectif est donnée séparément par l'UUID et la révision de l'instantané publié.
 
@@ -400,7 +405,16 @@ Les fonctions restent idempotentes sur l’UUID de soumission. Un rejeu avec une
 
 #### `submit_student_response_v3(...)`
 
-Point d'entrée courant des étudiants. Il conserve les 81 items et le catalogue de valeurs, accepte uniquement une année d’études facultative comprise entre 1 et 6, impose `client-scoring-v2`, `research-consent-2026-09-04` et la provenance exacte d'un catalogue publié, puis écrit `submission_schema_version = 2`. L'UUID fourni par le client reste idempotent : un rejeu strictement identique renvoie le même identifiant, tandis qu'un payload différent avec le même UUID est refusé.
+Point d'entrée étudiant antérieur conservé pour compatibilité. Il conserve les 81 items, le catalogue de valeurs et le schéma 2, mais ne distingue pas encore les explorateurs et ne recueille pas leur perception libre de la médecine.
+
+#### `submit_student_response_v4(...)`
+
+Point d'entrée courant des étudiants et des personnes qui explorent la médecine. Il conserve les 81 items et le catalogue de valeurs, puis ajoute deux données obligatoires au moment d'enregistrer volontairement une réponse :
+
+1. `participant_role`, limité à `student` ou `curious` ;
+2. `medicine_view`, un texte normalisé de 3 à 2 000 caractères répondant à la question « Que pensez-vous de la médecine ? ».
+
+Une année d'études facultative comprise entre 1 et 6 est admise uniquement pour `student` ; elle doit être `NULL` pour `curious`. La fonction impose `client-scoring-v2`, `research-consent-2026-09-11`, `medicine-view-v1` et la provenance exacte d'un catalogue publié, puis écrit `submission_schema_version = 3`. Dans l'interface, l'enregistrement reste facultatif : la personne peut passer cette étape et afficher ses résultats sans créer de ligne. L'UUID fourni par le client reste idempotent : un rejeu strictement identique renvoie le même identifiant, tandis qu'un rôle, un texte ou tout autre payload différent avec le même UUID est refusé.
 
 #### `submit_specialist_response_v3(...)`
 
@@ -425,6 +439,8 @@ Les façades publiques v3 et v4 nécessaires sont exécutables par `anon` et `au
 
 Les comptes allowlistés disposant du droit de recherche peuvent :
 
+- distinguer et filtrer les cohortes `student` et `curious` sans les agréger implicitement ;
+- prévisualiser, lire et exporter le verbatim des participants sur leur perception de la médecine avec son rôle et sa version de protocole ;
 - filtrer les spécialistes selon la complétude de l'entretien qualitatif ;
 - filtrer selon la complétion ou le passage volontaire du questionnaire de 81 items ;
 - prévisualiser la réponse sur la perception actuelle dans la liste ;
@@ -442,7 +458,7 @@ La recherche, la pagination et l'export passent par les politiques RLS existante
 | Lire le catalogue actif | Oui | Oui | Oui | Oui | Oui |
 | Soumettre une réponse v1/v2/v3/v4 | Oui | Oui | Oui | Oui | Oui |
 | Lire les réponses de recherche | Non | Non | Oui | Oui | Oui |
-| Lire/exporter les verbatims spécialistes | Non | Non | Oui | Oui | Oui |
+| Lire/exporter les verbatims participants et spécialistes | Non | Non | Oui | Oui | Oui |
 | Lire le brouillon | Non | Non | Non | Oui | Oui |
 | Modifier le brouillon | Non | Non | Non | Oui | Oui |
 | Consulter l’historique éditorial | Non | Non | Non | Oui | Oui |
@@ -525,19 +541,21 @@ Le navigateur n’a aucun `INSERT`, `UPDATE` ou `DELETE` direct sur les tables d
 
 ### 9.4 Validation des payloads
 
-Les contraintes de table distinguent trois générations sans réinterpréter les anciennes lignes :
+Les contraintes de table distinguent quatre générations sans réinterpréter les anciennes lignes :
 
 - le schéma 0 reste lisible comme legacy ;
 - le schéma 1 conserve exactement `client-scoring-v1` ou `calibration-v1` et le consentement du 26 août 2026 ;
-- le schéma 2 exige les versions courantes, les deux colonnes de provenance et les nouvelles règles qualitatives.
+- le schéma 2 exige les versions courantes, les deux colonnes de provenance et les nouvelles règles qualitatives spécialistes ;
+- le schéma 3 étend les réponses participantes avec un rôle explicite, le verbatim sur la médecine et la version de cette question.
 
-Pour le schéma 2, la base contrôle notamment :
+Pour les schémas 2 et 3, la base contrôle notamment :
 
-- pour les étudiants et les spécialistes ayant choisi le profil quantitatif : exactement 81 identifiants, des notes entières de 1 à 10 et une à quatre valeurs canoniques distinctes ;
-- pour un spécialiste ayant passé ce profil : `questionnaire_completed = false`, `ratings = {}` et `selected_values = []`, sans état partiel possible ;
+- pour les participants du schéma 3 et les spécialistes ayant choisi le profil quantitatif : exactement 81 identifiants, des notes entières de 1 à 10 et une à quatre valeurs canoniques distinctes ;
+- pour un spécialiste ayant choisi l'accès direct à l'entretien qualitatif : `questionnaire_completed = false`, `ratings = {}` et `selected_values = []`, sans état partiel possible ;
 - une spécialité parmi les 58 valeurs du catalogue ;
 - une langue parmi `en`, `fr`, `ro` ;
-- une année d’études étudiante facultative limitée aux entiers de 1 à 6 pour toute nouvelle écriture ;
+- un rôle participant limité à `student` ou `curious`, avec une année d’études facultative de 1 à 6 uniquement pour `student` et obligatoirement absente pour `curious` ;
+- un avis sur la médecine normalisé de 3 à 2 000 caractères et la version `medicine-view-v1` pour toute ligne participante de schéma 3 ;
 - les versions exactes du questionnaire, des catalogues, du scoring ou du calibrage et du consentement ;
 - la structure des scores clients étudiants ;
 - l'existence de l'instantané publié référencé et la cohérence UUID/révision ;
@@ -546,7 +564,7 @@ Pour le schéma 2, la base contrôle notamment :
 - la présence d'une justification uniquement lorsque le choix vaut `no` ;
 - la nullité des anciens champs structurés dans toute nouvelle réponse spécialiste.
 
-Les contrôles existent à la fois dans les RPC et dans des contraintes `CHECK`, afin qu'une erreur interne ne puisse pas créer silencieusement une ligne de schéma 2 incohérente. Les lignes historiques restent consultables et exportables, mais le dashboard les signale comme incompatibles avec les indicateurs du protocole courant.
+Les contrôles existent à la fois dans les RPC et dans des contraintes `CHECK`, afin qu'une erreur interne ne puisse pas créer silencieusement une ligne de schéma 2 ou 3 incohérente. Les lignes historiques restent consultables et exportables, mais le dashboard les signale comme incompatibles avec les indicateurs du protocole courant.
 
 ## 10. Versionnement et provenance des résultats
 
@@ -559,9 +577,10 @@ Une recommandation reproductible dépend de plusieurs éléments :
 - la version du catalogue canonique des spécialités ;
 - la version du moteur de scoring ou de calibration ;
 - la version du consentement ;
+- la version de la question libre participant, lorsque le schéma vaut 3 ;
 - l’UUID et la révision du catalogue dynamique publié.
 
-Les RPC v2, v3 et v4 enregistrent les deux derniers champs de provenance dans la ligne de réponse. Les RPC courantes v3 étudiante et v4 spécialiste les rendent obligatoires pour le schéma 2. Cela permet de retrouver l'instantané exact même après plusieurs publications et d'éviter d'analyser une réponse avec un catalogue différent de celui réellement utilisé.
+Les RPC v2, v3 et v4 enregistrent l’UUID et la révision du catalogue publié dans la ligne de réponse. Les RPC courantes v4 participant et v4 spécialiste les rendent obligatoires respectivement pour les schémas 3 et 2. Cela permet de retrouver l'instantané exact même après plusieurs publications et d'éviter d'analyser une réponse avec un catalogue différent de celui réellement utilisé.
 
 Le `checksum` sert à détecter une différence de contenu et à identifier un instantané. Il n’est pas un secret et ne remplace pas le contrôle d’accès.
 
@@ -571,9 +590,10 @@ Le `checksum` sert à détecter une différence de contenu et à identifier un i
 
 ### 10.2 Anciennes soumissions
 
-Les fonctions v1 et v2 restent disponibles pour la compatibilité et certaines lignes anciennes peuvent ne pas avoir une provenance dynamique complète. Le dashboard distingue :
+Les fonctions v1, v2 et v3 restent disponibles pour la compatibilité et certaines lignes anciennes peuvent ne pas avoir une provenance dynamique complète. Le dashboard distingue :
 
-- données de schéma 2 courantes et reproductibles ;
+- données participantes de schéma 3 et données spécialistes de schéma 2, courantes et reproductibles ;
+- données participantes de schéma 2 encore exploitables pour le questionnaire quantitatif, mais dépourvues du verbatim et du rôle explicite du nouveau protocole ;
 - données de schéma 0 ou 1 consultables et exportables comme legacy ;
 - données exclues des indicateurs pour incompatibilité de version.
 
@@ -700,13 +720,14 @@ Les mécanismes de sauvegarde disponibles dépendent du plan Supabase. Ils doive
 - les appels v2, v3 et v4 refusent une version non publiée ;
 - l’UUID et la révision enregistrés sont cohérents ;
 - les fonctions v1 et v2 restent compatibles avec les données historiques ;
-- les soumissions courantes v3 étudiantes et v4 spécialistes écrivent le schéma 2 et les versions scientifiques exactes ;
+- la soumission participante v4 distingue `student` et `curious`, exige le verbatim sur la médecine, interdit l'année d'études aux explorateurs et écrit le schéma 3 avec les versions scientifiques exactes ;
+- les soumissions spécialistes v4 écrivent le schéma 2 et les versions scientifiques exactes ;
 - le RPC spécialiste v4 accepte soit un profil quantitatif complet, soit un passage explicite avec `{}` et `[]`, et rejette tout état intermédiaire ou incohérent ;
 - les quatre textes permanents et, pour une réponse `no`, le texte conditionnel sont obligatoires selon leurs règles de longueur ;
 - une réponse `no` exige une raison et une réponse `yes` interdit cette raison ;
 - les champs structurés legacy restent `NULL` dans le schéma 2 ;
 - le nouvel instantané actif complète seulement les traits mesurés manquants, garde les cibles existantes et laisse `prevention_orientation` inchangé ;
-- les exports contiennent les verbatims, la provenance et neutralisent les préfixes de formule CSV ;
+- les listes, détails et exports distinguent les cohortes participantes, contiennent leurs verbatims et ceux des spécialistes avec la provenance, et neutralisent les préfixes de formule CSV ;
 - la sélection d'une valeur manuelle ne peut plus diminuer le rang d'une spécialité manuelle ;
 - un sous-score sans trait disponible reste non mesuré plutôt que 0 %.
 
@@ -735,7 +756,7 @@ Après déploiement :
 3. tester chaque rôle avec un compte distinct ;
 4. tester la lecture publique du seul catalogue actif ;
 5. créer un brouillon de test, vérifier le conflit optimiste, puis l’annuler ou le publier selon le protocole ;
-6. effectuer une soumission étudiante v3 et deux soumissions spécialistes v4 synthétiques (profil complet et questionnaire passé), puis vérifier leur schéma, leur statut, leurs versions, leurs réponses qualitatives et leur provenance ;
+6. effectuer deux soumissions participantes v4 synthétiques (`student` et `curious`) et deux soumissions spécialistes v4 synthétiques (profil complet et questionnaire passé), puis vérifier leur schéma, leur rôle, leur statut, leurs versions, leurs réponses qualitatives et leur provenance ;
 7. supprimer les données synthétiques avec une procédure administrative contrôlée.
 
 ## 14. Exploitation et bonnes pratiques
@@ -786,7 +807,7 @@ Les journaux techniques de la plateforme peuvent aussi contenir des métadonnée
 
 ---
 
-**Références de structure :** `supabase/migrations/20260831120000_specialist_admin_portal.sql`, `supabase/migrations/20260904193000_accuracy_and_qualitative_specialist_v2.sql` et `supabase/migrations/20260906090000_limit_student_study_year_to_six.sql`
+**Références de structure :** `supabase/migrations/20260831120000_specialist_admin_portal.sql`, `supabase/migrations/20260904193000_accuracy_and_qualitative_specialist_v2.sql`, `supabase/migrations/20260906090000_limit_student_study_year_to_six.sql`, `supabase/migrations/20260910090000_optional_specialist_questionnaire.sql` et `supabase/migrations/20260911090000_participant_medicine_reflection.sql`
 
 **Source des règles antérieures de collecte et de sécurité :** migrations précédentes du dossier `supabase/migrations`.  
 **Format Word généré :** `docs/Q-Project-Structure-Base-de-donnees.docx`.

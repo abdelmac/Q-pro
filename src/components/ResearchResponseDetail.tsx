@@ -17,6 +17,7 @@ import {
   type StudentResponseRow,
 } from '@/lib/researchDashboard';
 import { DATA_VERSIONS } from '@/lib/researchVersions';
+import { participantRoleLabel } from '@/lib/dashboardNavigation';
 import { BarChart3, Braces, CheckCircle2, X } from 'lucide-react';
 import { useSpecialtyCatalog } from '@/lib/SpecialtyCatalogContext';
 
@@ -129,7 +130,9 @@ export default function ResearchResponseDetail({ response, lang, onClose }: Rese
     ? translateSpecialtyName(response.row.actual_specialty, lang)
     : response.row.preferred_specialty
       ? translateSpecialtyName(response.row.preferred_specialty, lang)
-      : (french ? 'Étudiant sans préférence' : 'Student without preference');
+      : response.row.participant_role === 'curious'
+        ? (french ? 'Explorateur de la médecine' : lang === 'ro' ? 'Persoană care explorează medicina' : 'Medicine explorer')
+        : (french ? 'Étudiant sans préférence' : lang === 'ro' ? 'Student fără preferință' : 'Student without preference');
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-ink-950/45 backdrop-blur-sm" role="presentation" onMouseDown={(event) => {
@@ -148,7 +151,9 @@ export default function ResearchResponseDetail({ response, lang, onClose }: Rese
             <p className="text-xs font-semibold uppercase tracking-wider text-brand-700">
               {response.kind === 'specialist'
                 ? (french ? 'Réponse spécialiste' : 'Specialist response')
-                : (french ? 'Réponse étudiante' : 'Student response')}
+                : response.row.participant_role === 'curious'
+                  ? (french ? 'Réponse — découverte de la médecine' : lang === 'ro' ? 'Răspuns — explorarea medicinei' : 'Medicine explorer response')
+                  : (french ? 'Réponse étudiante' : lang === 'ro' ? 'Răspuns student' : 'Student response')}
             </p>
             <h2 id="response-detail-title" className="mt-1 font-display text-2xl font-semibold text-ink-900">{title}</h2>
             <p className="mt-1 break-all font-mono text-[11px] text-ink-400">{row.id}</p>
@@ -465,7 +470,7 @@ function QualitativeAnswer({
   );
 }
 
-function StudentMetadata({
+export function StudentMetadata({
   response,
   lang,
   analysis,
@@ -475,16 +480,40 @@ function StudentMetadata({
   analysis: ReturnType<typeof analyzeStudentResponse>;
 }) {
   const french = lang === 'fr';
+  const romanian = lang === 'ro';
   return (
-    <section className="rounded-2xl border border-ink-100 bg-white p-5 shadow-soft">
-      <h3 className="font-semibold text-ink-900">{french ? 'Métadonnées étudiantes' : 'Student metadata'}</h3>
-      <dl className="mt-4 grid gap-3 sm:grid-cols-2">
-        <Info label={french ? 'Année d’étude' : 'Study year'} value={response.study_year ?? '—'} />
-        <Info label={french ? 'Spécialité préférée' : 'Preferred specialty'} value={response.preferred_specialty ? translateSpecialtyName(response.preferred_specialty, lang) : '—'} />
-        <Info label={french ? 'Rang canonique de la préférence' : 'Canonical preferred rank'} value={formatRank(analysis.preferredRankMin, analysis.preferredRankMax)} />
-        <Info label={french ? 'Indice de similarité' : 'Similarity index'} value={analysis.preferredScore === null ? '—' : `${analysis.preferredScore.toFixed(1)}/100`} />
-      </dl>
-    </section>
+    <>
+      <section className="rounded-2xl border border-ink-100 bg-white p-5 shadow-soft">
+        <h3 className="font-semibold text-ink-900">{french ? 'Métadonnées du participant' : romanian ? 'Metadatele participantului' : 'Participant metadata'}</h3>
+        <dl className="mt-4 grid gap-3 sm:grid-cols-2">
+          <Info label={french ? 'Public' : romanian ? 'Public' : 'Audience'} value={participantRoleLabel(response.participant_role, lang)} />
+          <Info label={french ? 'Année d’étude' : romanian ? 'Anul de studiu' : 'Study year'} value={response.study_year ?? '—'} />
+          <Info label={french ? 'Spécialité préférée' : romanian ? 'Specialitatea preferată' : 'Preferred specialty'} value={response.preferred_specialty ? translateSpecialtyName(response.preferred_specialty, lang) : '—'} />
+          <Info label={french ? 'Rang canonique de la préférence' : romanian ? 'Rangul canonic al preferinței' : 'Canonical preferred rank'} value={formatRank(analysis.preferredRankMin, analysis.preferredRankMax)} />
+          <Info label={french ? 'Indice de similarité' : romanian ? 'Indice de similaritate' : 'Similarity index'} value={analysis.preferredScore === null ? '—' : `${analysis.preferredScore.toFixed(1)}/100`} />
+          <Info
+            label={french ? 'Protocole de réflexion' : romanian ? 'Protocol de reflecție' : 'Reflection protocol'}
+            value={response.participant_reflection_version ?? (french ? 'Non recueilli (ancien protocole)' : romanian ? 'Necolectat (protocol anterior)' : 'Not collected (previous protocol)')}
+          />
+        </dl>
+      </section>
+      <section className="rounded-2xl border border-brand-100 bg-white p-5 shadow-soft">
+        <h3 className="font-semibold text-ink-900">{french ? 'Regard sur la médecine' : romanian ? 'Perspectiva asupra medicinei' : 'View of medicine'}</h3>
+        <p className="mt-1 text-xs leading-relaxed text-ink-500">
+          {french
+            ? 'Réponse qualitative distincte du profil de personnalité ; elle ne modifie ni les traits ni le classement.'
+            : romanian
+              ? 'Răspuns calitativ separat de profilul de personalitate; nu modifică trăsăturile sau clasamentul.'
+              : 'A qualitative response kept separate from the personality profile; it does not change traits or ranking.'}
+        </p>
+        <div className="mt-4">
+          <QualitativeAnswer
+            label={french ? 'Que pensez-vous de la médecine ?' : romanian ? 'Ce părere ai despre medicină?' : 'What do you think about medicine?'}
+            value={response.medicine_view}
+          />
+        </div>
+      </section>
+    </>
   );
 }
 

@@ -155,6 +155,12 @@ export interface UIStrings {
   specialistFreeTextPrivacy: string;
   studentDataTitle: string;
   studentDataDesc: string;
+  curiousDataTitle: string;
+  curiousDataDesc: string;
+  participantMedicineView: string;
+  participantMedicineViewPlaceholder: string;
+  participantMedicineViewPrivacy: string;
+  participantMedicineViewCount: (current: number, maximum: number) => string;
   studentStudyYear: string;
   studentPreferNotToSay: string;
   studentYear: (n: number) => string;
@@ -433,8 +439,14 @@ const en: UIStrings = {
   specialistStudentSelfQuestion: 'What question do you think a student should ask themselves before choosing this specialty?',
   specialistStudentSelfQuestionPlaceholder: 'Write the most useful self-reflection question for a student.',
   specialistFreeTextPrivacy: 'Required fields. Do not include names, contact details, or any information that could identify a patient or another person.',
-  studentDataTitle: 'Help us understand student profiles',
-  studentDataDesc: 'If you choose to save, your 81 answers, selected values, preferred specialty, optional study year, and browser-computed ranking are stored without your name or email for research. Saving records your consent; you can skip this step.',
+  studentDataTitle: 'Share your perspective as a medical student',
+  studentDataDesc: 'If you choose to save, your participant type, written view of medicine, 81 answers, selected values, preferred specialty, optional study year, and browser-computed ranking are stored without your name or email for research. Saving records your consent; you can skip this step.',
+  curiousDataTitle: 'Share your perspective on medicine',
+  curiousDataDesc: 'If you choose to save, your participant type, written view of medicine, 81 answers, selected values, preferred specialty, and browser-computed ranking are stored without your name or email for research. Saving records your consent; you can skip this step.',
+  participantMedicineView: 'What do you think about medicine?',
+  participantMedicineViewPlaceholder: 'Write your answer here…',
+  participantMedicineViewPrivacy: 'Required to save this contribution. Do not include names, contact details, or information that could identify you, a patient, or another person.',
+  participantMedicineViewCount: (current: number, maximum: number) => `${current}/${maximum}`,
   studentStudyYear: 'Year of study',
   studentPreferNotToSay: 'Prefer not to say',
   studentYear: (n: number) => `Year ${n}`,
@@ -705,8 +717,14 @@ const ro: UIStrings = {
   specialistStudentSelfQuestion: 'Ce întrebare crezi că ar trebui să își pună un student înainte de a alege această specialitate?',
   specialistStudentSelfQuestionPlaceholder: 'Scrie cea mai utilă întrebare de reflecție pentru un student.',
   specialistFreeTextPrivacy: 'Câmpuri obligatorii. Nu include nume, date de contact sau informații care ar putea identifica un pacient ori o altă persoană.',
-  studentDataTitle: 'Ajută-ne să înțelegem profilurile studenților',
-  studentDataDesc: 'Dacă alegi salvarea, cele 81 de răspunsuri, valorile, specialitatea preferată, anul opțional și clasamentul calculat în browser sunt stocate fără nume sau e-mail pentru cercetare. Salvarea înregistrează consimțământul; poți omite acest pas.',
+  studentDataTitle: 'Împărtășește perspectiva ta de student la medicină',
+  studentDataDesc: 'Dacă alegi salvarea, tipul de participant, opinia ta scrisă despre medicină, cele 81 de răspunsuri, valorile, specialitatea preferată, anul opțional și clasamentul calculat în browser sunt stocate fără nume sau e-mail pentru cercetare. Salvarea înregistrează consimțământul; poți omite acest pas.',
+  curiousDataTitle: 'Împărtășește perspectiva ta asupra medicinei',
+  curiousDataDesc: 'Dacă alegi salvarea, tipul de participant, opinia ta scrisă despre medicină, cele 81 de răspunsuri, valorile, specialitatea preferată și clasamentul calculat în browser sunt stocate fără nume sau e-mail pentru cercetare. Salvarea înregistrează consimțământul; poți omite acest pas.',
+  participantMedicineView: 'Ce părere ai despre medicină?',
+  participantMedicineViewPlaceholder: 'Scrie răspunsul tău aici…',
+  participantMedicineViewPrivacy: 'Obligatoriu pentru salvarea contribuției. Nu include nume, date de contact sau informații care te-ar putea identifica pe tine, un pacient ori o altă persoană.',
+  participantMedicineViewCount: (current: number, maximum: number) => `${current}/${maximum}`,
   studentStudyYear: 'Anul de studiu',
   studentPreferNotToSay: 'Prefer să nu spun',
   studentYear: (n: number) => `Anul ${n}`,
@@ -977,8 +995,14 @@ const fr: UIStrings = {
   specialistStudentSelfQuestion: 'Quelle question un étudiant devrait-il se poser avant de choisir cette spécialité ?',
   specialistStudentSelfQuestionPlaceholder: 'Écrivez la question de réflexion la plus utile pour un étudiant.',
   specialistFreeTextPrivacy: 'Champs obligatoires. N’indiquez aucun nom, aucune coordonnée ni aucune information permettant d’identifier un patient ou une autre personne.',
-  studentDataTitle: 'Aidez-nous à comprendre les profils étudiants',
-  studentDataDesc: 'Si vous choisissez l’enregistrement, vos 81 réponses, vos valeurs, votre spécialité préférée, votre année facultative et le classement calculé dans le navigateur sont conservés sans nom ni e-mail pour la recherche. Enregistrer vaut consentement ; vous pouvez passer cette étape.',
+  studentDataTitle: 'Partagez votre point de vue d’étudiant en médecine',
+  studentDataDesc: 'Si vous choisissez l’enregistrement, votre type de participant, votre avis écrit sur la médecine, vos 81 réponses, vos valeurs, votre spécialité préférée, votre année facultative et le classement calculé dans le navigateur sont conservés sans nom ni e-mail pour la recherche. Enregistrer vaut consentement ; vous pouvez passer cette étape.',
+  curiousDataTitle: 'Partagez votre point de vue sur la médecine',
+  curiousDataDesc: 'Si vous choisissez l’enregistrement, votre type de participant, votre avis écrit sur la médecine, vos 81 réponses, vos valeurs, votre spécialité préférée et le classement calculé dans le navigateur sont conservés sans nom ni e-mail pour la recherche. Enregistrer vaut consentement ; vous pouvez passer cette étape.',
+  participantMedicineView: 'Que pensez-vous de la médecine ?',
+  participantMedicineViewPlaceholder: 'Écrivez votre réponse ici…',
+  participantMedicineViewPrivacy: 'Obligatoire pour enregistrer cette contribution. N’indiquez aucun nom, aucune coordonnée ni aucune information permettant de vous identifier, d’identifier un patient ou une autre personne.',
+  participantMedicineViewCount: (current: number, maximum: number) => `${current}/${maximum}`,
   studentStudyYear: 'Année d’études',
   studentPreferNotToSay: 'Je préfère ne pas répondre',
   studentYear: (n: number) => `${n}e année`,

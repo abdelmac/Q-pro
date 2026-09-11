@@ -160,6 +160,26 @@ await assertResearchRpcValidation('submit_student_response_v3', {
   p_scoring_version: 'client-scoring-v2',
   ...currentProvenance,
 });
+await assertResearchRpcValidation('submit_student_response_v4', {
+  p_submission_id: invalidSubmissionId,
+  p_participant_role: 'curious',
+  // Deliberately too short: this keeps the runtime probe non-mutating while
+  // proving that PostgREST resolves the versioned reflection contract.
+  p_medicine_view: 'x',
+  p_study_year: null,
+  p_preferred_specialty: null,
+  p_ratings: {},
+  p_selected_values: ['Prestige'],
+  p_client_scores: [],
+  p_language: 'en',
+  p_questionnaire_version: 'q81-v1',
+  p_value_catalog_version: 'career-values-v1',
+  p_specialty_catalog_version: 'medical-specialties-v1',
+  p_scoring_version: 'client-scoring-v2',
+  p_consent_version: 'research-consent-2026-09-11',
+  p_participant_reflection_version: 'medicine-view-v1',
+  p_specialty_config_version_id: catalog.version.id,
+});
 await assertResearchRpcValidation('submit_specialist_response_v3', {
   p_submission_id: invalidSubmissionId,
   p_actual_specialty: 'Cardiology',
@@ -203,6 +223,7 @@ console.log(JSON.stringify({
   measuredMetadataTraitsPublished: true,
   multilingualNarratives,
   schema2SubmissionRpcs: true,
+  participantReflectionRpc: true,
   optionalSpecialistQuestionnaireRpc: true,
   multilingualEncoding: true,
   anonymousDirectTableAccessRejected: true,

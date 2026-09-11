@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLanguage } from '@/lib/LanguageContext';
 import { CATEGORY_ORDER, type Specialty } from '@/data/specialties';
 import { translateSpecialtyName, translateCategory } from '@/data/i18n';
@@ -21,6 +21,7 @@ interface SpecialistPromptProps {
   questionnaireCompleted: boolean;
   language: SupportedLanguage;
   onDone: () => void;
+  onSubmittingChange?: (submitting: boolean) => void;
 }
 
 export default function SpecialistPrompt({
@@ -30,6 +31,7 @@ export default function SpecialistPrompt({
   questionnaireCompleted,
   language,
   onDone,
+  onSubmittingChange,
 }: SpecialistPromptProps) {
   const { t, lang } = useLanguage();
   const { specialties, version, source } = useSpecialtyCatalog();
@@ -46,7 +48,16 @@ export default function SpecialistPrompt({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const mountedRef = useRef(true);
   useScrollToPageTop(getSpecialistPromptNavigationScrollKey(success));
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      onSubmittingChange?.(false);
+    };
+  }, [onSubmittingChange]);
 
   const hasRequiredText = [
     currentSpecialtyView,
@@ -70,29 +81,41 @@ export default function SpecialistPrompt({
   const handleSubmit = async () => {
     if (!actualSpecialty || !canSubmit || wouldChooseAgain === null) return;
     setSubmitting(true);
+    onSubmittingChange?.(true);
     setError(null);
-    const result = await submitSpecialistResponse({
-      submission_id: submissionId,
-      actual_specialty: actualSpecialty,
-      ratings,
-      selected_values: selectedValues,
-      questionnaire_completed: questionnaireCompleted,
-      language,
-      current_specialty_view: currentSpecialtyView.trim(),
-      specialty_changes_over_years: specialtyChangesOverYears.trim(),
-      most_important_specialty_quality: mostImportantSpecialtyQuality.trim(),
-      would_choose_again_code: wouldChooseAgain,
-      would_not_choose_again_reason: wouldChooseAgain === 'no'
-        ? wouldNotChooseAgainReason.trim()
-        : null,
-      student_self_question: studentSelfQuestion.trim(),
-      specialty_config_version_id: source === 'remote' ? version.id : null,
-    });
-    setSubmitting(false);
-    if (result.success) {
-      setSuccess(true);
-    } else {
-      setError(result.error ?? t.specialistError);
+    try {
+      const result = await submitSpecialistResponse({
+        submission_id: submissionId,
+        actual_specialty: actualSpecialty,
+        ratings,
+        selected_values: selectedValues,
+        questionnaire_completed: questionnaireCompleted,
+        language,
+        current_specialty_view: currentSpecialtyView.trim(),
+        specialty_changes_over_years: specialtyChangesOverYears.trim(),
+        most_important_specialty_quality: mostImportantSpecialtyQuality.trim(),
+        would_choose_again_code: wouldChooseAgain,
+        would_not_choose_again_reason: wouldChooseAgain === 'no'
+          ? wouldNotChooseAgainReason.trim()
+          : null,
+        student_self_question: studentSelfQuestion.trim(),
+        specialty_config_version_id: source === 'remote' ? version.id : null,
+      });
+      if (!mountedRef.current) return;
+      if (result.success) {
+        setSuccess(true);
+      } else {
+        setError(result.error ?? t.specialistError);
+      }
+    } catch (submissionError) {
+      if (mountedRef.current) {
+        setError(submissionError instanceof Error ? submissionError.message : t.specialistError);
+      }
+    } finally {
+      if (mountedRef.current) {
+        setSubmitting(false);
+        onSubmittingChange?.(false);
+      }
     }
   };
 

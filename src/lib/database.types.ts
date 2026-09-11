@@ -114,6 +114,9 @@ export type Database = {
           created_at: string
           id: string
           language: string
+          medicine_view: string | null
+          participant_reflection_version: string | null
+          participant_role: string
           preferred_specialty: string | null
           questionnaire_version: string
           ratings: Json
@@ -132,6 +135,9 @@ export type Database = {
           created_at?: string
           id?: string
           language?: string
+          medicine_view?: string | null
+          participant_reflection_version?: string | null
+          participant_role?: string
           preferred_specialty?: string | null
           questionnaire_version?: string
           ratings: Json
@@ -150,6 +156,9 @@ export type Database = {
           created_at?: string
           id?: string
           language?: string
+          medicine_view?: string | null
+          participant_reflection_version?: string | null
+          participant_role?: string
           preferred_specialty?: string | null
           questionnaire_version?: string
           ratings?: Json
@@ -331,6 +340,27 @@ export type Database = {
           p_client_scores: Json
           p_consent_version: string
           p_language: string
+          p_preferred_specialty: string
+          p_questionnaire_version: string
+          p_ratings: Json
+          p_scoring_version: string
+          p_selected_values: Json
+          p_specialty_catalog_version: string
+          p_specialty_config_version_id: string
+          p_study_year: number
+          p_submission_id: string
+          p_value_catalog_version: string
+        }
+        Returns: string
+      }
+      submit_student_response_v4: {
+        Args: {
+          p_client_scores: Json
+          p_consent_version: string
+          p_language: string
+          p_medicine_view: string
+          p_participant_reflection_version: string
+          p_participant_role: string
           p_preferred_specialty: string
           p_questionnaire_version: string
           p_ratings: Json

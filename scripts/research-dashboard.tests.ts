@@ -1,6 +1,12 @@
 import assert from 'node:assert/strict';
 import AlgorithmExplanation from '../src/components/AlgorithmExplanation';
 import DashboardSidebar from '../src/components/DashboardSidebar';
+import PageBackButton from '../src/components/PageBackButton';
+import ParticipantReflectionForm, {
+  PARTICIPANT_MEDICINE_VIEW_MAX_LENGTH,
+  PARTICIPANT_MEDICINE_VIEW_MIN_LENGTH,
+  type ParticipantReflectionDraft,
+} from '../src/components/ParticipantReflectionForm';
 import {
   ALGORITHM_FLOW_STEP_IDS,
   getAlgorithmCoverage,
@@ -8,14 +14,23 @@ import {
 import {
   getDashboardNavItems,
   isCohortView,
+  participantRoleLabel,
+  participantRoleSupportsStudyYear,
+  popDashboardViewHistory,
+  pushDashboardViewHistory,
   type DashboardView,
 } from '../src/lib/dashboardNavigation';
+import {
+  createAppNavigationReducer,
+  createAppNavigationState,
+  getCurrentAppLocation,
+  navigateBack,
+  navigateTo,
+  normalizeAppLocation,
+  replaceNavigation,
+} from '../src/lib/appNavigation';
 import RatingScale from '../src/components/RatingScale';
 import { RoleSelectionView, type RoleSelectionCopy } from '../src/components/RoleSelection';
-import {
-  SpecialistQuestionnaireChoiceView,
-  type SpecialistQuestionnaireChoiceCopy,
-} from '../src/components/SpecialistQuestionnaireChoice';
 import {
   SpecialistQuestionnaireChoiceView,
   type SpecialistQuestionnaireChoiceCopy,
@@ -169,6 +184,130 @@ function resolvedElementTextContent(node: unknown): string {
   return resolvedElementTextContent(element.props.children);
 }
 
+const appNavigationReducer = createAppNavigationReducer({ maxQuizStepIndex: 82 });
+let appNavigation = createAppNavigationState();
+assert.deepEqual(
+  appNavigationReducer(appNavigation, navigateBack()),
+  appNavigation,
+  'Back at the participant-role root must remain safe and deterministic',
+);
+appNavigation = appNavigationReducer(appNavigation, navigateTo({ phase: 'intro' }));
+appNavigation = appNavigationReducer(appNavigation, navigateTo({ phase: 'quiz', stepIndex: 0 }));
+appNavigation = appNavigationReducer(appNavigation, navigateTo({ phase: 'quiz', stepIndex: 1 }));
+appNavigation = appNavigationReducer(appNavigation, navigateTo({ phase: 'qprofile' }));
+appNavigation = appNavigationReducer(appNavigation, navigateTo({ phase: 'student' }));
+appNavigation = appNavigationReducer(appNavigation, replaceNavigation({ phase: 'results' }));
+assert.deepEqual(
+  getCurrentAppLocation(appNavigation),
+  { phase: 'results' },
+  'A completed contribution must replace its form with the result page',
+);
+appNavigation = appNavigationReducer(appNavigation, navigateBack());
+assert.deepEqual(
+  getCurrentAppLocation(appNavigation),
+  { phase: 'qprofile' },
+  'Back from results must return to the exact previous screen without reopening a submitted form',
+);
+appNavigation = appNavigationReducer(appNavigation, navigateBack());
+assert.deepEqual(
+  getCurrentAppLocation(appNavigation),
+  { phase: 'quiz', stepIndex: 1 },
+  'Application history must preserve the exact questionnaire step',
+);
+assert.deepEqual(normalizeAppLocation({ phase: 'quiz', stepIndex: 999 }, { maxQuizStepIndex: 82 }), { phase: 'quiz', stepIndex: 82 });
+assert.deepEqual(normalizeAppLocation({ phase: 'detail', specialtyName: '   ' }), { phase: 'explorer' });
+let explorerNavigation = createAppNavigationState({ phase: 'results' });
+explorerNavigation = appNavigationReducer(explorerNavigation, navigateTo({ phase: 'explorer' }));
+explorerNavigation = appNavigationReducer(explorerNavigation, navigateTo({ phase: 'detail', specialtyName: 'Cardiology' }));
+explorerNavigation = appNavigationReducer(explorerNavigation, navigateBack());
+assert.deepEqual(getCurrentAppLocation(explorerNavigation), { phase: 'explorer' });
+explorerNavigation = appNavigationReducer(explorerNavigation, navigateBack());
+assert.deepEqual(
+  getCurrentAppLocation(explorerNavigation),
+  { phase: 'results' },
+  'Explorer and specialty detail must return to their actual origin instead of inferring it from score state',
+);
+
+let sharedBackClicks = 0;
+const sharedBackButton = PageBackButton({ label: 'Previous page', onClick: () => { sharedBackClicks += 1; } });
+const sharedBackButtonProps = elementPropsByType(sharedBackButton, 'button')[0];
+assert.equal(sharedBackButtonProps.type, 'button');
+assert.equal(sharedBackButtonProps['data-navigation-back'], true);
+assert.ok(String(sharedBackButtonProps.className).includes('min-h-11'), 'The shared back control must expose a mobile-size touch target');
+assert.match(resolvedElementTextContent(sharedBackButton), /Previous page/);
+(sharedBackButtonProps.onClick as () => void)();
+assert.equal(sharedBackClicks, 1);
+
+const participantDraft: ParticipantReflectionDraft = {
+  submissionId: '00000000-0000-4000-8000-000000000099',
+  studyYear: '4',
+  medicineView: 'Medicine combines knowledge, care, and responsibility.',
+};
+let updatedParticipantDraft: ParticipantReflectionDraft | null = null;
+let participantSkipCount = 0;
+const studentReflectionForm = ParticipantReflectionForm({
+  participantRole: 'student',
+  draft: participantDraft,
+  onDraftChange: (draft) => { updatedParticipantDraft = draft; },
+  submitting: false,
+  error: null,
+  copy: TRANSLATIONS.en,
+  onSubmit: () => undefined,
+  onSkip: () => { participantSkipCount += 1; },
+});
+const participantTextareas = elementPropsByType(studentReflectionForm, 'textarea');
+assert.equal(participantTextareas.length, 1, 'The participant consent page must render one medicine-reflection textbox');
+assert.equal(participantTextareas[0].name, 'medicine_view');
+assert.equal(participantTextareas[0].required, true);
+assert.equal(participantTextareas[0].minLength, PARTICIPANT_MEDICINE_VIEW_MIN_LENGTH);
+assert.equal(participantTextareas[0].maxLength, PARTICIPANT_MEDICINE_VIEW_MAX_LENGTH);
+(participantTextareas[0].onChange as (event: { target: { value: string } }) => void)({ target: { value: 'Updated view' } });
+assert.equal(updatedParticipantDraft?.medicineView, 'Updated view');
+const studentStudyYearSelects = elementPropsByType(studentReflectionForm, 'select');
+assert.equal(studentStudyYearSelects.length, 1, 'Medical students must retain the optional 1-to-6 study-year field');
+assert.deepEqual(
+  elementPropsByType(studentStudyYearSelects[0].children, 'option').slice(1).map((option) => option.value),
+  [1, 2, 3, 4, 5, 6],
+);
+const participantButtons = elementPropsByType(studentReflectionForm, 'button');
+assert.equal(participantButtons.find((button) => button.type === 'submit')?.disabled, false);
+const participantSkipButton = participantButtons.find((button) => button.type === 'button');
+assert.ok(participantSkipButton, 'Saving the research contribution must remain optional');
+(participantSkipButton?.onClick as () => void)();
+assert.equal(participantSkipCount, 1);
+
+const curiousReflectionForm = ParticipantReflectionForm({
+  participantRole: 'curious',
+  draft: { ...participantDraft, studyYear: '' },
+  onDraftChange: () => undefined,
+  submitting: false,
+  error: null,
+  copy: TRANSLATIONS.en,
+  onSubmit: () => undefined,
+  onSkip: () => undefined,
+});
+assert.equal(
+  elementPropsByType(curiousReflectionForm, 'select').length,
+  0,
+  'People exploring medicine must never be shown a medical study-year field',
+);
+assert.match(resolvedElementTextContent(curiousReflectionForm), /What do you think about medicine\?/);
+const blankReflectionForm = ParticipantReflectionForm({
+  participantRole: 'student',
+  draft: { ...participantDraft, medicineView: '   ' },
+  onDraftChange: () => undefined,
+  submitting: false,
+  error: null,
+  copy: TRANSLATIONS.en,
+  onSubmit: () => undefined,
+  onSkip: () => undefined,
+});
+assert.equal(
+  elementPropsByType(blankReflectionForm, 'button').find((button) => button.type === 'submit')?.disabled,
+  true,
+  'Whitespace-only qualitative text must not enable research saving',
+);
+
 const readOnlyDashboardItems = getDashboardNavItems(false, 'en');
 assert.deepEqual(
   readOnlyDashboardItems.map(({ id }) => id),
@@ -186,14 +325,35 @@ assert.deepEqual(
   'Catalog configuration must be appended only for accounts with edit permission',
 );
 assert.deepEqual(
+  readOnlyDashboardItems.map(({ label }) => label),
+  ['Specialists', 'Students & explorers', 'How the algorithm works'],
+  'The dashboard must name both participant audiences instead of silently grouping explorers as students',
+);
+assert.deepEqual(
   getDashboardNavItems(false, 'fr').map(({ label }) => label),
-  ['Spécialistes', 'Étudiants', 'Comprendre l’algorithme'],
+  ['Spécialistes', 'Étudiants & explorateurs', 'Comprendre l’algorithme'],
   'The dashboard sidebar must expose French labels for every generally available view',
 );
 assert.deepEqual(
   getDashboardNavItems(false, 'ro').map(({ label }) => label),
-  ['Specialiști', 'Studenți', 'Cum funcționează algoritmul'],
+  ['Specialiști', 'Studenți și exploratori', 'Cum funcționează algoritmul'],
   'The dashboard sidebar must expose Romanian labels for every generally available view',
+);
+assert.deepEqual(
+  (['en', 'fr', 'ro'] as const).map((language) => participantRoleLabel('student', language)),
+  ['Medical student', 'Étudiant en médecine', 'Student la medicină'],
+);
+assert.deepEqual(
+  (['en', 'fr', 'ro'] as const).map((language) => participantRoleLabel('curious', language)),
+  ['Exploring medicine', 'Découverte de la médecine', 'Explorează medicina'],
+  'Every dashboard language must keep explorers visibly separate from medical students',
+);
+assert.equal(participantRoleSupportsStudyYear('student'), true);
+assert.equal(participantRoleSupportsStudyYear('all'), true);
+assert.equal(
+  participantRoleSupportsStudyYear('curious'),
+  false,
+  'The dashboard must not combine a medicine-explorer audience with an impossible study-year filter',
 );
 
 for (const cohortView of ['specialists', 'students'] as const) {
@@ -206,6 +366,31 @@ for (const staticView of ['algorithm', 'configuration'] as const) {
     `${staticView} must not be treated as a cohort query, filter, table, or export view`,
   );
 }
+
+let dashboardViewHistory: DashboardView[] = [];
+dashboardViewHistory = pushDashboardViewHistory(dashboardViewHistory, 'specialists', 'students');
+dashboardViewHistory = pushDashboardViewHistory(dashboardViewHistory, 'students', 'algorithm');
+assert.deepEqual(
+  dashboardViewHistory,
+  ['specialists', 'students'],
+  'Selecting distinct dashboard tabs must retain the exact visit order',
+);
+assert.deepEqual(
+  pushDashboardViewHistory(dashboardViewHistory, 'algorithm', 'algorithm'),
+  dashboardViewHistory,
+  'Selecting the active dashboard tab must not add a duplicate history entry',
+);
+const firstDashboardBack = popDashboardViewHistory(dashboardViewHistory);
+assert.equal(firstDashboardBack.previousView, 'students');
+assert.deepEqual(firstDashboardBack.remainingHistory, ['specialists']);
+const secondDashboardBack = popDashboardViewHistory(firstDashboardBack.remainingHistory);
+assert.equal(secondDashboardBack.previousView, 'specialists');
+assert.deepEqual(secondDashboardBack.remainingHistory, []);
+assert.deepEqual(
+  popDashboardViewHistory([]),
+  { previousView: null, remainingHistory: [] },
+  'At the first dashboard tab, Previous must fall through to the parent page',
+);
 
 const selectedDashboardViews: DashboardView[] = [];
 const dashboardSidebar = DashboardSidebar({
@@ -532,8 +717,8 @@ assert.equal(getPostQuestionnaireDestination('student'), 'student');
 assert.equal(getPostQuestionnaireDestination('specialist'), 'specialist');
 assert.equal(
   getPostQuestionnaireDestination('curious'),
-  'results',
-  'Curious participants must bypass both research-submission prompts and go directly to results',
+  'student',
+  'Curious participants must see the shared reflection and consent screen before results',
 );
 for (const language of ['en', 'ro', 'fr'] as const) {
   const copy = TRANSLATIONS[language];
@@ -1030,8 +1215,11 @@ const specialist: SpecialistResponseRow = {
 const student: StudentResponseRow = {
   id: '00000000-0000-4000-8000-000000000002',
   created_at: specialist.created_at,
+  participant_role: 'student',
   study_year: 6,
   preferred_specialty: SPECIALTIES[1].name,
+  medicine_view: null,
+  participant_reflection_version: null,
   language: 'en',
   ratings,
   selected_values: [VALUE_OPTIONS[0]],
@@ -1046,11 +1234,38 @@ const student: StudentResponseRow = {
   consent_version: DATA_VERSIONS.consent,
 };
 
+const curiousParticipant: StudentResponseRow = {
+  ...student,
+  id: '00000000-0000-4000-8000-000000000003',
+  participant_role: 'curious',
+  study_year: null,
+  preferred_specialty: null,
+  medicine_view: 'Medicine combines scientific reasoning, service, and a lasting responsibility toward patients.',
+  participant_reflection_version: DATA_VERSIONS.participantReflection,
+  submission_schema_version: DATA_VERSIONS.studentSubmissionSchema,
+  consent_version: DATA_VERSIONS.studentConsent,
+};
+
 const validAnalysis = analyzeSpecialistResponse(specialist);
 assert.equal(validAnalysis.eligible, true);
 assert.equal(validAnalysis.ranking.length, SPECIALTIES.length);
 assert.ok(validAnalysis.ranking.every(({ rankMin, rankMax }) => rankMin <= rankMax));
 assert.equal(analyzeStudentResponse(student).eligible, true);
+assert.equal(
+  analyzeStudentResponse(curiousParticipant).eligible,
+  true,
+  'The current reflection protocol must keep a valid curious participant quantitatively analyzable',
+);
+assert.deepEqual(
+  analyzeStudentResponse(curiousParticipant).ranking,
+  analyzeStudentResponse({ ...curiousParticipant, medicine_view: 'A completely different qualitative reflection.' }).ranking,
+  'The medicine reflection must never alter traits, scores, or specialty ranks',
+);
+assert.deepEqual(
+  analyzeStudentResponse({ ...curiousParticipant, participant_reflection_version: null }).exclusionReasons,
+  ['analysis_version'],
+  'Schema-3 rows without the declared reflection protocol must be flagged without invalidating schema-2 student history',
+);
 assert.match(DASHBOARD_MODEL_CHECKSUM, /^fnv1a64-[0-9a-f]{16}$/);
 assert.equal(validAnalysis.modelChecksum, DASHBOARD_MODEL_CHECKSUM);
 const changedCatalog = SPECIALTIES.map((specialty, index) => index === 0
@@ -1265,7 +1480,7 @@ assert.equal(preventionTrait?.gap, null);
 
 for (const csv of [
   specialistRawCsv([specialist]), specialistAnalyticCsv([specialist]), specialistLongCsv([specialist]),
-  studentRawCsv([student]), studentAnalyticCsv([student]), studentLongCsv([student]),
+  studentRawCsv([student, curiousParticipant]), studentAnalyticCsv([student, curiousParticipant]), studentLongCsv([student, curiousParticipant]),
 ]) {
   assert.equal(csv.charCodeAt(0), 0xfeff);
   const parsed = parseCsv(csv);
@@ -1279,6 +1494,58 @@ assert.equal(
   'A skipped questionnaire must not be expanded into 81 misleading blank long-format rows',
 );
 assert.equal(parseCsv(studentLongCsv([student])).length, 82);
+assert.equal(parseCsv(studentLongCsv([curiousParticipant])).length, 82);
+
+const participantRaw = parseCsv(studentRawCsv([student, curiousParticipant]));
+const participantRawHeaders = participantRaw[0];
+assert.equal(participantRawHeaders.includes('participant_role'), true);
+assert.equal(participantRawHeaders.includes('medicine_view'), true);
+assert.equal(participantRawHeaders.includes('participant_reflection_version'), true);
+assert.deepEqual(
+  participantRaw.slice(1).map((row) => row[participantRawHeaders.indexOf('participant_role')]),
+  ['student', 'curious'],
+  'Student and medicine-explorer rows must remain explicitly separable in exports',
+);
+assert.equal(
+  participantRaw[2][participantRawHeaders.indexOf('medicine_view')],
+  curiousParticipant.medicine_view,
+  'The qualitative medicine reflection must be exported without lossy rewriting',
+);
+const multilineMedicineView = 'Medicine is a scientific vocation.\nIt also requires humility and sustained service.';
+const participantFormulaRaw = parseCsv(studentRawCsv([{
+  ...curiousParticipant,
+  medicine_view: '=HYPERLINK("https://example.invalid")',
+}, {
+  ...curiousParticipant,
+  id: '00000000-0000-4000-8000-000000000004',
+  medicine_view: multilineMedicineView,
+} ]));
+assert.equal(
+  participantFormulaRaw[1][participantRawHeaders.indexOf('medicine_view')],
+  "'=HYPERLINK(\"https://example.invalid\")",
+  'Medicine reflections must be neutralized against spreadsheet formula execution',
+);
+assert.equal(
+  participantFormulaRaw[2][participantRawHeaders.indexOf('medicine_view')],
+  multilineMedicineView,
+  'Multiline qualitative reflections must survive CSV quoting exactly',
+);
+for (const csv of [studentAnalyticCsv([curiousParticipant]), studentLongCsv([curiousParticipant])]) {
+  const parsed = parseCsv(csv);
+  const roleIndex = parsed[0].indexOf('participant_role');
+  const reflectionIndex = parsed[0].indexOf('medicine_view');
+  assert.ok(roleIndex >= 0 && reflectionIndex >= 0, 'Every student/curious CSV shape must retain role and reflection metadata');
+  assert.ok(parsed.slice(1).every((row) => row[roleIndex] === 'curious'));
+  assert.ok(parsed.slice(1).every((row) => row[reflectionIndex] === curiousParticipant.medicine_view));
+}
+for (const response of [student, curiousParticipant]) {
+  const parsed = parseCsv(studentAnalyticCsv([response]));
+  assert.equal(
+    parsed[1][parsed[0].indexOf('analysis_eligible')],
+    'true',
+    `Student schema ${response.submission_schema_version} must remain quantitatively analyzable`,
+  );
+}
 
 const rawLegacy = parseCsv(specialistRawCsv([legacy]));
 const rawHeaders = rawLegacy[0];
@@ -1342,9 +1609,11 @@ console.log(JSON.stringify({
   multilingualSpecialtyNarratives: true,
   navigationScrollPolicy: true,
   dashboardSidebarNavigation: true,
+  dashboardPreviousViewHistory: true,
   algorithmExplanation: true,
   participantRoleSelection: true,
   curiousParticipantFlow: true,
+  participantMedicineReflections: true,
   optionalSpecialistQuestionnaire: true,
   studentStudyYearsOneToSix: true,
   mobileRatingScale: true,

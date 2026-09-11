@@ -169,7 +169,19 @@ function checksum32(input: string, seed: number): string {
 
 export function dashboardModelChecksum(catalog: SpecialtyCatalog = SPECIALTIES): string {
   const modelConfiguration = stableSerialize({
-    versions: DATA_VERSIONS,
+    // Keep participant-form protocol versions out of the algorithm checksum:
+    // they change collection metadata, not q81 scoring or specialty targets.
+    // The explicit legacy set also preserves checksum continuity for identical
+    // algorithm configurations across the schema-3 reflection rollout.
+    versions: {
+      submissionSchema: DATA_VERSIONS.submissionSchema,
+      questionnaire: DATA_VERSIONS.questionnaire,
+      valueCatalog: DATA_VERSIONS.valueCatalog,
+      specialtyCatalog: DATA_VERSIONS.specialtyCatalog,
+      scoring: DATA_VERSIONS.scoring,
+      calibration: DATA_VERSIONS.calibration,
+      consent: DATA_VERSIONS.consent,
+    },
     analysisVersion: DASHBOARD_ANALYSIS_VERSION,
     engineRevision: SCORING_ENGINE_REVISION,
     rankEpsilon: RANK_EPSILON,
@@ -306,7 +318,24 @@ export function assessSpecialistEligibility(row: SpecialistResponseRow): Eligibi
 }
 
 export function assessStudentEligibility(row: StudentResponseRow): EligibilityAssessment {
-  const reasons = assessSharedVersions(row);
+  // Student responses have two intentionally supported protocols. Schema 2 is
+  // the historical student-only questionnaire. Schema 3 adds the optional
+  // participant reflection and distinguishes students from people who are
+  // exploring medicine. Both contain the same q81-v1 quantitative payload, so
+  // a valid historical row remains analytically usable.
+  const reasons: EligibilityReason[] = assessSharedVersions(row).filter((reason) => (
+    reason !== 'schema_version' && reason !== 'consent_version'
+  ));
+  if (row.submission_schema_version === DATA_VERSIONS.submissionSchema) {
+    if (row.consent_version !== DATA_VERSIONS.consent) reasons.push('consent_version');
+  } else if (row.submission_schema_version === DATA_VERSIONS.studentSubmissionSchema) {
+    if (row.consent_version !== DATA_VERSIONS.studentConsent) reasons.push('consent_version');
+    if (row.participant_reflection_version !== DATA_VERSIONS.participantReflection) {
+      reasons.push('analysis_version');
+    }
+  } else {
+    reasons.push('schema_version');
+  }
   if (row.scoring_version !== DATA_VERSIONS.scoring) reasons.push('analysis_version');
   if (row.preferred_specialty !== null && !SPECIALTY_NAMES.has(row.preferred_specialty)) {
     reasons.push('specialty');
@@ -685,7 +714,8 @@ const SPECIALIST_METADATA_COLUMNS = [
 ] as const;
 
 const STUDENT_METADATA_COLUMNS = [
-  'id', 'created_at', 'study_year', 'preferred_specialty', 'language',
+  'id', 'created_at', 'participant_role', 'study_year', 'preferred_specialty',
+  'medicine_view', 'participant_reflection_version', 'language',
   'submission_schema_version', 'questionnaire_version', 'value_catalog_version',
   'specialty_catalog_version', 'specialty_config_version_id', 'specialty_config_revision',
   'scoring_version', 'consent_version',
