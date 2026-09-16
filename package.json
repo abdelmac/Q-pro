@@ -16,6 +16,8 @@
     "test:map": "node scripts/verify-participation-map.mjs",
     "test:portal-data": "node scripts/verify-portal-test-data.mjs",
     "test:browser": "node scripts/verify-browser-ui.mjs",
+    "generate:icons": "node scripts/generate-app-icons.mjs",
+    "test:icons": "node scripts/verify-app-icons.mjs",
     "test:dashboard": "node scripts/verify-research-dashboard.mjs",
     "test:specialty-content": "node scripts/generate-specialty-narrative-migration.mjs",
     "generate:specialty-content-migration": "node scripts/generate-specialty-narrative-migration.mjs --write",

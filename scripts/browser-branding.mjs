@@ -50,6 +50,43 @@ export async function verifyBrowserBranding({ page, fixtureDefinitions }) {
   assert.equal(imageInfo.height, 1254);
   assert.deepEqual(await sourceImages.evaluateAll(elements => elements.map(image => image.getAttribute('href'))), [source, source], 'Both pieces of the compact lockup reuse the original artwork');
 
+  // Playwright intentionally aborts /favicon.ico in routed browser contexts.
+  // Verify that exact resource with its HTTP client; decode the PNGs in-page.
+  const icoHref = await page.locator('head link[rel="icon"][type="image/x-icon"]').getAttribute('href');
+  const icoResponse = await page.request.get(new URL(icoHref, page.url()).href);
+  assert.equal(icoResponse.status(), 200, 'ICO fallback is served at its exact declared URL');
+  assert.ok((await icoResponse.body()).length > 22, 'ICO fallback is not empty');
+  const iconResults = await page.evaluate(async () => {
+    const links = [...document.head.querySelectorAll('link[rel="icon"], link[rel="apple-touch-icon"], link[rel="manifest"]')];
+    return Promise.all(links.map(async link => {
+      const response = link.type === 'image/x-icon' ? null : await fetch(link.href);
+      const result = { rel: link.rel, sizes: link.getAttribute('sizes'), status: response?.status ?? 200, pathname: new URL(link.href).pathname };
+      if (link.rel === 'manifest') {
+        const manifest = await response.json();
+        result.icons = await Promise.all(manifest.icons.map(async entry => {
+          const url = new URL(entry.src, link.href);
+          const image = new Image(); image.src = url.href; await image.decode();
+          return { sizes: entry.sizes, purpose: entry.purpose, width: image.naturalWidth, height: image.naturalHeight, pathname: url.pathname };
+        }));
+      } else if (link.type === 'image/png' || link.rel === 'apple-touch-icon') {
+        const image = new Image(); image.src = link.href; await image.decode();
+        result.width = image.naturalWidth; result.height = image.naturalHeight;
+      }
+      return result;
+    }));
+  });
+  assert.equal(iconResults.length, 5, 'Browser icons, Apple touch icon and manifest are linked');
+  for (const icon of iconResults) {
+    assert.equal(icon.status, 200, `Icon resolves: ${icon.pathname}`);
+    assert.ok(icon.pathname.startsWith('/Q-pro/'), 'Icon resources respect the deployment base path');
+    if (icon.sizes) assert.equal(`${icon.width}x${icon.height}`, icon.sizes, 'Icon dimensions match the declaration');
+    for (const entry of icon.icons ?? []) {
+      assert.equal(`${entry.width}x${entry.height}`, entry.sizes);
+      assert.ok(entry.pathname.startsWith('/Q-pro/branding/'));
+      assert.equal(entry.purpose, 'any maskable');
+    }
+  }
+
   for (const language of LANGUAGES) {
     const copy = TRANSLATIONS[language.code];
     if (language.code !== 'en') await chooseLanguage(language);
@@ -86,5 +123,5 @@ export async function verifyBrowserBranding({ page, fixtureDefinitions }) {
   await chooseLanguage(LANGUAGES.find(language => language.code === 'en'));
   await page.setViewportSize({ width: 375, height: 812 });
   await page.getByRole('heading', { name: TRANSLATIONS.en.roleIntrospection, exact: true }).waitFor();
-  console.log('Branding: original PNG decoded, accessible lockups, EN/FR/RO role and credits pages at 320/375/768/1440px passed.');
+  console.log('Branding: original PNG, browser/home-screen icons, accessible lockups, EN/FR/RO role and credits pages at 320/375/768/1440px passed.');
 }

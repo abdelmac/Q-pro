@@ -41,6 +41,7 @@ jobs:
           npm run test:map
           npm run test:portal-data
           npm run test:mobile
+          npm run test:icons
 
       - name: Install test browser
         run: npx playwright install --with-deps chromium
