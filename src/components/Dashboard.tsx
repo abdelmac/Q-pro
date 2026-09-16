@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { translateSpecialtyName } from '@/data/i18n';
 import { useLanguage } from '@/lib/LanguageContext';
 import { getDashboardNavigationScrollKey, useScrollToPageTop } from '@/lib/scrollToTop';
@@ -32,6 +32,7 @@ import ResearchResponseDetail, { type DetailedResponse } from '@/components/Rese
 import SpecialtyConfigurationEditor from '@/components/SpecialtyConfigurationEditor';
 import { useSpecialtyCatalog } from '@/lib/SpecialtyCatalogContext';
 import { STUDENT_STUDY_YEARS } from '@/lib/participantProfile';
+import { MAP_TRANSLATIONS } from '@/data/mapI18n';
 import {
   ArrowLeft,
   BarChart3,
@@ -51,6 +52,7 @@ import {
 } from 'lucide-react';
 
 const PAGE_SIZE = 50;
+const ParticipationMap = lazy(() => import('@/components/ParticipationMap'));
 const EXPORT_BATCH_SIZE = 250;
 const IDLE_SIGN_OUT_MS = 30 * 60 * 1000;
 
@@ -188,6 +190,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
   const [specialists, setSpecialists] = useState<SpecialistListRow[]>([]);
   const [view, setView] = useState<DashboardView>('specialists');
   const [viewHistory, setViewHistory] = useState<DashboardView[]>([]);
+  const [mapRefreshKey, setMapRefreshKey] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [yearFilter, setYearFilter] = useState('all');
   const [participantRoleFilter, setParticipantRoleFilter] = useState<ParticipantRoleFilter>('all');
@@ -815,6 +818,10 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
   };
 
   const refreshData = () => {
+    if (view === 'map') {
+      setMapRefreshKey(value => value + 1);
+      return;
+    }
     if (view === 'configuration') {
       void refreshCatalog();
       return;
@@ -827,6 +834,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
   };
 
   const selectDashboardView = (nextView: DashboardView) => {
+    if (nextView === 'map' && !portalProfile?.can_edit) return;
     if (sidebarOpen) closeMobileSidebar();
     if (view === nextView) return;
     setError(null);
@@ -874,6 +882,14 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
         : romanian
           ? 'De la chestionar la clasament, cu formulele, proveniența și limitările actuale.'
           : 'From questionnaire to ranking, including formulas, provenance, and current limitations.',
+    },
+    map: {
+      title: french ? 'Carte de participation' : romanian ? 'Harta participării' : 'Participation map',
+      description: french
+        ? 'Explorez les statistiques publiées par type de participant, pays, langue, période et version, avec des effectifs agrégés protégés.'
+        : romanian
+          ? 'Explorează statisticile publicate după tipul participantului, țară, limbă, perioadă și versiune, cu numere agregate protejate.'
+          : 'Explore published statistics by participant type, country, language, period and version, using privacy-protected aggregates.',
     },
     configuration: {
       title: french ? 'Configuration versionnée' : romanian ? 'Configurare versionată' : 'Versioned configuration',
@@ -1040,6 +1056,12 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
           <SpecialtyConfigurationEditor french={french} portalProfile={portalProfile} onPublished={() => void refreshCatalog()} />
         )}
 
+        {view === 'map' && portalProfile?.can_edit && (
+          <Suspense fallback={<div role="status" className="flex items-center gap-2 rounded-2xl bg-white p-6 text-sm text-brand-800"><Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />{MAP_TRANSLATIONS[lang].loading}</div>}>
+            <ParticipationMap embedded onBack={goToPreviousDashboardPage} refreshKey={mapRefreshKey} />
+          </Suspense>
+        )}
+
         {isCohortView(view) && <section className="mb-5 rounded-2xl border border-ink-100 bg-white p-4 shadow-soft">
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
             {view === 'specialists' ? (
@@ -1122,7 +1144,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
           </div>
         )}
 
-        {isCohortView(view) && <div className="overflow-x-auto rounded-2xl border border-ink-100 bg-white shadow-soft">
+        {isCohortView(view) && <div className="relative overflow-x-auto rounded-2xl border border-ink-100 bg-white shadow-soft">
           {view === 'specialists'
             ? <SpecialistTable rows={specialists} lang={lang} french={french} locale={locale} loadingId={detailLoadingId} onOpen={(id) => void openDetail('specialists', id)} />
             : <StudentTable rows={students} lang={lang} french={french} locale={locale} loadingId={detailLoadingId} onOpen={(id) => void openDetail('students', id)} />}

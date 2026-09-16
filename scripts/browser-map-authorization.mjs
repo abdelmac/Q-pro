@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { verifyBrowserDashboardMap } from './browser-dashboard-map.mjs';
 
 /** Synthetic sessions only: all Auth/profile/map calls are intercepted. */
 export async function verifyBrowserMapAuthorization({ context, fixtureDefinitions, mapFixture }) {
@@ -187,6 +188,7 @@ export async function verifyBrowserMapAuthorization({ context, fixtureDefinition
     finishDelayedProfile = null;
     await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
     await noFilters('A delayed pre-logout authorization cannot grant access after logout');
+    await verifyBrowserDashboardMap({ context, page, fixtureDefinitions, defaultArgs, mapCalls, signIn, setProfile: value => { profile = value; } });
     assert.ok(profileCalls >= 8, 'Every authorization is verified by the server profile');
     assert.ok(mapCalls.some(args => args.p_respondent_type === 'specialist'));
     assert.deepEqual(errors, []);

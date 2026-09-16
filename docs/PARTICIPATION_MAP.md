@@ -4,7 +4,9 @@ The map reuses `student_responses` for students and explorers (`participant_role
 
 ## Filter access
 
-The unfiltered map remains public, including zoom, panning and selecting a country to inspect its already-published counts. All filter controls (participant type, country, language, period and version) require an enabled `doctor` or `professor` portal account. Sign in through the dashboard, then return to the participation map in the same browser. Selecting “specialist” in the questionnaire does not grant administrative access; read-only `researcher` accounts do not have this permission either.
+The unfiltered map remains public, including zoom, panning and selecting a country to inspect its already-published counts. All filter controls (participant type, country, language, period and version) require an enabled `doctor` or `professor` portal account. Sign in to the dashboard, then open **Administration → Participation map** in its sidebar (or mobile menu). The map stays inside the portal, with its existing Back and Refresh controls; Refresh keeps the applied filters. Selecting “specialist” in the questionnaire does not grant administrative access; read-only `researcher` accounts do not have this permission either. Returning to the questionnaire signs out of the portal as before.
+
+The embedded view shares the public map component and aggregate API, without duplicating its page header or navigation. It includes all six filter arguments: respondent type, country, questionnaire language, first month, last month and data version. Month validation, reset, zoom, country details and mobile filter drawer are unchanged. The map is loaded on demand and requires no additional database migration.
 
 The UI checks `current_user_portal_profile` and clears filters and displayed filtered data when the session changes or access is denied. The SQL facade independently checks `private.require_portal_role` before accepting any non-default filter. Anonymous users, ordinary signed-in users and disabled accounts receive SQLSTATE `42501` if they call filtered queries directly. No additional raw data or table grants are introduced.
 

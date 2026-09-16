@@ -1,5 +1,6 @@
 import {
   GitCompare,
+  Globe2,
   GraduationCap,
   Settings2,
   Stethoscope,
@@ -8,7 +9,7 @@ import {
 import type { Language } from '@/data/i18n';
 
 export type CohortView = 'specialists' | 'students';
-export type DashboardView = CohortView | 'algorithm' | 'configuration';
+export type DashboardView = CohortView | 'algorithm' | 'map' | 'configuration';
 
 export interface DashboardNavItem {
   id: DashboardView;
@@ -77,6 +78,12 @@ export function getDashboardNavItems(canEdit: boolean, lang: Language): Dashboar
   ];
 
   if (canEdit) {
+    items.push({
+      id: 'map',
+      label: lang === 'fr' ? 'Carte de participation' : lang === 'ro' ? 'Harta participării' : 'Participation map',
+      section: 'administration',
+      icon: Globe2,
+    });
     items.push({
       id: 'configuration',
       label: lang === 'ro' ? 'Configurare' : 'Configuration',

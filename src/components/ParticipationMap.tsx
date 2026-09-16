@@ -12,7 +12,11 @@ import {
 import PageBackButton from './PageBackButton';
 import LanguageSwitcher from './LanguageSwitcher';
 
-interface ParticipationMapProps { onBack: () => void }
+interface ParticipationMapProps {
+  onBack: () => void;
+  embedded?: boolean;
+  refreshKey?: number;
+}
 interface View { x: number; y: number; scale: number }
 const INITIAL_VIEW: View = { x: 0, y: 0, scale: 1 };
 const BUTTON = 'inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl border border-ink-200 bg-white px-3 text-sm font-medium text-ink-700 transition hover:bg-brand-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 disabled:opacity-40';
@@ -65,7 +69,7 @@ function MapFilters({ value, onChange, onApply, onReset, copy, prefix }: {
   </form>;
 }
 
-export default function ParticipationMap({ onBack }: ParticipationMapProps) {
+export default function ParticipationMap({ onBack, embedded = false, refreshKey = 0 }: ParticipationMapProps) {
   const { lang } = useLanguage();
   const copy = MAP_TRANSLATIONS[lang];
   const { accessKey, recheckAccess } = useMapFilterAccess();
@@ -102,7 +106,7 @@ export default function ParticipationMap({ onBack }: ParticipationMapProps) {
       if (!controller.signal.aborted) setLoading(false);
     });
     return () => controller.abort();
-  }, [accessKey, filters, retry, recheckAccess]);
+  }, [accessKey, filters, retry, refreshKey, recheckAccess]);
 
   useEffect(() => {
     setDraft({ ...DEFAULT_MAP_FILTERS });
@@ -166,19 +170,22 @@ export default function ParticipationMap({ onBack }: ParticipationMapProps) {
   const counters = [
     [copy.total, stats?.total], [copy.countries, stats?.countries], [copy.students, stats?.students], [copy.specialists, stats?.specialists], [copy.nonMedical, stats?.nonMedical],
   ] as const;
+  const Content = embedded ? 'div' : 'main';
 
-  return <div className="min-h-screen bg-[#f6f8fb]">
-    <header className="border-b border-ink-100 bg-white px-4 py-4 sm:px-8">
+  return <div className={embedded ? 'min-w-0' : 'min-h-screen bg-[#f6f8fb]'} data-participation-map={embedded ? 'admin' : 'public'}>
+    {!embedded && <header className="border-b border-ink-100 bg-white px-4 py-4 sm:px-8">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
         <PageBackButton label={copy.back} onClick={onBack} />
         <div className="flex items-center gap-3"><span className="hidden items-center gap-2 text-xs font-medium text-brand-800 sm:flex"><Globe2 className="h-4 w-4" aria-hidden="true" />{copy.publicLabel}</span><LanguageSwitcher /></div>
       </div>
-    </header>
-    <main className="mx-auto max-w-7xl px-4 py-8 sm:px-8 sm:py-12">
-      <h1 className="font-display text-3xl font-semibold tracking-tight text-ink-900 sm:text-4xl">{copy.title}</h1>
-      <p className="mt-3 max-w-2xl text-base leading-relaxed text-ink-500">{copy.subtitle}</p>
+    </header>}
+    <Content className={embedded ? '' : 'mx-auto max-w-7xl px-4 py-8 sm:px-8 sm:py-12'}>
+      {!embedded && <>
+        <h1 className="font-display text-3xl font-semibold tracking-tight text-ink-900 sm:text-4xl">{copy.title}</h1>
+        <p className="mt-3 max-w-2xl text-base leading-relaxed text-ink-500">{copy.subtitle}</p>
+      </>}
 
-      <div className="mt-7 rounded-2xl border border-brand-100 bg-white p-4 sm:p-5">
+      <div className={`${embedded ? '' : 'mt-7 '}rounded-2xl border border-brand-100 bg-white p-4 sm:p-5`}>
         <div className="flex items-start gap-3"><ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-brand-700" aria-hidden="true" /><div className="text-xs leading-relaxed text-ink-600"><p>{copy.privacy}</p><p className="mt-1">{copy.privacyRegion}</p></div></div>
         {stats && <p className="mt-3 text-xs font-medium text-brand-800">{stats.publishedThrough ? `${copy.publishedThrough} ${new Intl.DateTimeFormat(lang, { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' }).format(new Date(`${stats.publishedThrough}T00:00:00Z`))}` : copy.pending}</p>}
       </div>
@@ -246,7 +253,7 @@ export default function ParticipationMap({ onBack }: ParticipationMapProps) {
           <a href="https://www.naturalearthdata.com/about/terms-of-use/" target="_blank" rel="noreferrer" className="mt-5 inline-block text-xs text-ink-500 underline decoration-ink-200 underline-offset-4">{copy.attribution}</a>
         </div>
       </div>
-    </main>
+    </Content>
     {canFilter && <dialog ref={dialogRef} aria-labelledby="map-filter-title" className="fixed inset-x-0 bottom-0 top-auto m-0 max-h-[90dvh] w-full max-w-none overflow-y-auto rounded-t-3xl bg-white p-5 shadow-2xl backdrop:bg-ink-900/50 sm:inset-0 sm:m-auto sm:max-w-md sm:rounded-3xl" onClick={event => { if (event.target === event.currentTarget) dialogRef.current?.close(); }}>
       <div className="mb-6 flex items-center justify-between"><h2 id="map-filter-title" className="text-xl font-semibold text-ink-900">{copy.filters}</h2><button type="button" className={BUTTON} onClick={() => dialogRef.current?.close()} aria-label={copy.close}><X className="h-5 w-5" aria-hidden="true" /></button></div>
       <MapFilters value={draft} onChange={setDraft} onApply={applyFilters} onReset={resetFilters} copy={copy} prefix="mobile-map" />

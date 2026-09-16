@@ -338,9 +338,15 @@ assert.deepEqual(
 );
 assert.deepEqual(
   getDashboardNavItems(true, 'en').map(({ id }) => id),
-  ['specialists', 'students', 'algorithm', 'configuration'],
-  'Catalog configuration must be appended only for accounts with edit permission',
+  ['specialists', 'students', 'algorithm', 'map', 'configuration'],
+  'The participation map and catalog configuration belong only to accounts with edit permission',
 );
+assert.equal(readOnlyDashboardItems.some(({ id }) => id === 'map'), false, 'Read-only researchers must not receive the administration map destination');
+for (const [language, label] of [['en', 'Participation map'], ['fr', 'Carte de participation'], ['ro', 'Harta participării']] as const) {
+  const mapItem = getDashboardNavItems(true, language).find(({ id }) => id === 'map');
+  assert.equal(mapItem?.label, label, 'The administration map needs a localized sidebar label');
+  assert.equal(mapItem?.section, 'administration', 'The map must be grouped with administrative tools');
+}
 assert.deepEqual(
   readOnlyDashboardItems.map(({ label }) => label),
   ['Specialists', 'Students & explorers', 'How the algorithm works'],
@@ -376,7 +382,7 @@ assert.equal(
 for (const cohortView of ['specialists', 'students'] as const) {
   assert.equal(isCohortView(cohortView), true, `${cohortView} must be recognized as a cohort view`);
 }
-for (const staticView of ['algorithm', 'configuration'] as const) {
+for (const staticView of ['algorithm', 'map', 'configuration'] as const) {
   assert.equal(
     isCohortView(staticView),
     false,
@@ -403,6 +409,12 @@ assert.deepEqual(firstDashboardBack.remainingHistory, ['specialists']);
 const secondDashboardBack = popDashboardViewHistory(firstDashboardBack.remainingHistory);
 assert.equal(secondDashboardBack.previousView, 'specialists');
 assert.deepEqual(secondDashboardBack.remainingHistory, []);
+const mapDashboardHistory = pushDashboardViewHistory(dashboardViewHistory, 'algorithm', 'map');
+const configurationDashboardHistory = pushDashboardViewHistory(mapDashboardHistory, 'map', 'configuration');
+const mapDashboardBack = popDashboardViewHistory(configurationDashboardHistory);
+assert.equal(mapDashboardBack.previousView, 'map', 'Returning from configuration must restore the preceding embedded map tab');
+assert.deepEqual(mapDashboardBack.remainingHistory, ['specialists', 'students', 'algorithm']);
+assert.equal(popDashboardViewHistory(mapDashboardBack.remainingHistory).previousView, 'algorithm', 'The map participates in the same dashboard back history as the cohorts and algorithm');
 assert.deepEqual(
   popDashboardViewHistory([]),
   { previousView: null, remainingHistory: [] },
@@ -468,9 +480,26 @@ const editorSidebar = DashboardSidebar({
 });
 const editorNavButtons = elementPropsByType(editorSidebar, 'button')
   .filter((button) => button['data-dashboard-view'] !== undefined);
-assert.equal(editorNavButtons.length, 4, 'An editor must receive the additional configuration destination');
-assert.equal(editorNavButtons[3]['data-dashboard-view'], 'configuration');
-assert.equal(editorNavButtons[3]['aria-current'], 'page');
+assert.equal(editorNavButtons.length, 5, 'An editor must receive the additional map and configuration destinations');
+assert.equal(editorNavButtons[3]['data-dashboard-view'], 'map');
+assert.equal(editorNavButtons[3]['aria-current'], undefined);
+assert.equal(editorNavButtons[4]['data-dashboard-view'], 'configuration');
+assert.equal(editorNavButtons[4]['aria-current'], 'page');
+const activeMapSidebar = DashboardSidebar({
+  activeView: 'map',
+  canEdit: true,
+  lang: 'fr',
+  displayName: 'Professor',
+  portalRole: 'professor',
+  onSelectView: () => undefined,
+  onBack: () => undefined,
+  onSignOut: () => undefined,
+});
+assert.deepEqual(
+  elementPropsByType(activeMapSidebar, 'button').filter((button) => button['aria-current'] === 'page').map((button) => button['data-dashboard-view']),
+  ['map'],
+  'The embedded map destination must be the only active sidebar page when selected',
+);
 
 let sidebarCloseCount = 0;
 const mobileDashboardSidebar = DashboardSidebar({
@@ -1076,11 +1105,11 @@ assert.notEqual(
   'Changing dashboard screens must create a new scroll-reset key',
 );
 assert.equal(
-  new Set((['specialists', 'students', 'algorithm', 'configuration'] as const).map((view) => (
+  new Set((['specialists', 'students', 'algorithm', 'map', 'configuration'] as const).map((view) => (
     getDashboardNavigationScrollKey('authorized', view)
   ))).size,
-  4,
-  'Every sidebar destination, including the algorithm guide, must receive a distinct scroll-reset key',
+  5,
+  'Every sidebar destination, including the embedded map and algorithm guide, must receive a distinct scroll-reset key',
 );
 assert.notEqual(
   getSpecialistPromptNavigationScrollKey(false),

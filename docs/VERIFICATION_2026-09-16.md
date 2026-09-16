@@ -31,6 +31,14 @@
 - Tests navigateur réussis : public sans filtres en trois langues, administrateurs sur mobile/bureau, refus des chercheurs/comptes désactivés/profils invalides, déconnexion avec panneau ouvert, révocation après erreur `42501` et réponse d'autorisation tardive après déconnexion. Appels Auth/recherche intégralement simulés.
 - Tests carte, dashboard, mobile, contenu multilingue, lint, typage, builds web/mobile, synchronisation Capacitor et validation Word réussis. Contrôle local PostgreSQL/WASM : les quinze migrations et 82 assertions carte passent ; Auth/Cron/pgTAP y sont simulés et la CI Supabase demeure le contrôle intégré.
 
+## Carte intégrée au portail administrateur
+
+- Nouvelle entrée **Administration → Carte de participation**, traduite en anglais, français et roumain, réservée aux comptes d'administration. La sidebar, le retour à l'onglet précédent et la déconnexion restent ceux du portail.
+- Carte partagée chargée à la demande : aucun second en-tête, titre principal ou élément `main`. Tous les filtres existants restent disponibles ; Actualiser conserve les six paramètres appliqués et ne soumet pas un brouillon de filtre.
+- Vérifications navigateur : médecin à 375 px, professeur à 1440 px, largeur intermédiaire 1024 px, sélection et réinitialisation des six filtres, dates invalides, Actualiser, historique des onglets, déconnexion et absence de l'onglet pour un chercheur. Aucune lecture de réponses individuelles pendant les interactions avec la carte ; tous les appels Auth et tables du test sont simulés.
+- Correction ciblée du conteneur du tableau : son positionnement relatif empêche un libellé accessible hors écran d'élargir le viewport mobile et de rendre le bas de la sidebar inaccessible.
+- Aucune nouvelle migration ; la protection Supabase existante est conservée et les tests distants non mutateurs de la carte passent.
+
 ## Limites et points à conserver visibles
 
 Les compteurs publics ne sont ni instantanés ni exacts, et ne représentent pas des personnes uniques vérifiées. Une carte vide au lancement est normale : aucune localisation historique n'est inventée et aucun petit groupe n'est divulgué.
