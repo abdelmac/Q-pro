@@ -773,6 +773,7 @@ def validate_source(markdown: str) -> None:
         "20260906090000_limit_student_study_year_to_six.sql",
         "20260910090000_optional_specialist_questionnaire.sql",
         "20260911090000_participant_medicine_reflection.sql",
+        "20260916114539_optional_participant_medicine_reflection.sql",
     )
     for migration_name in required_migrations:
         if migration_name not in markdown:

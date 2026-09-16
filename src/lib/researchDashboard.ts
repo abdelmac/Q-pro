@@ -318,16 +318,21 @@ export function assessSpecialistEligibility(row: SpecialistResponseRow): Eligibi
 }
 
 export function assessStudentEligibility(row: StudentResponseRow): EligibilityAssessment {
-  // Student responses have two intentionally supported protocols. Schema 2 is
-  // the historical student-only questionnaire. Schema 3 adds the optional
-  // participant reflection and distinguishes students from people who are
-  // exploring medicine. Both contain the same q81-v1 quantitative payload, so
-  // a valid historical row remains analytically usable.
+  // Participant responses have three intentionally supported protocols.
+  // Schema 2 is the historical student-only questionnaire, schema 3 introduced
+  // a required reflection, and schema 4 makes that reflection optional. All
+  // three contain the same q81-v1 quantitative payload, so collection-protocol
+  // changes must not invalidate otherwise usable historical measurements.
   const reasons: EligibilityReason[] = assessSharedVersions(row).filter((reason) => (
     reason !== 'schema_version' && reason !== 'consent_version'
   ));
   if (row.submission_schema_version === DATA_VERSIONS.submissionSchema) {
     if (row.consent_version !== DATA_VERSIONS.consent) reasons.push('consent_version');
+  } else if (row.submission_schema_version === DATA_VERSIONS.requiredReflectionSubmissionSchema) {
+    if (row.consent_version !== DATA_VERSIONS.requiredReflectionConsent) reasons.push('consent_version');
+    if (row.participant_reflection_version !== DATA_VERSIONS.requiredParticipantReflection) {
+      reasons.push('analysis_version');
+    }
   } else if (row.submission_schema_version === DATA_VERSIONS.studentSubmissionSchema) {
     if (row.consent_version !== DATA_VERSIONS.studentConsent) reasons.push('consent_version');
     if (row.participant_reflection_version !== DATA_VERSIONS.participantReflection) {

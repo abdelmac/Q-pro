@@ -35,8 +35,11 @@ export default function ParticipantReflectionForm({
 }: ParticipantReflectionFormProps) {
   const isStudent = participantRole === 'student';
   const normalizedMedicineViewLength = draft.medicineView.trim().length;
-  const canSave = normalizedMedicineViewLength >= PARTICIPANT_MEDICINE_VIEW_MIN_LENGTH
-    && normalizedMedicineViewLength <= PARTICIPANT_MEDICINE_VIEW_MAX_LENGTH;
+  const hasMedicineView = normalizedMedicineViewLength > 0;
+  const canSave = !hasMedicineView || (
+    normalizedMedicineViewLength >= PARTICIPANT_MEDICINE_VIEW_MIN_LENGTH
+    && normalizedMedicineViewLength <= PARTICIPANT_MEDICINE_VIEW_MAX_LENGTH
+  );
   const medicineViewHelpId = 'medicine-view-help';
   const Icon = isStudent ? GraduationCap : Compass;
 
@@ -59,20 +62,19 @@ export default function ParticipantReflectionForm({
       <form onSubmit={onSubmit}>
         <div>
           <label htmlFor="medicine-view" className="mb-2 block text-sm font-semibold text-ink-700">
-            {copy.participantMedicineView} <span className="text-red-500" aria-hidden="true">*</span>
+            {copy.participantMedicineView}{' '}
+            <span className="font-normal text-ink-400">({copy.participantMedicineViewOptional})</span>
           </label>
           <textarea
             id="medicine-view"
             name="medicine_view"
             rows={6}
-            required
-            minLength={PARTICIPANT_MEDICINE_VIEW_MIN_LENGTH}
             maxLength={PARTICIPANT_MEDICINE_VIEW_MAX_LENGTH}
             value={draft.medicineView}
             onChange={(event) => updateDraft({ medicineView: event.target.value })}
             placeholder={copy.participantMedicineViewPlaceholder}
             aria-describedby={medicineViewHelpId}
-            aria-invalid={Boolean(error)}
+            aria-invalid={Boolean(error) || !canSave}
             disabled={submitting}
             className="w-full resize-y rounded-xl border border-ink-200 bg-white px-4 py-3 text-sm text-ink-900 placeholder:text-ink-400 transition-all focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100 disabled:cursor-not-allowed disabled:opacity-60"
           />

@@ -374,6 +374,27 @@ export type Database = {
         }
         Returns: string
       }
+      submit_student_response_v5: {
+        Args: {
+          p_client_scores: Json
+          p_consent_version: string
+          p_language: string
+          p_medicine_view: string
+          p_participant_reflection_version: string
+          p_participant_role: string
+          p_preferred_specialty: string
+          p_questionnaire_version: string
+          p_ratings: Json
+          p_scoring_version: string
+          p_selected_values: Json
+          p_specialty_catalog_version: string
+          p_specialty_config_version_id: string
+          p_study_year: number
+          p_submission_id: string
+          p_value_catalog_version: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never

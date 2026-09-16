@@ -88,6 +88,7 @@ export function formatSupabaseError(
     || message.includes('submit_specialist_response_v2')
     || message.includes('submit_student_response_v3')
     || message.includes('submit_student_response_v4')
+    || message.includes('submit_student_response_v5')
     || message.includes('submit_specialist_response_v3')
     || message.includes('submit_specialist_response_v4')
   ) {
@@ -140,7 +141,7 @@ export interface SpecialistResponse {
 export interface StudentResponse {
   submission_id: string;
   participant_role: 'student' | 'curious';
-  medicine_view: string;
+  medicine_view?: string | null;
   study_year?: number | null;
   preferred_specialty: string | null;
   ratings: Record<string, number>;
@@ -293,12 +294,12 @@ function validateStudentResponse(data: StudentResponse): string | null {
       fr: 'Le type de participant est invalide.',
     });
   }
-  const medicineViewLength = data.medicine_view.trim().length;
-  if (medicineViewLength < 3 || medicineViewLength > 2000) {
+  const medicineViewLength = data.medicine_view?.trim().length ?? 0;
+  if (medicineViewLength !== 0 && (medicineViewLength < 3 || medicineViewLength > 2000)) {
     return localized(data.language, {
-      en: 'Your answer about medicine must contain between 3 and 2,000 characters.',
-      ro: 'Răspunsul despre medicină trebuie să conțină între 3 și 2.000 de caractere.',
-      fr: 'Votre réponse sur la médecine doit contenir entre 3 et 2 000 caractères.',
+      en: 'If provided, your answer about medicine must contain between 3 and 2,000 characters.',
+      ro: 'Dacă este completat, răspunsul despre medicină trebuie să conțină între 3 și 2.000 de caractere.',
+      fr: 'Si elle est fournie, votre réponse sur la médecine doit contenir entre 3 et 2 000 caractères.',
     });
   }
   if (data.participant_role === 'curious' && data.study_year != null) {
@@ -399,10 +400,12 @@ export async function submitStudentResponse(data: StudentResponse): Promise<Subm
   const validationError = validateStudentResponse(data);
   if (validationError) return { success: false, error: validationError };
 
+  const normalizedMedicineView = data.medicine_view?.trim() || null;
+
   const rpcArguments = {
     p_submission_id: data.submission_id,
     p_participant_role: data.participant_role,
-    p_medicine_view: data.medicine_view.trim(),
+    p_medicine_view: normalizedMedicineView,
     p_study_year: data.study_year ?? null,
     p_preferred_specialty: data.preferred_specialty,
     p_ratings: data.ratings as Json,
@@ -417,8 +420,8 @@ export async function submitStudentResponse(data: StudentResponse): Promise<Subm
     p_participant_reflection_version: DATA_VERSIONS.participantReflection,
   };
   const { data: responseId, error } = await supabase.rpc(
-    'submit_student_response_v4',
-    asPostgresRoutineArgs<Database['public']['Functions']['submit_student_response_v4']['Args']>({
+    'submit_student_response_v5',
+    asPostgresRoutineArgs<Database['public']['Functions']['submit_student_response_v5']['Args']>({
       ...rpcArguments,
       p_specialty_config_version_id: data.specialty_config_version_id,
     }),

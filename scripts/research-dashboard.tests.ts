@@ -258,9 +258,11 @@ const studentReflectionForm = ParticipantReflectionForm({
 const participantTextareas = elementPropsByType(studentReflectionForm, 'textarea');
 assert.equal(participantTextareas.length, 1, 'The participant consent page must render one medicine-reflection textbox');
 assert.equal(participantTextareas[0].name, 'medicine_view');
-assert.equal(participantTextareas[0].required, true);
-assert.equal(participantTextareas[0].minLength, PARTICIPANT_MEDICINE_VIEW_MIN_LENGTH);
+assert.equal(participantTextareas[0].required, undefined, 'The medicine reflection must be optional');
+assert.equal(participantTextareas[0].minLength, undefined, 'Whitespace-only input must be treated like an omitted optional answer');
 assert.equal(participantTextareas[0].maxLength, PARTICIPANT_MEDICINE_VIEW_MAX_LENGTH);
+assert.match(resolvedElementTextContent(studentReflectionForm), /What do you think about medicine\?\s+\(\s*Optional\s*\)/);
+assert.match(resolvedElementTextContent(studentReflectionForm), /Optional\. If you answer, use 3 to 2,000 characters\./);
 (participantTextareas[0].onChange as (event: { target: { value: string } }) => void)({ target: { value: 'Updated view' } });
 assert.equal(updatedParticipantDraft?.medicineView, 'Updated view');
 const studentStudyYearSelects = elementPropsByType(studentReflectionForm, 'select');
@@ -304,8 +306,23 @@ const blankReflectionForm = ParticipantReflectionForm({
 });
 assert.equal(
   elementPropsByType(blankReflectionForm, 'button').find((button) => button.type === 'submit')?.disabled,
+  false,
+  'Whitespace-only qualitative text must be accepted as an omitted optional answer',
+);
+const shortReflectionForm = ParticipantReflectionForm({
+  participantRole: 'student',
+  draft: { ...participantDraft, medicineView: 'No' },
+  onDraftChange: () => undefined,
+  submitting: false,
+  error: null,
+  copy: TRANSLATIONS.en,
+  onSubmit: () => undefined,
+  onSkip: () => undefined,
+});
+assert.equal(
+  elementPropsByType(shortReflectionForm, 'button').find((button) => button.type === 'submit')?.disabled,
   true,
-  'Whitespace-only qualitative text must not enable research saving',
+  `A provided reflection shorter than ${PARTICIPANT_MEDICINE_VIEW_MIN_LENGTH} characters must remain invalid`,
 );
 
 const readOnlyDashboardItems = getDashboardNavItems(false, 'en');
@@ -1246,6 +1263,20 @@ const curiousParticipant: StudentResponseRow = {
   consent_version: DATA_VERSIONS.studentConsent,
 };
 
+const requiredReflectionParticipant: StudentResponseRow = {
+  ...curiousParticipant,
+  id: '00000000-0000-4000-8000-000000000004',
+  submission_schema_version: DATA_VERSIONS.requiredReflectionSubmissionSchema,
+  consent_version: DATA_VERSIONS.requiredReflectionConsent,
+  participant_reflection_version: DATA_VERSIONS.requiredParticipantReflection,
+};
+
+const participantWithoutReflection: StudentResponseRow = {
+  ...curiousParticipant,
+  id: '00000000-0000-4000-8000-000000000005',
+  medicine_view: null,
+};
+
 const validAnalysis = analyzeSpecialistResponse(specialist);
 assert.equal(validAnalysis.eligible, true);
 assert.equal(validAnalysis.ranking.length, SPECIALTIES.length);
@@ -1254,7 +1285,17 @@ assert.equal(analyzeStudentResponse(student).eligible, true);
 assert.equal(
   analyzeStudentResponse(curiousParticipant).eligible,
   true,
-  'The current reflection protocol must keep a valid curious participant quantitatively analyzable',
+  'The current optional-reflection protocol must keep a valid curious participant quantitatively analyzable',
+);
+assert.equal(
+  analyzeStudentResponse(participantWithoutReflection).eligible,
+  true,
+  'Omitting the optional medicine reflection must not exclude a current participant from quantitative analysis',
+);
+assert.equal(
+  analyzeStudentResponse(requiredReflectionParticipant).eligible,
+  true,
+  'A valid schema-3 required-reflection row must remain quantitatively analyzable after the optional protocol launches',
 );
 assert.deepEqual(
   analyzeStudentResponse(curiousParticipant).ranking,
@@ -1262,9 +1303,14 @@ assert.deepEqual(
   'The medicine reflection must never alter traits, scores, or specialty ranks',
 );
 assert.deepEqual(
+  analyzeStudentResponse(curiousParticipant).ranking,
+  analyzeStudentResponse(participantWithoutReflection).ranking,
+  'Omitting the optional medicine reflection must never alter traits, scores, or specialty ranks',
+);
+assert.deepEqual(
   analyzeStudentResponse({ ...curiousParticipant, participant_reflection_version: null }).exclusionReasons,
   ['analysis_version'],
-  'Schema-3 rows without the declared reflection protocol must be flagged without invalidating schema-2 student history',
+  'Schema-4 rows without the declared optional-prompt protocol must be flagged without invalidating historical participant data',
 );
 assert.match(DASHBOARD_MODEL_CHECKSUM, /^fnv1a64-[0-9a-f]{16}$/);
 assert.equal(validAnalysis.modelChecksum, DASHBOARD_MODEL_CHECKSUM);
@@ -1538,7 +1584,25 @@ for (const csv of [studentAnalyticCsv([curiousParticipant]), studentLongCsv([cur
   assert.ok(parsed.slice(1).every((row) => row[roleIndex] === 'curious'));
   assert.ok(parsed.slice(1).every((row) => row[reflectionIndex] === curiousParticipant.medicine_view));
 }
-for (const response of [student, curiousParticipant]) {
+for (const csv of [
+  studentRawCsv([participantWithoutReflection]),
+  studentAnalyticCsv([participantWithoutReflection]),
+  studentLongCsv([participantWithoutReflection]),
+]) {
+  const parsed = parseCsv(csv);
+  const reflectionIndex = parsed[0].indexOf('medicine_view');
+  assert.ok(reflectionIndex >= 0, 'Every participant CSV shape must retain the optional reflection column');
+  assert.ok(
+    parsed.slice(1).every((row) => row[reflectionIndex] === ''),
+    'An omitted optional medicine reflection must export as an empty CSV cell',
+  );
+}
+for (const response of [
+  student,
+  requiredReflectionParticipant,
+  curiousParticipant,
+  participantWithoutReflection,
+]) {
   const parsed = parseCsv(studentAnalyticCsv([response]));
   assert.equal(
     parsed[1][parsed[0].indexOf('analysis_eligible')],

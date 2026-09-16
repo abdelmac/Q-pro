@@ -4,7 +4,7 @@ Q Project utilise Supabase pour collecter des réponses de recherche anonymes et
 
 ## Architecture déployée
 
-- `public.student_responses` et `public.specialist_responses` conservent les observations anonymes. Le navigateur n’a aucun droit d’écriture directe ; les soumissions passent par `submit_*_response_v1` ou `submit_*_response_v2`.
+- `public.student_responses` et `public.specialist_responses` conservent les observations anonymes. Le navigateur n’a aucun droit d’écriture directe ; les soumissions passent par les RPC versionnées `submit_*_response_v1` à `v5`. Le parcours participant courant utilise `submit_student_response_v5` et le spécialiste `submit_specialist_response_v4`.
 - `private.researchers` est l’allowlist liée à `auth.users`. Son champ `portal_role` accepte `researcher`, `doctor` ou `professor`.
 - `private.trait_catalog` documente la provenance de mesure de chaque trait.
 - `private.specialty_catalog_versions` contient les snapshots `draft`, `active` et `archived`.
@@ -63,7 +63,7 @@ where user_id = (
 5. `list_specialty_catalog_versions(...)` expose l’historique administratif autorisé.
 6. `restore_specialty_catalog_version(...)` republie un snapshot historique sous un nouvel UUID et une nouvelle révision.
 
-Le frontend charge le catalogue avant de démarrer le questionnaire, le valide puis utilise ce snapshot pour le scoring. Les soumissions v2 enregistrent `specialty_config_version_id` et `specialty_config_revision`. Les lignes legacy, dont la configuration exacte est inconnue, conservent ces champs à `NULL`.
+Le frontend charge le catalogue avant de démarrer le questionnaire, le valide puis utilise ce snapshot pour le scoring. Les soumissions v2 à v5 enregistrent `specialty_config_version_id` et `specialty_config_revision`. Le protocole participant courant écrit le schéma 4 : son rôle est obligatoire, sa réponse libre sur la médecine est facultative et une absence est stockée comme `NULL`. Les lignes legacy, dont la configuration exacte est inconnue, conservent les champs de provenance à `NULL`.
 
 Les `client_scores` étudiants restent un résultat calculé dans le navigateur et non une vérité vérifiée. Toute analyse scientifique doit repartir de `ratings`, `selected_values`, des versions enregistrées et du snapshot de configuration concerné.
 
@@ -89,7 +89,7 @@ npm.cmd run lint
 npm.cmd run build
 ```
 
-Le test pgTAP couvre les privilèges, les RPC, les rôles Doctor/Professor, le verrou optimiste, l’immutabilité des snapshots publiés, les soumissions v1/v2 et la provenance. `test:dashboard` vérifie notamment l’éligibilité scientifique, les ex æquo, les dénominateurs, la couverture structurelle, les exports CSV et le checksum du modèle.
+Le test pgTAP couvre les privilèges, les RPC, les rôles Doctor/Professor, le verrou optimiste, l’immutabilité des snapshots publiés, les soumissions v1 à v5, le champ participant facultatif, l’idempotence avec `NULL` et la provenance. `test:dashboard` vérifie notamment l’éligibilité scientifique, les ex æquo, les dénominateurs, la couverture structurelle, les exports CSV et le checksum du modèle.
 
 Après un changement de schéma, regénérer les types et relire le diff :
 
@@ -109,7 +109,7 @@ npx.cmd --yes supabase@2.115.0 db push --linked
 npx.cmd --yes supabase@2.115.0 db lint --linked
 ```
 
-La migration du portail est `supabase/migrations/20260831120000_specialist_admin_portal.sql`. Elle préserve les RPC v1 pour compatibilité, ajoute les RPC v2 avec provenance et ne donne aucun droit direct supplémentaire sur les réponses.
+La migration du portail est `supabase/migrations/20260831120000_specialist_admin_portal.sql`. Elle préserve les RPC v1 pour compatibilité et ajoute les RPC v2 avec provenance. Les migrations suivantes conservent ces contrats historiques ; `supabase/migrations/20260916114539_optional_participant_medicine_reflection.sql` ajoute la RPC participante v5 et le schéma 4 sans donner aucun droit direct supplémentaire sur les réponses.
 
 ## Points d’exploitation
 

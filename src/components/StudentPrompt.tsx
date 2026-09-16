@@ -53,8 +53,11 @@ export default function StudentPrompt({
     event.preventDefault();
     const normalizedMedicineView = draft.medicineView.trim();
     if (
-      normalizedMedicineView.length < PARTICIPANT_MEDICINE_VIEW_MIN_LENGTH
-      || normalizedMedicineView.length > PARTICIPANT_MEDICINE_VIEW_MAX_LENGTH
+      normalizedMedicineView.length > 0
+      && (
+        normalizedMedicineView.length < PARTICIPANT_MEDICINE_VIEW_MIN_LENGTH
+        || normalizedMedicineView.length > PARTICIPANT_MEDICINE_VIEW_MAX_LENGTH
+      )
     ) return;
 
     setSubmitting(true);
@@ -64,7 +67,7 @@ export default function StudentPrompt({
       const result = await submitStudentResponse({
         submission_id: draft.submissionId,
         participant_role: participantRole,
-        medicine_view: normalizedMedicineView,
+        medicine_view: normalizedMedicineView || null,
         study_year: participantRole === 'student' && draft.studyYear ? Number(draft.studyYear) : null,
         preferred_specialty: preferredSpecialty,
         ratings,
