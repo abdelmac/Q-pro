@@ -196,6 +196,9 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_portal_test_dataset: { Args: never; Returns: Json }
+      create_portal_test_dataset: { Args: never; Returns: Json }
+      delete_portal_test_dataset: { Args: { p_dataset_id: string }; Returns: boolean }
       get_participation_map_stats: {
         Args: {
           p_respondent_type?: string

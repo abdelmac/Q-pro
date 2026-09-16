@@ -776,6 +776,7 @@ def validate_source(markdown: str) -> None:
         "20260916114539_optional_participant_medicine_reflection.sql",
         "20260916122348_geographic_participation_map.sql",
         "20260916155938_admin_only_participation_map_filters.sql",
+        "20260916171852_portal_test_dataset.sql",
     )
     for migration_name in required_migrations:
         if migration_name not in markdown:

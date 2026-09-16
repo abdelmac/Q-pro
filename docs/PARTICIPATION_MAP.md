@@ -37,6 +37,8 @@ Date filters accept full closed UTC months only. There are no arbitrary day wind
 
 The totals describe the published subset, not every recorded questionnaire. They must be presented as approximate, privacy-protected published counts. Geography omission, small cells, unfinished questionnaires, skipped specialist questionnaires and the current month contribute no public count. A newly launched map can therefore be empty even when the private research dashboard has responses.
 
+Administrator test examples also contribute no map count. Migration `20260916171852_portal_test_dataset.sql` adds only `private.portal_test_dataset`, a removable seed-and-catalog recipe for five synthetic specialists, five students and five explorers. The application generates these examples separately; their creation never inserts research responses or fabricates consent, and their deletion targets only the recipe UUID. The publication query has no dependency on this test table.
+
 ## Privacy release mechanism
 
 `private.publish_participation_map_month(date)` publishes one closed UTC month. It groups consented, complete, valid 81-answer questionnaires into disjoint cells of month, country, respondent type, language, questionnaire version and submission data version. Every cell must contain at least 10 responses. Accepted cell counts are rounded **down** to a multiple of 5; rejected counts are omitted completely. Neither hidden cells nor their raw totals are stored in the release tables.

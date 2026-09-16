@@ -14,6 +14,7 @@
     "mobile:ios": "cap open ios",
     "test:mobile": "node scripts/verify-mobile.mjs",
     "test:map": "node scripts/verify-participation-map.mjs",
+    "test:portal-data": "node scripts/verify-portal-test-data.mjs",
     "test:browser": "node scripts/verify-browser-ui.mjs",
     "test:dashboard": "node scripts/verify-research-dashboard.mjs",
     "test:specialty-content": "node scripts/generate-specialty-narrative-migration.mjs",

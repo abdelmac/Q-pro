@@ -66,6 +66,42 @@ const english = {
 
 export type MapStrings = { [Key in keyof typeof english]: string };
 
+export const TEST_MAP_TRANSLATIONS: Record<Language, Partial<MapStrings>> = {
+  en: {
+    total: 'Test participants',
+    privacy: 'TEST DATA — These 15 fictional profiles are separate from research. Counts are exact synthetic examples, including groups below 10, so you can test every filter. They are never published on the public map.',
+    privacyRegion: 'No real people, participant consent or research evidence are represented. Delete the test dataset from the dashboard whenever you finish testing.',
+    empty: 'No test participants match these filters.',
+    emptyDetail: 'Change or reset the filters to see the fictional dataset again.',
+    noCountryData: 'No test participants for this country in this view.',
+    selectCountry: 'Select a country to inspect its fictional test participants.',
+    countryList: 'Test countries', noPublished: 'No test data', more: 'More test participants',
+    mapLabel: 'Interactive world map of fictional test participants',
+  },
+  fr: {
+    total: 'Participants fictifs',
+    privacy: 'DONNÉES DE TEST — Ces 15 profils fictifs sont séparés de la recherche. Les effectifs sont des exemples synthétiques exacts, même pour les groupes de moins de 10, afin de tester tous les filtres. Ils ne sont jamais publiés sur la carte publique.',
+    privacyRegion: 'Aucune personne réelle, aucun consentement de participant ni aucune preuve scientifique ne sont représentés. Supprimez le jeu de test depuis le dashboard quand vous avez terminé.',
+    empty: 'Aucun participant fictif ne correspond à ces filtres.',
+    emptyDetail: 'Modifiez ou réinitialisez les filtres pour retrouver le jeu de test.',
+    noCountryData: 'Aucun participant fictif pour ce pays dans cette vue.',
+    selectCountry: 'Sélectionnez un pays pour consulter ses participants fictifs.',
+    countryList: 'Pays du jeu de test', noPublished: 'Aucune donnée de test', more: 'Plus de participants fictifs',
+    mapLabel: 'Carte mondiale interactive des participants fictifs',
+  },
+  ro: {
+    total: 'Participanți fictivi',
+    privacy: 'DATE DE TEST — Aceste 15 profiluri fictive sunt separate de cercetare. Numerele sunt exemple sintetice exacte, inclusiv pentru grupuri sub 10, pentru a testa toate filtrele. Nu sunt publicate niciodată pe harta publică.',
+    privacyRegion: 'Nu reprezintă persoane reale, consimțământ al participanților sau dovezi științifice. Șterge setul de test din dashboard când ai terminat.',
+    empty: 'Niciun participant fictiv nu corespunde acestor filtre.',
+    emptyDetail: 'Modifică sau resetează filtrele pentru a vedea din nou setul de test.',
+    noCountryData: 'Nu există participanți fictivi pentru această țară în această vizualizare.',
+    selectCountry: 'Selectează o țară pentru a vedea participanții săi fictivi.',
+    countryList: 'Țările setului de test', noPublished: 'Nu există date de test', more: 'Mai mulți participanți fictivi',
+    mapLabel: 'Hartă mondială interactivă a participanților fictivi',
+  },
+};
+
 export const MAP_TRANSLATIONS: Record<Language, MapStrings> = {
   en: english,
   fr: {

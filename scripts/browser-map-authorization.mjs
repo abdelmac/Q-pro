@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
 import { verifyBrowserDashboardMap } from './browser-dashboard-map.mjs';
+import { verifyBrowserPortalTestData } from './browser-portal-test-data.mjs';
 
 /** Synthetic sessions only: all Auth/profile/map calls are intercepted. */
-export async function verifyBrowserMapAuthorization({ context, fixtureDefinitions, mapFixture }) {
+export async function verifyBrowserMapAuthorization({ context, fixtureDefinitions, mapFixture, catalog }) {
   const { TRANSLATIONS, MAP_TRANSLATIONS } = fixtureDefinitions;
   const copy = MAP_TRANSLATIONS.en;
   const defaultArgs = { p_respondent_type: 'all', p_country_code: null, p_language: 'all', p_month_from: null, p_month_to: null, p_data_version: 'all' };
@@ -189,6 +190,7 @@ export async function verifyBrowserMapAuthorization({ context, fixtureDefinition
     await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
     await noFilters('A delayed pre-logout authorization cannot grant access after logout');
     await verifyBrowserDashboardMap({ context, page, fixtureDefinitions, defaultArgs, mapCalls, signIn, setProfile: value => { profile = value; } });
+    await verifyBrowserPortalTestData({ context, page, catalog, mapCalls, signIn, setProfile: value => { profile = value; } });
     assert.ok(profileCalls >= 8, 'Every authorization is verified by the server profile');
     assert.ok(mapCalls.some(args => args.p_respondent_type === 'specialist'));
     assert.deepEqual(errors, []);

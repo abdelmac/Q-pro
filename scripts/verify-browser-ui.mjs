@@ -67,6 +67,7 @@ try {
     requests.push({ rpc, args });
     if (rpc === 'get_participation_map_stats') return route.fulfill({ json: mapFixture(args) });
     if (rpc === 'get_active_specialty_catalog') return route.fulfill({ json: catalog });
+    if (rpc === 'get_portal_test_dataset') return route.fulfill({ json: null });
     if (rpc === 'current_user_portal_profile') return route.fulfill({ json: { authorized: false } });
     if (rpc.startsWith('submit_') && submissionMocks.handler) return submissionMocks.handler({ route, rpc, args });
     return route.fulfill({ status: 403, json: { message: 'Browser test blocks every non-fixture endpoint' } });
@@ -86,7 +87,7 @@ try {
   await page.goto('http://127.0.0.1:4179/', { waitUntil: 'networkidle' });
 
   if (process.argv.includes('--map-auth-only')) {
-    await verifyBrowserMapAuthorization({ context, fixtureDefinitions, mapFixture });
+    await verifyBrowserMapAuthorization({ context, fixtureDefinitions, mapFixture, catalog });
   } else {
   for (const language of LANGUAGES) {
     const copy = TRANSLATIONS[language.code];
@@ -193,7 +194,7 @@ try {
   }
   await desktop.close();
   await verifyBrowserResearchFlows({ page, context, catalog, fixtureDefinitions, submissionMocks, requests });
-  await verifyBrowserMapAuthorization({ context, fixtureDefinitions, mapFixture });
+  await verifyBrowserMapAuthorization({ context, fixtureDefinitions, mapFixture, catalog });
   assert.deepEqual(pageErrors, []);
   console.log('Browser checks passed: responsive three-language public map, administrator-only filters, optional geography, reload/resume, offline consent synchronization, payload-specific receipts and persistent opt-out. All research endpoints were mocked; no production submissions.');
   }

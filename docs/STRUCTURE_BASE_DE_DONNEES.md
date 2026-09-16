@@ -10,6 +10,8 @@
 
 **Extension géographique et mobile :** `supabase/migrations/20260916122348_geographic_participation_map.sql`. Les protocoles actifs sont désormais participant v6 / schéma 5 et spécialiste v5 / schéma 3. Les RPC antérieures décrites ci-dessous restent documentées pour la compatibilité historique.
 
+**Jeu de test isolé :** `supabase/migrations/20260916171852_portal_test_dataset.sql`. Une recette privée permet aux administrateurs de générer un aperçu de cinq spécialistes, cinq étudiants et cinq personnes qui explorent la médecine. Aucun de ces quinze exemples n'est une participation réelle.
+
 Ce document décrit la structure fonctionnelle et technique de la base Q Project après l’introduction du portail Specialist/Admin. Il ne contient aucun secret, aucune adresse de compte et aucun mot de passe.
 
 <!-- PAGEBREAK -->
@@ -39,6 +41,8 @@ Q Project utilise Supabase pour deux familles de données strictement séparées
 - les **réponses anonymes de recherche** des étudiants, des personnes qui explorent la médecine et des spécialistes ;
 - la **configuration versionnée du moteur de matching**, comprenant les descriptions, les résumés cliniques et les profils de traits des spécialités.
 
+Un espace technique supplémentaire, `private.portal_test_dataset`, conserve au maximum une recette synthétique de démonstration. Il contient une graine aléatoire, une version de générateur et la référence d'un catalogue publié ; il ne contient pas quinze réponses de recherche. L'application reconstitue les cinq exemples de chaque public à partir de cette recette, avec le moteur canonique. Ces exemples ne représentent ni des personnes réelles, ni des consentements, ni des observations de calibration.
+
 Le portail administratif ne modifie jamais les réponses de recherche. Il permet à des comptes autorisés de préparer un brouillon du catalogue, de documenter les changements et de publier une nouvelle version sans modifier le code TypeScript.
 
 Les principes structurants sont les suivants :
@@ -56,6 +60,8 @@ Les principes structurants sont les suivants :
 - l'entretien spécialiste des schémas 2 et 3 collecte toujours cinq réponses qualitatives ; les 81 items et les valeurs professionnelles sont facultatifs et leur complétion est enregistrée explicitement ;
 - le pays et la région sont facultatifs ; aucune adresse, position GPS ou adresse IP n'est collectée par le formulaire ;
 - la carte publique ne lit que des cellules mensuelles agrégées, figées, avec un seuil de dix réponses et un arrondi inférieur au multiple de cinq ;
+- seuls Doctor et Professor peuvent consulter, créer ou supprimer le jeu de test isolé ; sa suppression cible son UUID exact et ne touche aucune contribution réelle ;
+- une migration installe cette capacité de test sans créer automatiquement de recette ou de faux participant ;
 - les anciennes colonnes et les anciennes RPC restent présentes afin de conserver l'historique sans le mélanger au protocole courant ;
 - les indicateurs Top-k sont descriptifs et ne modifient jamais automatiquement les poids.
 
@@ -118,7 +124,7 @@ La migration `20260831120000_specialist_admin_portal.sql` ajoute la couche édit
 |---|---|---|
 | `auth` | Géré par Supabase | Comptes, sessions, identité et authentification. |
 | `public` | Exposé par l’API selon les privilèges | Tables de réponses anonymes et façades RPC explicitement accordées. |
-| `private` | Non exposé au navigateur | Allowlist, rôles, validateurs, catalogue éditable, versions et journal d’audit. |
+| `private` | Non exposé au navigateur | Allowlist, rôles, validateurs, catalogue éditable, versions, journal d’audit, agrégats et recette synthétique isolée. |
 
 Cette séparation limite la surface d’attaque. Les rôles `anon` et `authenticated` n’obtiennent aucun droit direct sur les tables privées. Les fonctions publiques `SECURITY DEFINER` constituent les seuls passages autorisés et réalisent leurs propres contrôles de rôle et de validité.
 
@@ -162,6 +168,18 @@ public.student_responses                 public.specialist_responses
 ```
 
 Les réponses ne référencent pas `auth.users`. Elles restent anonymes du point de vue du modèle applicatif. Seuls les membres du portail ont une relation avec un compte Auth.
+
+La recette synthétique possède ses propres relations, distinctes des réponses :
+
+```text
+private.portal_test_dataset (0 ou 1 ligne pour toute l'application)
+    id UUID PK ; seed ; generator_version
+    created_by ───────────────► auth.users(id), ON DELETE SET NULL
+    catalog_version_id ───────► private.specialty_catalog_versions(id)
+                               instantané publié, ON DELETE RESTRICT
+```
+
+Aucune clé de cette recette ne référence `student_responses`, `specialist_responses` ou les tables de publication de la carte. Le créateur est l'administrateur du test, pas un participant fictif doté d'un compte Auth.
 
 ## 5. Dictionnaire des tables
 
@@ -352,6 +370,24 @@ Les deux tables ont RLS activée et aucun accès direct pour `anon` ou `authenti
 
 Les déclencheurs rendent les publications immuables. Les filtres ne font que sommer ces mêmes cellules déjà publiées : un sous-groupe masqué ne peut pas être récupéré en soustrayant un total exact d'un total filtré. Les compteurs sont donc des réponses publiables approximatives, pas le total exact de la recherche ni un nombre de personnes uniques vérifiées. La publication est différée jusqu'après la clôture du mois UTC. Voir `docs/PARTICIPATION_MAP.md` pour la planification et la reprise opérationnelle.
 
+### 5.10 `private.portal_test_dataset`
+
+Cette table conserve la recette d'un aperçu synthétique de **15 exemples : 5 spécialistes, 5 étudiants et 5 explorateurs de la médecine**. Les quinze exemples sont générés par l'application ; il n'existe qu'une ligne de recette en base, ou aucune après suppression.
+
+| Colonne | Type | Rôle |
+|---|---|---|
+| `id` | `uuid` PK, généré côté serveur | Identité propre à ce jeu ; utilisée pour une suppression ciblée. |
+| `singleton` | `boolean`, non nullable, défaut `true`, unique | Une contrainte impose `true` : au maximum une recette existe pour tout le portail. |
+| `seed` | `integer`, strictement positif | Graine aléatoire côté serveur entre 1 et 2 147 483 647, permettant de reproduire les mêmes exemples. |
+| `generator_version` | `text`, non nullable | Version exacte du générateur synthétique : `portal-test-v1`. |
+| `created_at` | `timestamptz`, généré côté serveur | Date de création de la recette. |
+| `created_by` | `uuid`, nullable, FK vers `auth.users(id)` | Administrateur ayant créé le test ; devient `NULL` si son compte Auth est supprimé. |
+| `catalog_version_id` | `uuid`, FK vers `private.specialty_catalog_versions(id)` | Version publiée utilisée pour produire et calculer les exemples ; suppression du catalogue référencé interdite. |
+
+Le déclencheur `validate_portal_test_dataset_catalog` refuse un catalogue inexistant ou encore au statut `draft`. Une version publiée qui devient `archived` demeure la référence de la recette : une nouvelle publication ne modifie pas les exemples déjà générés. La lecture retourne le contenu de cet instantané, pas celui du catalogue actif au moment de la consultation.
+
+RLS est activée sans politique publique et aucun rôle client ne peut lire ou modifier directement la table. La création et la suppression passent par des RPC administratives. Un verrou transactionnel commun sérialise ces deux opérations ; la contrainte unique protège également l'invariant d'une seule recette en cas de concurrence. Aucun déclencheur n'insère de ligne dans les tables de recherche, de consentement ou d'agrégats.
+
 ## 6. Fonctions RPC et points d’entrée
 
 ### 6.1 Accès et identité du portail
@@ -484,6 +520,22 @@ Les comptes allowlistés disposant du droit de recherche peuvent :
 
 La recherche, la pagination et l'export passent par les politiques RLS existantes. Les cellules CSV commençant comme une formule de tableur sont préfixées afin de limiter l'injection de formules lors de l'ouverture dans Excel ou un logiciel équivalent.
 
+### 6.6 Jeu de test synthétique administratif
+
+Les trois façades suivantes sont exécutables par le rôle PostgreSQL `authenticated`. Leurs implémentations privées vérifient systématiquement `private.require_portal_role(ARRAY['doctor', 'professor'])`. Un compte authentifié ordinaire, un compte `researcher` ou un administrateur désactivé reçoit un refus `42501`. Le rôle déclaré dans des métadonnées modifiables par l'utilisateur ne donne aucun droit.
+
+| RPC | Entrée | Résultat et effet |
+|---|---|---|
+| `get_portal_test_dataset()` | Aucun paramètre | Retourne `NULL` si aucune recette n'existe ; sinon retourne la recette et son catalogue publié figé. Lecture seule. |
+| `create_portal_test_dataset()` | Aucun paramètre | Crée une recette aléatoire avec le catalogue actuellement publié, ou retourne exactement la recette existante en cas de rejeu. |
+| `delete_portal_test_dataset(p_dataset_id uuid)` | UUID exact de la recette affichée | Retourne `true` si cette recette a été supprimée ; `false` si l'UUID est absent, inconnu ou périmé. |
+
+Les réponses de lecture et de création ont cinq clés : `id`, `seed`, `created_at`, `generator_version` et `catalog`. `catalog` reprend la forme de `get_active_specialty_catalog()` — objet `version` et tableau de 58 `specialties` avec textes localisés et profils — mais désigne la version enregistrée dans la recette. L'identité Auth du créateur reste interne et n'est pas renvoyée.
+
+Un deuxième clic sur « créer » ne remplace pas le jeu courant et n'ajoute pas de participants. Pour obtenir un nouveau jeu, l'administrateur supprime explicitement l'ancien puis en crée un autre. Ce nouveau jeu reçoit un nouvel UUID et une nouvelle graine ; son catalogue est celui publié au moment de cette nouvelle création. Une demande de suppression tardive portant l'ancien UUID ne peut pas supprimer le nouveau jeu.
+
+La création de cette recette ne passe jamais par `submit_student_response_*` ou `submit_specialist_response_*`. Aucun consentement n'est fabriqué. La suppression exécute uniquement une suppression ciblée dans `private.portal_test_dataset` : elle ne supprime ni réponses, ni compte Auth, ni version du catalogue, ni cellule de carte.
+
 ## 7. Matrice des permissions
 
 | Opération | `anon` | Auth ordinaire | Researcher | Doctor | Professor |
@@ -492,6 +544,7 @@ La recherche, la pagination et l'export passent par les politiques RLS existante
 | Soumettre une réponse v1/v2/v3/v4/v5 | Oui | Oui | Oui | Oui | Oui |
 | Lire les réponses de recherche | Non | Non | Oui | Oui | Oui |
 | Lire/exporter les verbatims participants et spécialistes | Non | Non | Oui | Oui | Oui |
+| Consulter, créer ou supprimer le jeu synthétique isolé | Non | Non | Non | Oui | Oui |
 | Lire le brouillon | Non | Non | Non | Oui | Oui |
 | Modifier le brouillon | Non | Non | Non | Oui | Oui |
 | Consulter l’historique éditorial | Non | Non | Non | Oui | Oui |
@@ -736,6 +789,12 @@ La progression se conserve localement, avec un choix de reprise et des commandes
 
 Seul un clic explicite d'enregistrement crée une contribution à synchroniser. La file garde le payload et l'UUID exacts ; les erreurs réseau autorisent un renvoi, les refus de validation restent visibles sans renvoi automatique. La durée des tentatives est limitée à sept jours. Les copies expirées restent signalées et peuvent être effacées explicitement. Un message « en attente » est distinct d'un accusé de réception serveur. Effacer une copie locale ne supprime pas une réponse déjà reçue par Supabase. Voir `docs/MOBILE.md` pour la compilation et les limites de validation des plateformes.
 
+### 12.5 Conservation et suppression du jeu synthétique
+
+La recette reste disponible aux administrateurs jusqu'à sa suppression explicite. Sa graine, la version `portal-test-v1` et le catalogue publié figé permettent de retrouver les mêmes quinze exemples. La recette doit rester séparée des exports et des indicateurs de recherche ; elle ne doit pas être utilisée comme cohorte de calibration ou comme preuve de précision du moteur.
+
+Pour la retirer, appeler `delete_portal_test_dataset` avec l'UUID effectivement affiché. Cette opération retire seulement la recette courante ; elle ne constitue pas une restauration de base et ne nécessite aucune purge des réponses réelles. Un nouveau jeu peut ensuite être créé explicitement. La migration `20260916171852_portal_test_dataset.sql` ne crée aucun jeu par défaut et ne modifie pas les consentements existants.
+
 ## 13. Tests et déploiement
 
 ### 13.1 Tests de base à conserver
@@ -778,6 +837,8 @@ Seul un clic explicite d'enregistrement crée une contribution à synchroniser. 
 - la sélection d'une valeur manuelle ne peut plus diminuer le rang d'une spécialité manuelle ;
 - un sous-score sans trait disponible reste non mesuré plutôt que 0 %.
 
+Le fichier `supabase/tests/database/003_portal_test_dataset.sql` ajoute 50 assertions dédiées : refus des trois RPC pour les visiteurs, utilisateurs ordinaires, chercheurs et comptes désactivés ; lecture, création et suppression pour Doctor et Professor ; graine et version valides ; rejeu de création idempotent ; unicité imposée par PostgreSQL ; refus des catalogues non publiés ; conservation du catalogue figé après une publication ultérieure ; suppression précise et résistance à un ancien UUID. Des empreintes avant/après vérifient que l'ensemble du cycle de test ne change aucune réponse réelle, aucun consentement porté par ces réponses et aucune publication de carte. Les fixtures SQL de vérification sont entièrement annulées par `ROLLBACK`.
+
 ### 13.3 Vérifications applicatives
 
 ```powershell
@@ -802,9 +863,11 @@ Après déploiement :
 2. vérifier les privilèges et RLS ;
 3. tester chaque rôle avec un compte distinct ;
 4. tester la lecture publique du seul catalogue actif ;
-5. créer un brouillon de test, vérifier le conflit optimiste, puis l’annuler ou le publier selon le protocole ;
-6. effectuer deux soumissions participantes v5 synthétiques (`student` avec texte et `curious` sans texte) et deux soumissions spécialistes v4 synthétiques (profil complet et questionnaire passé), puis vérifier leur schéma, leur rôle, leur statut, leurs versions, leurs réponses qualitatives et leur provenance ;
-7. supprimer les données synthétiques avec une procédure administrative contrôlée.
+5. vérifier les conflits éditoriaux et les soumissions de recherche synthétiques dans une base de test ou dans les transactions pgTAP annulées ;
+6. si une démonstration dans le portail est souhaitée, appeler explicitement `create_portal_test_dataset()` avec un compte Doctor ou Professor et contrôler l'aperçu isolé de cinq exemples par public ;
+7. retirer cette démonstration avec `delete_portal_test_dataset(p_dataset_id)` en utilisant son UUID exact, sans effectuer de suppression dans les tables de réponses.
+
+L'application d'une migration ne provisionne pas les quinze exemples. Leur mise à disposition requiert l'appel administratif explicite de création ; les opérations de démonstration ne doivent jamais injecter de fausses réponses dans la recherche de production.
 
 ## 14. Exploitation et bonnes pratiques
 

@@ -2,9 +2,10 @@ import { useEffect, useMemo, useRef, useState, type FormEvent, type PointerEvent
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Globe2, Loader2, Minus, Plus, RotateCcw, ShieldCheck, SlidersHorizontal, X } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 import { countryOptions, getCountryName } from '@/data/geography';
-import { MAP_TRANSLATIONS, type MapStrings } from '@/data/mapI18n';
+import { MAP_TRANSLATIONS, TEST_MAP_TRANSLATIONS, type MapStrings } from '@/data/mapI18n';
 import world from '@/data/worldMapPaths.json';
 import { useMapFilterAccess } from '@/lib/useMapFilterAccess';
+import { buildTestParticipationMapStats, type PortalTestDataset } from '@/lib/portalTestData';
 import {
   areValidMapDates, DEFAULT_MAP_FILTERS, fetchParticipationMapStats, latestClosedMonth, MapFilterAccessError,
   type ParticipationMapFilters, type ParticipationMapStats,
@@ -16,7 +17,9 @@ interface ParticipationMapProps {
   onBack: () => void;
   embedded?: boolean;
   refreshKey?: number;
+  testDataset?: PortalTestDataset;
 }
+type MapDisplayStats = Pick<ParticipationMapStats, 'total' | 'countries' | 'students' | 'specialists' | 'nonMedical' | 'groups' | 'publishedThrough'>;
 interface View { x: number; y: number; scale: number }
 const INITIAL_VIEW: View = { x: 0, y: 0, scale: 1 };
 const BUTTON = 'inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl border border-ink-200 bg-white px-3 text-sm font-medium text-ink-700 transition hover:bg-brand-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 disabled:opacity-40';
@@ -69,17 +72,19 @@ function MapFilters({ value, onChange, onApply, onReset, copy, prefix }: {
   </form>;
 }
 
-export default function ParticipationMap({ onBack, embedded = false, refreshKey = 0 }: ParticipationMapProps) {
+export default function ParticipationMap({ onBack, embedded = false, refreshKey = 0, testDataset }: ParticipationMapProps) {
   const { lang } = useLanguage();
-  const copy = MAP_TRANSLATIONS[lang];
+  const isTestView = embedded && testDataset !== undefined;
+  const sourceId = isTestView ? testDataset.id : null;
+  const copy = isTestView ? { ...MAP_TRANSLATIONS[lang], ...TEST_MAP_TRANSLATIONS[lang] } : MAP_TRANSLATIONS[lang];
   const { accessKey, recheckAccess } = useMapFilterAccess();
   const canFilter = accessKey !== null;
   const [selection, setSelection] = useState<{ accessKey: string | null; filters: ParticipationMapFilters }>({ accessKey: null, filters: DEFAULT_MAP_FILTERS });
   const filters = canFilter && selection.accessKey === accessKey ? selection.filters : DEFAULT_MAP_FILTERS;
   const [draft, setDraft] = useState<ParticipationMapFilters>({ ...DEFAULT_MAP_FILTERS });
-  const [response, setResponse] = useState<{ accessKey: string | null; filters: ParticipationMapFilters; stats: ParticipationMapStats } | null>(null);
+  const [response, setResponse] = useState<{ accessKey: string | null; sourceId: string | null; filters: ParticipationMapFilters; stats: MapDisplayStats } | null>(null);
   // Never render data from a previous account, authorization check or filter set.
-  const stats = response?.accessKey === accessKey && response.filters === filters ? response.stats : null;
+  const stats = response?.accessKey === accessKey && response.sourceId === sourceId && response.filters === filters ? response.stats : null;
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
   const [retry, setRetry] = useState(0);
@@ -90,13 +95,21 @@ export default function ParticipationMap({ onBack, embedded = false, refreshKey 
   const detailsRef = useRef<HTMLElement>(null);
   const pointers = useRef(new Map<number, { x: number; y: number; originX: number; originY: number; code: string | null; moved: boolean }>());
   const numbers = useMemo(() => new Intl.NumberFormat(lang), [lang]);
-  const approximate = (value: number) => value === 0 ? '0' : `≈ ${numbers.format(value)}`;
+  const approximate = (value: number) => isTestView || value === 0 ? numbers.format(value) : `≈ ${numbers.format(value)}`;
 
   useEffect(() => {
     const controller = new AbortController();
     setLoading(true); setResponse(null); setError(false); setSelectedCode(null);
-    fetchParticipationMapStats(filters, controller.signal).then(result => {
-      if (!controller.signal.aborted) setResponse({ accessKey, filters, stats: result });
+    // Demo records are never combined with real aggregates or sent to the public API.
+    if (isTestView && !canFilter) {
+      setLoading(false);
+      return () => controller.abort();
+    }
+    const request: Promise<MapDisplayStats> = isTestView
+      ? Promise.resolve().then(() => buildTestParticipationMapStats(testDataset, filters))
+      : fetchParticipationMapStats(filters, controller.signal);
+    request.then(result => {
+      if (!controller.signal.aborted) setResponse({ accessKey, sourceId, filters, stats: result });
     }).catch(cause => {
       if (!controller.signal.aborted) {
         setError(true);
@@ -106,7 +119,7 @@ export default function ParticipationMap({ onBack, embedded = false, refreshKey 
       if (!controller.signal.aborted) setLoading(false);
     });
     return () => controller.abort();
-  }, [accessKey, filters, retry, refreshKey, recheckAccess]);
+  }, [accessKey, canFilter, filters, isTestView, sourceId, testDataset, retry, refreshKey, recheckAccess]);
 
   useEffect(() => {
     setDraft({ ...DEFAULT_MAP_FILTERS });
@@ -185,9 +198,9 @@ export default function ParticipationMap({ onBack, embedded = false, refreshKey 
         <p className="mt-3 max-w-2xl text-base leading-relaxed text-ink-500">{copy.subtitle}</p>
       </>}
 
-      <div className={`${embedded ? '' : 'mt-7 '}rounded-2xl border border-brand-100 bg-white p-4 sm:p-5`}>
+      <div data-test-map-notice={isTestView || undefined} className={`${embedded ? '' : 'mt-7 '}rounded-2xl border ${isTestView ? 'border-amber-300 bg-amber-50' : 'border-brand-100 bg-white'} p-4 sm:p-5`}>
         <div className="flex items-start gap-3"><ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-brand-700" aria-hidden="true" /><div className="text-xs leading-relaxed text-ink-600"><p>{copy.privacy}</p><p className="mt-1">{copy.privacyRegion}</p></div></div>
-        {stats && <p className="mt-3 text-xs font-medium text-brand-800">{stats.publishedThrough ? `${copy.publishedThrough} ${new Intl.DateTimeFormat(lang, { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' }).format(new Date(`${stats.publishedThrough}T00:00:00Z`))}` : copy.pending}</p>}
+        {!isTestView && stats && <p className="mt-3 text-xs font-medium text-brand-800">{stats.publishedThrough ? `${copy.publishedThrough} ${new Intl.DateTimeFormat(lang, { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' }).format(new Date(`${stats.publishedThrough}T00:00:00Z`))}` : copy.pending}</p>}
       </div>
 
       <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5" aria-busy={loading}>

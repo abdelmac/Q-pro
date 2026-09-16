@@ -39,6 +39,7 @@ jobs:
       - name: Validate participation map and offline research storage
         run: |
           npm run test:map
+          npm run test:portal-data
           npm run test:mobile
 
       - name: Install test browser

@@ -33,6 +33,9 @@ import SpecialtyConfigurationEditor from '@/components/SpecialtyConfigurationEdi
 import { useSpecialtyCatalog } from '@/lib/SpecialtyCatalogContext';
 import { STUDENT_STUDY_YEARS } from '@/lib/participantProfile';
 import { MAP_TRANSLATIONS } from '@/data/mapI18n';
+import PortalTestDataPanel, { PORTAL_TEST_COPY } from '@/components/PortalTestDataPanel';
+import { usePortalTestDataset } from '@/lib/usePortalTestDataset';
+import { filterTestSpecialists, filterTestStudents, hasCompleteTestInterview, markPortalTestCsv } from '@/lib/portalTestDashboard';
 import {
   ArrowLeft,
   BarChart3,
@@ -178,13 +181,14 @@ function applyDateFilters<T extends {
 
 export default function Dashboard({ onBack }: { onBack: () => void }) {
   const { lang } = useLanguage();
-  const { specialties, version: catalogVersion, refresh: refreshCatalog } = useSpecialtyCatalog();
+  const { specialties: liveSpecialties, version: liveCatalogVersion, refresh: refreshCatalog } = useSpecialtyCatalog();
   const french = lang === 'fr';
   const romanian = lang === 'ro';
   const locale = french ? 'fr-FR' : romanian ? 'ro-RO' : 'en-GB';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [accessState, setAccessState] = useState<AccessState>('checking');
+  const [authIdentity, setAuthIdentity] = useState<string | null>(null);
   const [portalProfile, setPortalProfile] = useState<PortalProfile | null>(null);
   const [students, setStudents] = useState<StudentListRow[]>([]);
   const [specialists, setSpecialists] = useState<SpecialistListRow[]>([]);
@@ -220,8 +224,51 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
   const exportRequest = useRef(0);
   const sidebarTriggerRef = useRef<HTMLButtonElement>(null);
   const mobileSidebarDialogRef = useRef<HTMLDivElement>(null);
+  const [loadedSource, setLoadedSource] = useState('');
+  const [detailSource, setDetailSource] = useState('');
+  const [analysisSource, setAnalysisSource] = useState('');
+  const dataAbort = useRef(new AbortController());
+  const identityRef = useRef<string | null>(null);
+  const administrativeIdentityRef = useRef<string | null>(null);
+  const onTestAccessLost = useCallback(() => {
+    loadRequest.current++;
+    detailRequest.current++;
+    analysisRequest.current++;
+    exportRequest.current++;
+    dataAbort.current.abort();
+    identityRef.current = null;
+    administrativeIdentityRef.current = null;
+    setAuthIdentity(null);
+    setPortalProfile(null);
+    setAccessState('signed_out');
+    void supabase?.auth.signOut({ scope: 'local' });
+  }, []);
+  const canManageTestData = accessState === 'authorized' && portalProfile?.can_edit === true
+    && (portalProfile.portal_role === 'doctor' || portalProfile.portal_role === 'professor');
+  const testManager = usePortalTestDataset(canManageTestData, onTestAccessLost, authIdentity);
+  const testMode = testManager.mode === 'test';
+  // Managing a recipe while in live mode must not retrigger research loaders.
+  const testDataset = testMode ? testManager.dataset : null;
+  const testBlocked = testMode && !testDataset;
+  const testCopy = PORTAL_TEST_COPY[lang];
+  const specialties = useMemo(() => testMode ? testDataset?.catalog.specialties ?? [] : liveSpecialties, [testMode, testDataset, liveSpecialties]);
+  const catalogVersion = testMode && testDataset ? testDataset.catalog.version : liveCatalogVersion;
+  const sourceKey = `${authIdentity ?? 'signed-out'}:${accessState}:${testMode ? `test:${testDataset?.id ?? 'unavailable'}:${testManager.revision}` : 'live'}`;
+  const activeSource = useRef(sourceKey);
+  activeSource.current = sourceKey;
+  const testFilters = useMemo(() => ({
+    specialty: specialtyFilter, questionnaire: questionnaireFilter, completeness: completenessFilter,
+    chooseAgain: chooseAgainFilter, language: languageFilter, dataVersion: dataVersionFilter,
+    participantRole: participantRoleFilter, year: yearFilter, preferredSpecialty: studentSpecialtyFilter, dateFrom, dateTo,
+  }), [specialtyFilter, questionnaireFilter, completenessFilter, chooseAgainFilter, languageFilter, dataVersionFilter, participantRoleFilter, yearFilter, studentSpecialtyFilter, dateFrom, dateTo]);
+  const filteredTestSpecialists = useMemo(() => filterTestSpecialists(testDataset?.specialists ?? [], testFilters), [testDataset, testFilters]);
+  const filteredTestStudents = useMemo(() => filterTestStudents(testDataset?.students ?? [], testFilters), [testDataset, testFilters]);
+  const visibleStudents = loadedSource === sourceKey ? students : [];
+  const visibleSpecialists = loadedSource === sourceKey ? specialists : [];
+  const visibleCounts = loadedSource === sourceKey ? counts : EMPTY_COUNTS;
+  const visibleTotal = loadedSource === sourceKey ? activeTotal : 0;
 
-  const resetPageAndAnalysis = () => {
+  const resetPageAndAnalysis = useCallback(() => {
     loadRequest.current += 1;
     detailRequest.current += 1;
     analysisRequest.current += 1;
@@ -233,10 +280,38 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
     setAnalysisLoading(false);
     setExporting(null);
     setDetailLoadingId(null);
-  };
+  }, []);
+
+  useEffect(() => {
+    dataAbort.current.abort();
+    dataAbort.current = new AbortController();
+    resetPageAndAnalysis();
+    setStudents([]);
+    setSpecialists([]);
+    setCounts(EMPTY_COUNTS);
+    setActiveTotal(0);
+    setLoadedSource('');
+    return () => { dataAbort.current.abort(); };
+  }, [sourceKey, resetPageAndAnalysis]);
 
   const loadData = useCallback(async () => {
     if (!isCohortView(view)) {
+      setLoading(false);
+      return;
+    }
+    if (testMode) {
+      loadRequest.current++;
+      setLoadedSource(sourceKey);
+      setStudents(filteredTestStudents.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE));
+      setSpecialists(filteredTestSpecialists.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE));
+      setActiveTotal(view === 'specialists' ? filteredTestSpecialists.length : filteredTestStudents.length);
+      setCounts(testDataset ? {
+        students: testDataset.students.filter(row => row.participant_role === 'student').length,
+        curious: testDataset.students.filter(row => row.participant_role === 'curious').length,
+        specialists: testDataset.specialists.length,
+        studentsWithYear: testDataset.students.filter(row => row.participant_role === 'student' && row.study_year !== null).length,
+        specialistsComplete: testDataset.specialists.filter(hasCompleteTestInterview).length,
+      } : EMPTY_COUNTS);
       setLoading(false);
       return;
     }
@@ -245,6 +320,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
       return;
     }
     const requestId = ++loadRequest.current;
+    setLoadedSource(sourceKey);
     setLoading(true);
     setError(null);
     if (view === 'specialists') setSpecialists([]);
@@ -253,9 +329,9 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
     const rangeEnd = rangeStart + PAGE_SIZE - 1;
 
     const globalCounts = Promise.all([
-      supabase.from('student_responses').select('id', { count: 'exact', head: true }).eq('participant_role', 'student'),
-      supabase.from('specialist_responses').select('id', { count: 'exact', head: true }),
-      supabase.from('student_responses').select('id', { count: 'exact', head: true }).eq('participant_role', 'student').not('study_year', 'is', null),
+      supabase.from('student_responses').select('id', { count: 'exact', head: true }).eq('participant_role', 'student').abortSignal(dataAbort.current.signal),
+      supabase.from('specialist_responses').select('id', { count: 'exact', head: true }).abortSignal(dataAbort.current.signal),
+      supabase.from('student_responses').select('id', { count: 'exact', head: true }).eq('participant_role', 'student').not('study_year', 'is', null).abortSignal(dataAbort.current.signal),
       supabase.from('specialist_responses').select('id', { count: 'exact', head: true })
         .in('submission_schema_version', [DATA_VERSIONS.submissionSchema, DATA_VERSIONS.specialistSubmissionSchema])
         .not('current_specialty_view', 'is', null)
@@ -263,8 +339,8 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
         .not('most_important_specialty_quality', 'is', null)
         .not('would_choose_again_code', 'is', null)
         .not('student_self_question', 'is', null)
-        .or('would_choose_again_code.eq.yes,and(would_choose_again_code.eq.no,would_not_choose_again_reason.not.is.null)'),
-      supabase.from('student_responses').select('id', { count: 'exact', head: true }).eq('participant_role', 'curious'),
+        .or('would_choose_again_code.eq.yes,and(would_choose_again_code.eq.no,would_not_choose_again_reason.not.is.null)').abortSignal(dataAbort.current.signal),
+      supabase.from('student_responses').select('id', { count: 'exact', head: true }).eq('participant_role', 'curious').abortSignal(dataAbort.current.signal),
     ]);
 
     try {
@@ -320,9 +396,9 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
         }
         query = applyDateFilters(query, dateFrom, dateTo);
 
-        const [rowResult, countResults] = await Promise.all([query, globalCounts]);
+        const [rowResult, countResults] = await Promise.all([query.abortSignal(dataAbort.current.signal), globalCounts]);
         const queryError = rowResult.error ?? countResults.find(({ error: countError }) => countError)?.error;
-        if (requestId !== loadRequest.current) return;
+        if (requestId !== loadRequest.current || activeSource.current !== sourceKey) return;
         if (queryError) {
           setError(formatSupabaseError(queryError, lang));
           return;
@@ -361,9 +437,9 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
         }
         query = applyDateFilters(query, dateFrom, dateTo);
 
-        const [rowResult, countResults] = await Promise.all([query, globalCounts]);
+        const [rowResult, countResults] = await Promise.all([query.abortSignal(dataAbort.current.signal), globalCounts]);
         const queryError = rowResult.error ?? countResults.find(({ error: countError }) => countError)?.error;
-        if (requestId !== loadRequest.current) return;
+        if (requestId !== loadRequest.current || activeSource.current !== sourceKey) return;
         if (queryError) {
           setError(formatSupabaseError(queryError, lang));
           return;
@@ -386,6 +462,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
       if (requestId === loadRequest.current) setLoading(false);
     }
   }, [
+    testMode, testDataset, sourceKey, filteredTestSpecialists, filteredTestStudents,
     page,
     view,
     specialtyFilter,
@@ -412,9 +489,14 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
 
     let active = true;
     let authTimer: number | undefined;
-    const verifySession = async (hasSession: boolean) => {
+    let verification = 0;
+    const verifySession = async (expectedIdentity: string | null) => {
+      const check = ++verification;
       if (!active) return;
-      if (!hasSession) {
+      if (!expectedIdentity) {
+        identityRef.current = null;
+        administrativeIdentityRef.current = null;
+        setAuthIdentity(null);
         loadRequest.current += 1;
         detailRequest.current += 1;
         analysisRequest.current += 1;
@@ -439,7 +521,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
       setAccessState('checking_access');
       const { data: profileData, error: accessError } = await client.rpc('current_user_portal_profile');
       const profile = parsePortalProfile(profileData);
-      if (!active) return;
+      if (!active || check !== verification || identityRef.current !== expectedIdentity) return;
       if (accessError || !profile) {
         setError(accessError
           ? formatSupabaseError(accessError, lang)
@@ -448,15 +530,41 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
         setAccessState('signed_out');
         return;
       }
+      const isAdministrator = profile.can_edit && (profile.portal_role === 'doctor' || profile.portal_role === 'professor');
+      if (administrativeIdentityRef.current === expectedIdentity && !isAdministrator) {
+        // A role downgrade must not silently convert a suspended test view to live research.
+        onTestAccessLost();
+        return;
+      }
+      administrativeIdentityRef.current = isAdministrator ? expectedIdentity : null;
       setPortalProfile(profile);
       setAccessState('authorized');
     };
 
-    void client.auth.getSession().then(({ data }) => verifySession(Boolean(data.session)));
+    void client.auth.getSession().then(({ data }) => {
+      if (!active || verification !== 0) return;
+      const identity = data.session?.user.id ?? null;
+      identityRef.current = identity;
+      setAuthIdentity(identity);
+      return verifySession(identity);
+    });
     const { data: authListener } = client.auth.onAuthStateChange((event, session) => {
       if (event !== 'SIGNED_OUT' && event !== 'SIGNED_IN' && event !== 'USER_UPDATED') return;
+      verification++;
+      const identity = event === 'SIGNED_OUT' ? null : session?.user.id ?? null;
+      if (identityRef.current !== identity) administrativeIdentityRef.current = null;
+      identityRef.current = identity;
+      setAuthIdentity(identity);
+      // Cancel the old identity's results synchronously, before React commits revalidation.
+      loadRequest.current++;
+      detailRequest.current++;
+      analysisRequest.current++;
+      exportRequest.current++;
+      dataAbort.current.abort();
+      setPortalProfile(null);
+      setAccessState(event === 'SIGNED_OUT' ? 'signed_out' : 'checking_access');
       if (authTimer !== undefined) window.clearTimeout(authTimer);
-      authTimer = window.setTimeout(() => void verifySession(Boolean(session)), 0);
+      authTimer = window.setTimeout(() => void verifySession(identity), 0);
     });
 
     return () => {
@@ -468,7 +576,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
       if (authTimer !== undefined) window.clearTimeout(authTimer);
       authListener.subscription.unsubscribe();
     };
-  }, [lang]);
+  }, [lang, onTestAccessLost]);
 
   useEffect(() => {
     if (accessState === 'authorized' && isCohortView(view)) void loadData();
@@ -542,16 +650,18 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
     };
   }, [accessState]);
 
-  const totalPages = Math.max(1, Math.ceil(activeTotal / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(visibleTotal / PAGE_SIZE));
   useEffect(() => {
     if (page >= totalPages) setPage(totalPages - 1);
   }, [page, totalPages]);
 
   const fetchAllSpecialists = useCallback(async (): Promise<SpecialistResponseRow[]> => {
+    if (testMode) return filteredTestSpecialists;
     if (!supabase) throw new Error(getSupabaseConfigurationError() ?? 'Supabase is not configured.');
     const allRows: SpecialistResponseRow[] = [];
     let cursor: { createdAt: string; id: string } | null = null;
     for (;;) {
+      if (activeSource.current !== sourceKey) throw new Error('Data source changed');
       let query = supabase
         .from('specialist_responses')
         .select('*')
@@ -605,7 +715,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
         }
       }
       query = applyDateFilters(query, dateFrom, dateTo);
-      const { data, error: queryError } = await query;
+      const { data, error: queryError } = await query.abortSignal(dataAbort.current.signal);
       if (queryError) throw queryError;
       const batch = data ?? [];
       allRows.push(...batch);
@@ -615,6 +725,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
     }
     return allRows;
   }, [
+    testMode, filteredTestSpecialists, sourceKey,
     specialtyFilter,
     questionnaireFilter,
     chooseAgainFilter,
@@ -626,10 +737,12 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
   ]);
 
   const fetchAllStudents = useCallback(async (): Promise<StudentResponseRow[]> => {
+    if (testMode) return filteredTestStudents;
     if (!supabase) throw new Error(getSupabaseConfigurationError() ?? 'Supabase is not configured.');
     const allRows: StudentResponseRow[] = [];
     let cursor: { createdAt: string; id: string } | null = null;
     for (;;) {
+      if (activeSource.current !== sourceKey) throw new Error('Data source changed');
       let query = supabase
         .from('student_responses')
         .select('*')
@@ -656,7 +769,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
         query = query.lt('submission_schema_version', DATA_VERSIONS.studentSubmissionSchema);
       }
       query = applyDateFilters(query, dateFrom, dateTo);
-      const { data, error: queryError } = await query;
+      const { data, error: queryError } = await query.abortSignal(dataAbort.current.signal);
       if (queryError) throw queryError;
       const batch = data ?? [];
       allRows.push(...batch);
@@ -665,23 +778,32 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
       cursor = { createdAt: last.created_at, id: last.id };
     }
     return allRows;
-  }, [participantRoleFilter, yearFilter, studentSpecialtyFilter, languageFilter, dataVersionFilter, dateFrom, dateTo]);
+  }, [testMode, filteredTestStudents, sourceKey, participantRoleFilter, yearFilter, studentSpecialtyFilter, languageFilter, dataVersionFilter, dateFrom, dateTo]);
 
   const openDetail = async (kind: CohortView, id: string) => {
+    if (testMode) {
+      detailRequest.current++;
+      setDetailSource(sourceKey);
+      const row = kind === 'specialists' ? testDataset?.specialists.find(row => row.id === id) : testDataset?.students.find(row => row.id === id);
+      if (row) setDetailedResponse(kind === 'specialists' ? { kind: 'specialist', row: row as SpecialistResponseRow } : { kind: 'student', row: row as StudentResponseRow });
+      return;
+    }
     if (!supabase) return;
     const requestId = ++detailRequest.current;
     setDetailLoadingId(id);
     setError(null);
     try {
       if (kind === 'specialists') {
-        const { data, error: detailError } = await supabase.from('specialist_responses').select('*').eq('id', id).single();
+        const { data, error: detailError } = await supabase.from('specialist_responses').select('*').eq('id', id).abortSignal(dataAbort.current.signal).single();
         if (detailError) throw detailError;
-        if (requestId !== detailRequest.current) return;
+        if (requestId !== detailRequest.current || activeSource.current !== sourceKey) return;
+        setDetailSource(sourceKey);
         setDetailedResponse({ kind: 'specialist', row: data });
       } else {
-        const { data, error: detailError } = await supabase.from('student_responses').select('*').eq('id', id).single();
+        const { data, error: detailError } = await supabase.from('student_responses').select('*').eq('id', id).abortSignal(dataAbort.current.signal).single();
         if (detailError) throw detailError;
-        if (requestId !== detailRequest.current) return;
+        if (requestId !== detailRequest.current || activeSource.current !== sourceKey) return;
+        setDetailSource(sourceKey);
         setDetailedResponse({ kind: 'student', row: data });
       }
     } catch (detailError) {
@@ -699,7 +821,10 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
     setError(null);
     try {
       const rows = await fetchAllSpecialists();
-      if (requestId === analysisRequest.current) setAnalysisRows(rows);
+      if (requestId === analysisRequest.current && activeSource.current === sourceKey) {
+        setAnalysisSource(sourceKey);
+        setAnalysisRows(rows);
+      }
     } catch (analysisError) {
       if (requestId === analysisRequest.current) {
         setError(formatSupabaseError(analysisError instanceof Error ? analysisError.message : analysisError as { message: string }, lang));
@@ -710,39 +835,42 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
   };
 
   const exportData = async (kind: ExportKind) => {
-    if (!isCohortView(view)) return;
+    if (!isCohortView(view) || testBlocked) return;
     const requestId = ++exportRequest.current;
     setExporting(kind);
     setError(null);
     try {
       const date = new Date().toISOString().slice(0, 10);
+      const testId = testMode ? testDataset?.id : undefined;
+      const prefix = testId ? `TEST_${testId}_` : '';
+      const jsonRows = (rows: SpecialistResponseRow[] | StudentResponseRow[]) => JSON.stringify(testId ? { is_test: true, test_dataset_id: testId, research_consent: false, notice: 'SYNTHETIC TEST DATA - NOT RESEARCH', rows } : rows, null, 2);
       if (view === 'specialists') {
         // Always take a fresh, time-bounded snapshot. The on-screen analysis is
         // intentionally not reused because new submissions may have arrived.
         const rows = await fetchAllSpecialists();
-        if (requestId !== exportRequest.current) return;
+        if (requestId !== exportRequest.current || activeSource.current !== sourceKey) return;
         if (kind === 'json') {
-          downloadTextFile(`q-project-specialists-${date}.json`, JSON.stringify(rows, null, 2), 'application/json;charset=utf-8');
+          downloadTextFile(`${prefix}q-project-specialists-${date}.json`, jsonRows(rows), 'application/json;charset=utf-8');
         } else {
           const csv = kind === 'raw'
             ? specialistRawCsv(rows)
             : kind === 'long'
               ? specialistLongCsv(rows)
               : specialistAnalyticCsv(rows, specialties);
-          downloadTextFile(`q-project-specialists-${kind}-${date}.csv`, csv, 'text/csv;charset=utf-8');
+          downloadTextFile(`${prefix}q-project-specialists-${kind}-${date}.csv`, testId ? markPortalTestCsv(csv, testId) : csv, 'text/csv;charset=utf-8');
         }
       } else {
         const rows = await fetchAllStudents();
-        if (requestId !== exportRequest.current) return;
+        if (requestId !== exportRequest.current || activeSource.current !== sourceKey) return;
         if (kind === 'json') {
-          downloadTextFile(`q-project-students-${date}.json`, JSON.stringify(rows, null, 2), 'application/json;charset=utf-8');
+          downloadTextFile(`${prefix}q-project-students-${date}.json`, jsonRows(rows), 'application/json;charset=utf-8');
         } else {
           const csv = kind === 'raw'
             ? studentRawCsv(rows, specialties)
             : kind === 'long'
               ? studentLongCsv(rows)
               : studentAnalyticCsv(rows, specialties);
-          downloadTextFile(`q-project-students-${kind}-${date}.csv`, csv, 'text/csv;charset=utf-8');
+          downloadTextFile(`${prefix}q-project-students-${kind}-${date}.csv`, testId ? markPortalTestCsv(csv, testId) : csv, 'text/csv;charset=utf-8');
         }
       }
     } catch (exportError) {
@@ -823,6 +951,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
       return;
     }
     if (view === 'configuration') {
+      if (testMode) return;
       void refreshCatalog();
       return;
     }
@@ -902,8 +1031,9 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
   };
 
   const calibrationSummary = useMemo(() => analysisRows
+    && analysisSource === sourceKey && !testBlocked
     ? buildCalibrationSummary(analysisRows, specialtyFilter === 'all' ? null : specialtyFilter, specialties)
-    : null, [analysisRows, specialtyFilter, specialties]);
+    : null, [analysisRows, analysisSource, sourceKey, testBlocked, specialtyFilter, specialties]);
 
   if (accessState !== 'authorized') return (
     <main className="min-h-screen bg-accent-50 flex items-center justify-center px-6">
@@ -1026,14 +1156,16 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
                 )}
               </header>
 
+        {canManageTestData && <PortalTestDataPanel lang={lang} manager={testManager} />}
         {error && <p className="mb-5 rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-700">{error}</p>}
+        {!testBlocked && <>
 
         {isCohortView(view) && <div className="mb-8 grid grid-cols-2 gap-4 xl:grid-cols-5">
-          <Stat label={french ? 'Spécialistes' : 'Specialists'} value={counts.specialists} icon={<Stethoscope className="h-5 w-5" />} />
-          <Stat label={french ? 'Entretiens actuels complets' : 'Complete current interviews'} value={counts.specialistsComplete} icon={<CheckCircle2 className="h-5 w-5" />} />
-          <Stat label={french ? 'Étudiants' : romanian ? 'Studenți' : 'Students'} value={counts.students} icon={<Users className="h-5 w-5" />} />
-          <Stat label={french ? 'Explorateurs' : romanian ? 'Persoane care explorează' : 'Medicine explorers'} value={counts.curious} icon={<Users className="h-5 w-5" />} />
-          <Stat label={french ? 'Étudiants avec année' : romanian ? 'Studenți cu anul declarat' : 'Students with study year'} value={counts.studentsWithYear} icon={<GraduationCap className="h-5 w-5" />} />
+          <Stat label={french ? 'Spécialistes' : 'Specialists'} value={visibleCounts.specialists} icon={<Stethoscope className="h-5 w-5" />} />
+          <Stat label={french ? 'Entretiens actuels complets' : 'Complete current interviews'} value={visibleCounts.specialistsComplete} icon={<CheckCircle2 className="h-5 w-5" />} />
+          <Stat label={french ? 'Étudiants' : romanian ? 'Studenți' : 'Students'} value={visibleCounts.students} icon={<Users className="h-5 w-5" />} />
+          <Stat label={french ? 'Explorateurs' : romanian ? 'Persoane care explorează' : 'Medicine explorers'} value={visibleCounts.curious} icon={<Users className="h-5 w-5" />} />
+          <Stat label={french ? 'Étudiants avec année' : romanian ? 'Studenți cu anul declarat' : 'Students with study year'} value={visibleCounts.studentsWithYear} icon={<GraduationCap className="h-5 w-5" />} />
         </div>}
 
         {isCohortView(view) && <div className="mb-5 flex flex-wrap items-center justify-end gap-2">
@@ -1052,13 +1184,14 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
           />
         )}
 
-        {view === 'configuration' && portalProfile && (
+        {view === 'configuration' && testMode && <p data-test-configuration-locked className="rounded-xl border border-amber-300 bg-amber-50 p-5 text-sm text-amber-950">{testCopy.locked}</p>}
+        {view === 'configuration' && portalProfile && !testMode && (
           <SpecialtyConfigurationEditor french={french} portalProfile={portalProfile} onPublished={() => void refreshCatalog()} />
         )}
 
         {view === 'map' && portalProfile?.can_edit && (
           <Suspense fallback={<div role="status" className="flex items-center gap-2 rounded-2xl bg-white p-6 text-sm text-brand-800"><Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />{MAP_TRANSLATIONS[lang].loading}</div>}>
-            <ParticipationMap embedded onBack={goToPreviousDashboardPage} refreshKey={mapRefreshKey} />
+            <ParticipationMap embedded onBack={goToPreviousDashboardPage} refreshKey={mapRefreshKey} testDataset={testMode ? testDataset ?? undefined : undefined} />
           </Suspense>
         )}
 
@@ -1146,15 +1279,15 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
 
         {isCohortView(view) && <div className="relative overflow-x-auto rounded-2xl border border-ink-100 bg-white shadow-soft">
           {view === 'specialists'
-            ? <SpecialistTable rows={specialists} lang={lang} french={french} locale={locale} loadingId={detailLoadingId} onOpen={(id) => void openDetail('specialists', id)} />
-            : <StudentTable rows={students} lang={lang} french={french} locale={locale} loadingId={detailLoadingId} onOpen={(id) => void openDetail('students', id)} />}
-          {(view === 'specialists' ? specialists.length : students.length) === 0 && (
+            ? <SpecialistTable rows={visibleSpecialists} lang={lang} french={french} locale={locale} loadingId={detailLoadingId} onOpen={(id) => void openDetail('specialists', id)} />
+            : <StudentTable rows={visibleStudents} lang={lang} french={french} locale={locale} loadingId={detailLoadingId} onOpen={(id) => void openDetail('students', id)} />}
+          {(view === 'specialists' ? visibleSpecialists.length : visibleStudents.length) === 0 && (
             <p className="p-8 text-center text-sm text-ink-500">{loading ? (french ? 'Chargement…' : 'Loading…') : (french ? 'Aucune réponse pour ces filtres.' : 'No responses match these filters.')}</p>
           )}
         </div>}
 
         {isCohortView(view) && <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-ink-500">
-          <span>{activeTotal === 0 ? (french ? '0 réponse' : '0 responses') : `${page * PAGE_SIZE + 1}-${Math.min((page + 1) * PAGE_SIZE, activeTotal)} / ${activeTotal}`}</span>
+          <span>{visibleTotal === 0 ? (french ? '0 réponse' : '0 responses') : `${page * PAGE_SIZE + 1}-${Math.min((page + 1) * PAGE_SIZE, visibleTotal)} / ${visibleTotal}`}</span>
           <div className="flex items-center gap-2">
             <button type="button" onClick={() => setPage((current) => Math.max(0, current - 1))} disabled={loading || page === 0} className="rounded-full border border-ink-200 bg-white px-4 py-2 font-semibold text-ink-700 disabled:opacity-40">{french ? 'Précédent' : 'Previous'}</button>
             <span className="tabular-nums">{french ? 'Page' : 'Page'} {page + 1} / {totalPages}</span>
@@ -1171,12 +1304,13 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
             catalogHash={catalogVersion.content_hash}
           />
         )}
+        </>}
             </div>
           </div>
         </section>
       </div>
 
-      {detailedResponse && <ResearchResponseDetail response={detailedResponse} lang={lang} onClose={goToPreviousDashboardPage} />}
+      {detailedResponse && detailSource === sourceKey && !testBlocked && <ResearchResponseDetail response={detailedResponse} lang={lang} onClose={goToPreviousDashboardPage} catalogOverride={testMode ? testDataset?.catalog : undefined} />}
     </main>
   );
 }

@@ -19,7 +19,8 @@ import {
 import { DATA_VERSIONS } from '@/lib/researchVersions';
 import { participantRoleLabel } from '@/lib/dashboardNavigation';
 import { BarChart3, Braces, CheckCircle2, X } from 'lucide-react';
-import { useSpecialtyCatalog } from '@/lib/SpecialtyCatalogContext';
+import { useSpecialtyCatalog, type SpecialtyCatalogSnapshot } from '@/lib/SpecialtyCatalogContext';
+import { PORTAL_TEST_COPY } from '@/components/PortalTestDataPanel';
 
 export type DetailedResponse =
   | { kind: 'specialist'; row: SpecialistResponseRow }
@@ -29,6 +30,7 @@ interface ResearchResponseDetailProps {
   response: DetailedResponse;
   lang: Language;
   onClose: () => void;
+  catalogOverride?: SpecialtyCatalogSnapshot;
 }
 
 const CODE_LABELS: Record<string, Record<string, string>> = {
@@ -62,12 +64,14 @@ function formatRank(minimum: number | null, maximum: number | null): string {
   return minimum === maximum ? `#${minimum}` : `#${minimum}–${maximum}`;
 }
 
-export default function ResearchResponseDetail({ response, lang, onClose }: ResearchResponseDetailProps) {
+export default function ResearchResponseDetail({ response, lang, onClose, catalogOverride }: ResearchResponseDetailProps) {
   const french = lang === 'fr';
-  const { specialties, version: activeCatalogVersion } = useSpecialtyCatalog();
+  const liveCatalog = useSpecialtyCatalog();
+  const { specialties, version: activeCatalogVersion } = catalogOverride ?? liveCatalog;
   const dialogRef = useRef<HTMLElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const row = response.row;
+  const isTest = 'is_test' in row && row.is_test === true;
   const specialistQuestionnaireSkipped = response.kind === 'specialist'
     && !response.row.questionnaire_completed;
   const hasQuantitativeProfile = !specialistQuestionnaireSkipped;
@@ -146,6 +150,7 @@ export default function ResearchResponseDetail({ response, lang, onClose }: Rese
         tabIndex={-1}
         className="h-full w-full max-w-4xl overflow-y-auto bg-ink-50 shadow-2xl animate-fade-in"
       >
+        {isTest && <div data-test-detail-banner className="border-b-2 border-amber-500 bg-amber-100 px-5 py-4 text-amber-950 sm:px-8"><p className="font-bold">{PORTAL_TEST_COPY[lang].banner}</p><p className="mt-1 text-sm">{PORTAL_TEST_COPY[lang].warning}</p></div>}
         <header className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-ink-100 bg-white/95 px-5 py-4 backdrop-blur sm:px-8">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-brand-700">
