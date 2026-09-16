@@ -36,6 +36,7 @@ import { MAP_TRANSLATIONS } from '@/data/mapI18n';
 import PortalTestDataPanel, { PORTAL_TEST_COPY } from '@/components/PortalTestDataPanel';
 import { usePortalTestDataset } from '@/lib/usePortalTestDataset';
 import { filterTestSpecialists, filterTestStudents, hasCompleteTestInterview, markPortalTestCsv } from '@/lib/portalTestDashboard';
+import BrandLogo from './BrandLogo';
 import {
   ArrowLeft,
   BarChart3,
@@ -1039,7 +1040,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
     <main className="min-h-screen bg-accent-50 flex items-center justify-center px-6">
       <form onSubmit={signIn} className="w-full max-w-md p-8 rounded-2xl bg-white border border-ink-100 shadow-soft">
         <button type="button" onClick={() => void leaveDashboard()} disabled={loading || accessState === 'checking_access'} className="mb-8 inline-flex min-h-11 items-center gap-2 rounded-full px-3 text-sm text-ink-500 hover:bg-ink-100 hover:text-ink-900 disabled:cursor-not-allowed disabled:opacity-40"><ArrowLeft className="w-4 h-4" />{french ? 'Retour' : romanian ? 'Înapoi' : 'Back'}</button>
-        <div className="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center mb-5"><BarChart3 /></div>
+        <BrandLogo className="mb-6 w-56" />
         <h1 className="font-display text-3xl font-semibold text-ink-900 mb-2">{french ? 'Portail spécialistes & administration' : 'Specialist & admin portal'}</h1>
         <p className="text-sm text-ink-500 mb-6">{french ? 'Connectez-vous avec un compte Supabase autorisé pour consulter les cohortes et, selon votre rôle, calibrer le catalogue.' : 'Sign in with an authorized Supabase account to review cohorts and, according to your role, calibrate the catalog.'}</p>
         <label className="mb-3 block">

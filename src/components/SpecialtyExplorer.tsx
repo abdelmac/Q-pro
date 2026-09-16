@@ -7,6 +7,7 @@ import { translateCareType, translatePatientContact, translateWorkStyle } from '
 import { Search, ChevronRight } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import PageBackButton from './PageBackButton';
+import BrandLogo from './BrandLogo';
 
 interface SpecialtyExplorerProps {
   scores?: { specialty: Specialty; score: number }[];
@@ -37,8 +38,10 @@ export default function SpecialtyExplorer({ scores, onSelectSpecialty, onBack }:
 
   return (
     <div className="min-h-screen">
-      <header className="px-6 py-5 sm:px-10 sm:py-7 flex items-center justify-between border-b border-ink-100 bg-white/80 backdrop-blur sticky top-0 z-10">
+      <header className="px-6 py-5 sm:px-10 sm:py-7 flex items-center justify-between gap-3 border-b border-ink-100 bg-white/80 backdrop-blur sticky top-0 z-10">
         <PageBackButton onClick={onBack} label={t.explorerBack} />
+        <BrandLogo variant="mark" className="w-10 shrink-0 sm:hidden" />
+        <BrandLogo className="hidden w-48 shrink-0 sm:block" />
       </header>
 
       <div className="max-w-4xl mx-auto px-6 py-10">

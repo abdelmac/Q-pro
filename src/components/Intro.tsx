@@ -3,6 +3,7 @@ import type { ParticipantRole } from '@/lib/participantProfile';
 import { FEATURE_FLAGS } from '@/config/features';
 import LanguageSwitcher from './LanguageSwitcher';
 import PageBackButton from './PageBackButton';
+import BrandLogo from './BrandLogo';
 import { Stethoscope, Brain, Heart, HeartPulse, Sparkles, ArrowRight, Compass, Globe2, BookOpen, BarChart3, GraduationCap, RefreshCw } from 'lucide-react';
 
 interface IntroProps {
@@ -31,14 +32,8 @@ export default function Intro({ onStart, totalQuestions, participantRole, onBack
       <header className="flex items-center justify-between gap-2 px-3 py-5 sm:px-10 sm:py-7">
         <div className="flex items-center gap-2">
           <PageBackButton onClick={onBack} label={t.back} />
-          <div className="hidden items-center gap-2.5 lg:flex">
-            <div className="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center text-white shadow-soft">
-              <Stethoscope className="w-5 h-5" strokeWidth={2.2} />
-            </div>
-            <span className="font-display text-lg font-semibold tracking-tight text-ink-900">
-              {t.appName}
-            </span>
-          </div>
+          <BrandLogo className="hidden w-52 lg:block" label={t.appName} />
+          <BrandLogo variant="mark" className="w-9 lg:hidden" label={t.appName} />
         </div>
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
           <button

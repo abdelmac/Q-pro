@@ -17,8 +17,9 @@ import type { ParticipantRole } from '@/lib/participantProfile';
 import LanguageSwitcher from './LanguageSwitcher';
 import PageBackButton from './PageBackButton';
 import SpecialtyBibliography from './SpecialtyBibliography';
+import BrandLogo from './BrandLogo';
 import {
-  Stethoscope, Trophy, RotateCcw, Heart,
+  Trophy, RotateCcw, Heart,
   FlaskConical, GitCompare, Compass, BookOpen, X,
 } from 'lucide-react';
 
@@ -231,12 +232,8 @@ export default function Results({
       <header className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3 border-b border-ink-100 bg-white/80 px-4 py-4 backdrop-blur sm:px-10 sm:py-7">
         <div className="flex items-center gap-2">
           <PageBackButton onClick={onBack} label={t.back} />
-          <div className="hidden items-center gap-2.5 lg:flex">
-            <div className="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center text-white shadow-soft">
-              <Stethoscope className="w-5 h-5" strokeWidth={2.2} />
-            </div>
-            <span className="font-display text-lg font-semibold tracking-tight text-ink-900">{t.appName}</span>
-          </div>
+          <BrandLogo variant="mark" className="w-10 shrink-0 lg:hidden" />
+          <BrandLogo className="hidden w-48 shrink-0 lg:block" />
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
           <button onClick={onOpenExplorer} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold text-ink-600 hover:text-ink-900 hover:bg-ink-100 transition-colors">

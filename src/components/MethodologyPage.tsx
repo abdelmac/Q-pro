@@ -5,6 +5,7 @@ import {
   Sliders, ShieldCheck, Code, Lightbulb, Heart, BarChart3,
 } from 'lucide-react';
 import PageBackButton from './PageBackButton';
+import BrandLogo from './BrandLogo';
 
 interface MethodologyPageProps {
   onBack: () => void;
@@ -41,8 +42,10 @@ export default function MethodologyPage({ onBack }: MethodologyPageProps) {
 
   return (
     <div className="min-h-screen">
-      <header className="px-6 py-5 sm:px-10 sm:py-7 flex items-center justify-between border-b border-ink-100 bg-white/80 backdrop-blur sticky top-0 z-10">
+      <header className="px-6 py-5 sm:px-10 sm:py-7 flex items-center justify-between gap-3 border-b border-ink-100 bg-white/80 backdrop-blur sticky top-0 z-10">
         <PageBackButton onClick={onBack} label={t.methodologyBack} />
+        <BrandLogo variant="mark" className="w-10 shrink-0 sm:hidden" />
+        <BrandLogo className="hidden w-48 shrink-0 sm:block" />
       </header>
 
       <div className="max-w-3xl mx-auto px-6 py-10">

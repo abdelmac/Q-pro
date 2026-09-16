@@ -1,6 +1,5 @@
 import {
   ArrowLeft,
-  BarChart3,
   LogOut,
   X,
 } from 'lucide-react';
@@ -10,6 +9,7 @@ import {
   type DashboardNavItem,
   type DashboardView,
 } from '@/lib/dashboardNavigation';
+import BrandLogo from './BrandLogo';
 
 interface DashboardSidebarProps {
   id?: string;
@@ -66,16 +66,13 @@ export default function DashboardSidebar({
     >
       <div className="flex h-full flex-col overflow-y-auto p-5 scrollbar-thin sm:p-6">
         <div className="flex items-start justify-between gap-4">
-          <div className="flex min-w-0 items-center gap-3">
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-brand-800 shadow-soft">
-              <BarChart3 className="h-5 w-5" aria-hidden="true" />
-            </span>
-            <div className="min-w-0">
-              <p className="font-display text-lg font-semibold tracking-tight">Q-Pro</p>
-              <p className="mt-0.5 text-xs text-brand-200">
-                {french ? 'Portail de recherche' : romanian ? 'Portal de cercetare' : 'Research portal'}
-              </p>
+          <div className="min-w-0 flex-1">
+            <div className="rounded-xl bg-white p-3 shadow-soft">
+              <BrandLogo className="w-full" />
             </div>
+            <p className="mt-3 text-xs text-brand-200">
+              {french ? 'Portail de recherche' : romanian ? 'Portal de cercetare' : 'Research portal'}
+            </p>
           </div>
           {showClose && (
             <button

@@ -2,6 +2,7 @@ import { Heart, MessageCircle, Stethoscope } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 import LanguageSwitcher from './LanguageSwitcher';
 import PageBackButton from './PageBackButton';
+import BrandLogo from './BrandLogo';
 
 export default function ProjectCredits({ onBack }: { onBack: () => void }) {
   const { t } = useLanguage();
@@ -12,6 +13,7 @@ export default function ProjectCredits({ onBack }: { onBack: () => void }) {
         <LanguageSwitcher />
       </header>
       <main className="mx-auto max-w-3xl px-6 py-12 sm:py-16">
+        <BrandLogo variant="stacked" className="mb-10 w-56 sm:w-64" label={t.appName} />
         <p className="mb-3 text-sm font-semibold text-brand-700">{t.navCredits}</p>
         <h1 className="font-display text-3xl font-semibold tracking-tight text-ink-900 text-balance sm:text-4xl">{t.creditsTitle}</h1>
         <p className="mt-4 text-lg leading-relaxed text-ink-500">{t.creditsSubtitle}</p>

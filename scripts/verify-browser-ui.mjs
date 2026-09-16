@@ -11,6 +11,7 @@ import { join, resolve, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { verifyBrowserResearchFlows } from './browser-research-flows.mjs';
 import { verifyBrowserMapAuthorization } from './browser-map-authorization.mjs';
+import { verifyBrowserBranding } from './browser-branding.mjs';
 
 const testDirectory = await mkdtemp(join(tmpdir(), 'q-pro-browser-tests-'));
 let server;
@@ -85,6 +86,7 @@ try {
     await page.getByRole('button', { name: `${language.flag} ${language.label}`, exact: true }).click();
   };
   await page.goto('http://127.0.0.1:4179/', { waitUntil: 'networkidle' });
+  await verifyBrowserBranding({ page, fixtureDefinitions });
 
   if (process.argv.includes('--map-auth-only')) {
     await verifyBrowserMapAuthorization({ context, fixtureDefinitions, mapFixture, catalog });

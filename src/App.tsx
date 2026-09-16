@@ -36,6 +36,7 @@ import { flushPendingResearchSubmissions } from '@/lib/supabase';
 import type { QuestionnaireDraft } from '@/lib/questionnairePersistence';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import PageBackButton from '@/components/PageBackButton';
+import BrandLogo from '@/components/BrandLogo';
 import {
   createAppNavigationReducer,
   createAppNavigationState,
@@ -420,8 +421,10 @@ function AppContent() {
   if (phase === 'qprofile') {
     return (
       <div className="min-h-screen bg-accent-50">
-        <header className="px-6 py-5 sm:px-10 sm:py-7 flex items-center justify-between border-b border-ink-100 bg-white/80 backdrop-blur sticky top-0 z-10">
+        <header className="px-6 py-5 sm:px-10 sm:py-7 flex items-center justify-between gap-3 border-b border-ink-100 bg-white/80 backdrop-blur sticky top-0 z-10">
           <PageBackButton onClick={goBack} label={t.back} />
+          <BrandLogo variant="mark" className="w-10 shrink-0 sm:hidden" />
+          <BrandLogo className="hidden w-48 shrink-0 sm:block" />
           <LanguageSwitcher />
         </header>
         <QProfile
@@ -452,8 +455,10 @@ function AppContent() {
   if (phase === 'student') {
     return (
       <div className="min-h-screen">
-        <header className="px-6 py-5 sm:px-10 sm:py-7 flex items-center justify-between border-b border-ink-100 bg-white/80 backdrop-blur sticky top-0 z-10">
+        <header className="px-6 py-5 sm:px-10 sm:py-7 flex items-center justify-between gap-3 border-b border-ink-100 bg-white/80 backdrop-blur sticky top-0 z-10">
           <PageBackButton onClick={goBack} label={t.back} disabled={contributionSubmitting} />
+          <BrandLogo variant="mark" className="w-10 shrink-0 sm:hidden" />
+          <BrandLogo className="hidden w-48 shrink-0 sm:block" />
           <LanguageSwitcher />
         </header>
         <StudentPrompt
@@ -481,8 +486,10 @@ function AppContent() {
   if (phase === 'specialist') {
     return (
       <div className="min-h-screen">
-        <header className="px-6 py-5 sm:px-10 sm:py-7 flex items-center justify-between border-b border-ink-100 bg-white/80 backdrop-blur sticky top-0 z-10">
+        <header className="px-6 py-5 sm:px-10 sm:py-7 flex items-center justify-between gap-3 border-b border-ink-100 bg-white/80 backdrop-blur sticky top-0 z-10">
           <PageBackButton onClick={goBack} label={t.back} disabled={contributionSubmitting} />
+          <BrandLogo variant="mark" className="w-10 shrink-0 sm:hidden" />
+          <BrandLogo className="hidden w-48 shrink-0 sm:block" />
           <LanguageSwitcher />
         </header>
         <SpecialistPrompt
@@ -554,8 +561,9 @@ function AppContent() {
     <div className="min-h-screen flex flex-col bg-accent-50">
       <header className="px-6 py-4 sm:px-10 sm:py-5 border-b border-ink-100 bg-white/80 backdrop-blur sticky top-0 z-10">
         <div className="max-w-3xl mx-auto">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between gap-3 mb-4">
             <PageBackButton onClick={handleBack} label={t.back} />
+            <BrandLogo className="hidden w-40 shrink-0 md:block" />
             <div className="flex items-center gap-3">
               {isSpecialist && (
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-brand-50 border border-brand-100 text-brand-700 text-xs font-semibold">

@@ -4,10 +4,10 @@ import {
   ClipboardList,
   MessageSquareText,
   ShieldCheck,
-  Stethoscope,
 } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 import LanguageSwitcher from './LanguageSwitcher';
+import BrandLogo from './BrandLogo';
 
 export interface SpecialistQuestionnaireChoiceCopy {
   appName: string;
@@ -56,14 +56,7 @@ export function SpecialistQuestionnaireChoiceView({
   return (
     <div className="flex min-h-screen flex-col bg-accent-50">
       <header className="flex items-center justify-between gap-4 px-5 py-5 sm:px-10 sm:py-7">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-600 text-white shadow-soft">
-            <Stethoscope aria-hidden="true" className="h-5 w-5" strokeWidth={2.2} />
-          </div>
-          <span className="font-display text-lg font-semibold tracking-tight text-ink-900">
-            {copy.appName}
-          </span>
-        </div>
+        <BrandLogo className="w-40 shrink-0 sm:w-48" label={copy.appName} />
         <LanguageSwitcher />
       </header>
 

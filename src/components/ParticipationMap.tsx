@@ -6,6 +6,7 @@ import { MAP_TRANSLATIONS, TEST_MAP_TRANSLATIONS, type MapStrings } from '@/data
 import world from '@/data/worldMapPaths.json';
 import { useMapFilterAccess } from '@/lib/useMapFilterAccess';
 import { buildTestParticipationMapStats, type PortalTestDataset } from '@/lib/portalTestData';
+import BrandLogo from './BrandLogo';
 import {
   areValidMapDates, DEFAULT_MAP_FILTERS, fetchParticipationMapStats, latestClosedMonth, MapFilterAccessError,
   type ParticipationMapFilters, type ParticipationMapStats,
@@ -188,7 +189,11 @@ export default function ParticipationMap({ onBack, embedded = false, refreshKey 
   return <div className={embedded ? 'min-w-0' : 'min-h-screen bg-[#f6f8fb]'} data-participation-map={embedded ? 'admin' : 'public'}>
     {!embedded && <header className="border-b border-ink-100 bg-white px-4 py-4 sm:px-8">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
-        <PageBackButton label={copy.back} onClick={onBack} />
+        <div className="flex items-center gap-3">
+          <PageBackButton label={copy.back} onClick={onBack} />
+          <BrandLogo variant="mark" className="w-9 lg:hidden" />
+          <BrandLogo className="hidden w-48 lg:block" />
+        </div>
         <div className="flex items-center gap-3"><span className="hidden items-center gap-2 text-xs font-medium text-brand-800 sm:flex"><Globe2 className="h-4 w-4" aria-hidden="true" />{copy.publicLabel}</span><LanguageSwitcher /></div>
       </div>
     </header>}
