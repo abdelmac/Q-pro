@@ -10,6 +10,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { verifyBrowserResearchFlows } from './browser-research-flows.mjs';
+import { verifyBrowserMapAuthorization } from './browser-map-authorization.mjs';
 
 const testDirectory = await mkdtemp(join(tmpdir(), 'q-pro-browser-tests-'));
 let server;
@@ -66,6 +67,7 @@ try {
     requests.push({ rpc, args });
     if (rpc === 'get_participation_map_stats') return route.fulfill({ json: mapFixture(args) });
     if (rpc === 'get_active_specialty_catalog') return route.fulfill({ json: catalog });
+    if (rpc === 'current_user_portal_profile') return route.fulfill({ json: { authorized: false } });
     if (rpc.startsWith('submit_') && submissionMocks.handler) return submissionMocks.handler({ route, rpc, args });
     return route.fulfill({ status: 403, json: { message: 'Browser test blocks every non-fixture endpoint' } });
   });
@@ -81,9 +83,11 @@ try {
     await page.locator('header button').last().click();
     await page.getByRole('button', { name: `${language.flag} ${language.label}`, exact: true }).click();
   };
-  const waitForMap = predicate => page.waitForResponse(response => response.url().includes('/rpc/get_participation_map_stats') && predicate(response.request().postDataJSON()));
   await page.goto('http://127.0.0.1:4179/', { waitUntil: 'networkidle' });
 
+  if (process.argv.includes('--map-auth-only')) {
+    await verifyBrowserMapAuthorization({ context, fixtureDefinitions, mapFixture });
+  } else {
   for (const language of LANGUAGES) {
     const copy = TRANSLATIONS[language.code];
     const mapCopy = MAP_TRANSLATIONS[language.code];
@@ -101,26 +105,14 @@ try {
     await page.getByRole('button', { name: /Romania|România|Roumanie/ }).last().waitFor();
     await noOverflow(`map ${language.code}`);
     assert.equal(await page.locator('svg[role="group"] path').count(), 176);
-    await page.getByRole('button', { name: mapCopy.filters, exact: true }).click();
-    const dialog = page.getByRole('dialog');
-    await dialog.waitFor({ state: 'visible' });
-    await noOverflow(`map filter drawer ${language.code}`);
-    await dialog.getByLabel(mapCopy.country, { exact: true }).selectOption('RO');
-    await dialog.getByLabel(mapCopy.language, { exact: true }).selectOption('ro');
-    await dialog.getByLabel(mapCopy.version, { exact: true }).selectOption('current');
-    await Promise.all([waitForMap(args => args.p_country_code === 'RO' && args.p_language === 'ro'), dialog.getByRole('button', { name: mapCopy.applyFilters, exact: true }).click()]);
-    await dialog.waitFor({ state: 'hidden' });
-    await page.waitForFunction(() => !document.querySelector('[aria-busy="true"]'));
-    assert.equal(requests.at(-1).args.p_country_code, 'RO');
-    assert.equal(requests.at(-1).args.p_language, 'ro');
-    assert.equal(requests.at(-1).args.p_data_version, 'current');
-    await Promise.all([waitForMap(args => args.p_respondent_type === 'specialist'), page.locator('div[aria-label]').getByRole('button', { name: mapCopy.specialists, exact: true }).click()]);
-    await page.waitForFunction(() => !document.querySelector('[aria-busy="true"]'));
-    assert.equal(requests.at(-1).args.p_respondent_type, 'specialist');
-    const countryButton = page.getByRole('button', { name: /^(Romania|România|Roumanie) ≈ 15$/ });
+    assert.equal(await page.getByRole('button', { name: mapCopy.filters, exact: true }).count(), 0, 'Public visitors do not get filter controls');
+    assert.equal(await page.getByRole('button', { name: mapCopy.all, exact: true }).count(), 0, 'Public visitors do not get respondent-type filters');
+    assert.equal(await page.getByRole('combobox').count(), 0, 'Public country/language/version selectors are absent');
+    assert.equal(await page.getByRole('dialog', { includeHidden: true }).count(), 0, 'No public filter drawer exists');
+    const countryButton = page.getByRole('button', { name: /^(Romania|România|Roumanie) ≈ 35$/ });
     await countryButton.click();
     const details = page.getByRole('region', { name: mapCopy.details });
-    assert.match(await details.textContent(), /≈ 15/);
+    assert.match(await details.textContent(), /≈ 35/);
     await page.getByRole('button', { name: mapCopy.zoomIn, exact: true }).click();
     const zoomed = await page.locator('svg[role="group"]').getAttribute('viewBox');
     assert.notEqual(zoomed, '0 0 960 500');
@@ -134,14 +126,11 @@ try {
     await details.getByRole('heading', { name: /^(Romania|România|Roumanie)$/ }).waitFor();
     await page.locator('path[data-country="RO"]').focus();
     await page.keyboard.press('Enter');
-    assert.match(await details.textContent(), /≈ 15/);
+    assert.match(await details.textContent(), /≈ 35/);
     if (language.code === 'en') {
       await mkdir('browser-qa.local', { recursive: true });
       await page.screenshot({ path: 'browser-qa.local/map-mobile-synthetic.png', fullPage: true });
     }
-    await page.getByRole('button', { name: mapCopy.filters, exact: true }).click();
-    await Promise.all([waitForMap(args => args.p_respondent_type === 'all' && args.p_country_code === null), dialog.getByRole('button', { name: mapCopy.resetFilters, exact: true }).click()]);
-    await page.waitForFunction(() => !document.querySelector('[aria-busy="true"]'));
     await page.locator('[data-navigation-back]').click();
   }
 
@@ -186,21 +175,28 @@ try {
   assert.equal(await page.locator('input[type="range"]').first().inputValue(), '10');
   await noOverflow('resumed partial questionnaire');
 
-  // Independently check desktop layout, where the filter form stays beside the map.
+  // Public desktop uses the full map width without an administrator sidebar.
   const desktop = await context.newPage();
   await desktop.setViewportSize({ width: 1440, height: 1000 });
   await desktop.goto('http://127.0.0.1:4179/', { waitUntil: 'networkidle' });
   await desktop.getByRole('button', { name: TRANSLATIONS.en.navWorldMap, exact: true }).click();
-  await desktop.getByLabel(MAP_TRANSLATIONS.en.country, { exact: true }).first().waitFor({ state: 'visible' });
-  assert.ok(await desktop.locator('aside').last().isVisible());
+  await desktop.getByRole('button', { name: /^Romania ≈ 35$/ }).waitFor();
+  assert.equal(await desktop.getByRole('combobox').count(), 0);
+  assert.equal(await desktop.getByRole('button', { name: MAP_TRANSLATIONS.en.all, exact: true }).count(), 0);
+  assert.equal(await desktop.getByRole('dialog', { includeHidden: true }).count(), 0);
   await desktop.waitForFunction(() => !document.querySelector('[aria-busy="true"]'));
   await desktop.screenshot({ path: 'browser-qa.local/map-desktop-synthetic.png', fullPage: true });
   assert.deepEqual(pageErrors, []);
   assert.equal(requests.some(request => request.rpc.startsWith('submit_')), false, 'No research submission was made');
+  for (const request of requests.filter(request => request.rpc === 'get_participation_map_stats')) {
+    assert.deepEqual(request.args, { p_respondent_type: 'all', p_country_code: null, p_language: 'all', p_month_from: null, p_month_to: null, p_data_version: 'all' }, 'Public visitors only request the unfiltered aggregate');
+  }
   await desktop.close();
   await verifyBrowserResearchFlows({ page, context, catalog, fixtureDefinitions, submissionMocks, requests });
+  await verifyBrowserMapAuthorization({ context, fixtureDefinitions, mapFixture });
   assert.deepEqual(pageErrors, []);
-  console.log('Browser checks passed: responsive three-language UI/map, optional geography, reload/resume, offline consent synchronization, payload-specific receipts and persistent opt-out. All research endpoints were mocked; no production submissions.');
+  console.log('Browser checks passed: responsive three-language public map, administrator-only filters, optional geography, reload/resume, offline consent synchronization, payload-specific receipts and persistent opt-out. All research endpoints were mocked; no production submissions.');
+  }
 } finally {
   await browser?.close();
   await server?.close();

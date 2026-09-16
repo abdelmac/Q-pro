@@ -2,6 +2,20 @@ BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
 SELECT extensions.no_plan();
 
+-- Minimal Auth fixtures; authorization comes from the private allowlist,
+-- never from a role string supplied in editable user metadata or JWT claims.
+INSERT INTO auth.users (id, email) VALUES
+  ('63000000-0000-4000-8000-000000000001', 'map-ordinary@example.test'),
+  ('63000000-0000-4000-8000-000000000002', 'map-researcher@example.test'),
+  ('63000000-0000-4000-8000-000000000003', 'map-disabled-admin@example.test'),
+  ('63000000-0000-4000-8000-000000000004', 'map-doctor@example.test'),
+  ('63000000-0000-4000-8000-000000000005', 'map-professor@example.test');
+INSERT INTO private.researchers (user_id, display_name, enabled, portal_role) VALUES
+  ('63000000-0000-4000-8000-000000000002', 'Map researcher', true, 'researcher'),
+  ('63000000-0000-4000-8000-000000000003', 'Disabled map administrator', false, 'professor'),
+  ('63000000-0000-4000-8000-000000000004', 'Map doctor', true, 'doctor'),
+  ('63000000-0000-4000-8000-000000000005', 'Map professor', true, 'professor');
+
 DO $fixtures$
 BEGIN
   PERFORM set_config('q_map_test.ratings', (
@@ -101,8 +115,8 @@ SELECT extensions.is(
   'anonymous participants can save without medicine text or geography'
 );
 SELECT extensions.is(
-  (public.get_participation_map_stats('all', NULL, 'all', '2001-01-01', '2001-02-01', 'all')->>'total')::bigint,
-  0::bigint, 'anonymous map starts empty for unpublished months'
+  (public.get_participation_map_stats()->>'total')::bigint,
+  0::bigint, 'anonymous visitors can load the unfiltered public overview'
 );
 SELECT extensions.throws_ok(
   $$SELECT private.publish_participation_map_month('2001-01-01')$$,
@@ -119,6 +133,15 @@ SELECT extensions.is(
   'anonymous specialist endpoint permits voluntary geography with intentional questionnaire skip'
 );
 RESET ROLE;
+
+-- Existing aggregation/validation assertions run with an authorized principal.
+-- Explicit PostgreSQL-role boundary cases are tested at the end of this file.
+DO $doctor_context$
+BEGIN
+  PERFORM set_config('request.jwt.claim.sub', '63000000-0000-4000-8000-000000000004', true);
+  PERFORM set_config('request.jwt.claims', '{"sub":"63000000-0000-4000-8000-000000000004","role":"authenticated"}', true);
+END;
+$doctor_context$;
 
 SELECT extensions.is(
   pg_temp.participant('61000000-0000-4000-8000-000000000001', E' \t ', E' \t '),
@@ -367,6 +390,164 @@ SELECT extensions.ok(
   EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'q-pro-publish-participation-map' AND active),
   'a monthly closed-month publication job is installed'
 );
+
+-- Filters are administrative even though their data remains aggregated.
+-- Default totals stay public for every account class.
+RESET ROLE;
+DO $actor$
+BEGIN
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  PERFORM set_config('request.jwt.claims', '{}', true);
+END;
+$actor$;
+SET LOCAL ROLE anon;
+SELECT extensions.is(
+  public.get_participation_map_stats(),
+  public.get_participation_map_stats('all', NULL, 'all', NULL, NULL, 'all'),
+  'anonymous omitted arguments and explicit defaults return the same public overview'
+);
+SELECT extensions.throws_ok(
+  $$SELECT public.get_participation_map_stats('student')$$,
+  '42501', 'This account is not authorized for this portal action',
+  'anonymous respondent-type filtering is denied server-side'
+);
+SELECT extensions.throws_ok(
+  $$SELECT public.get_participation_map_stats('all', 'RO')$$,
+  '42501', 'This account is not authorized for this portal action',
+  'anonymous country filtering is denied server-side'
+);
+SELECT extensions.throws_ok(
+  $$SELECT public.get_participation_map_stats('all', NULL, 'fr')$$,
+  '42501', 'This account is not authorized for this portal action',
+  'anonymous language filtering is denied server-side'
+);
+SELECT extensions.throws_ok(
+  $$SELECT public.get_participation_map_stats('all', NULL, 'all', '2001-01-01')$$,
+  '42501', 'This account is not authorized for this portal action',
+  'anonymous start month filtering is denied server-side'
+);
+SELECT extensions.throws_ok(
+  $$SELECT public.get_participation_map_stats('all', NULL, 'all', NULL, '2001-01-01')$$,
+  '42501', 'This account is not authorized for this portal action',
+  'anonymous end month filtering is denied server-side'
+);
+SELECT extensions.throws_ok(
+  $$SELECT public.get_participation_map_stats('all', NULL, 'all', NULL, NULL, 'current')$$,
+  '42501', 'This account is not authorized for this portal action',
+  'anonymous data version filtering is denied server-side'
+);
+SELECT extensions.throws_ok(
+  $$SELECT public.get_participation_map_stats(NULL)$$,
+  '42501', 'This account is not authorized for this portal action',
+  'anonymous null type filtering is denied server-side'
+);
+SELECT extensions.throws_ok(
+  $$SELECT public.get_participation_map_stats('all', '')$$,
+  '42501', 'This account is not authorized for this portal action',
+  'anonymous empty country filtering is denied server-side'
+);
+SELECT extensions.throws_ok(
+  $$SELECT public.get_participation_map_stats('all', 'ZZ')$$,
+  '42501', 'This account is not authorized for this portal action',
+  'anonymous invalid country before payload validation filtering is denied server-side'
+);
+RESET ROLE;
+DO $actor$
+BEGIN
+  PERFORM set_config('request.jwt.claim.sub', '63000000-0000-4000-8000-000000000001', true);
+  PERFORM set_config('request.jwt.claims', '{"sub":"63000000-0000-4000-8000-000000000001","role":"authenticated","user_metadata":{"role":"professor"}}', true);
+END;
+$actor$;
+SET LOCAL ROLE authenticated;
+SELECT extensions.lives_ok(
+  $$SELECT public.get_participation_map_stats()$$,
+  'ordinary authenticated can still view the unfiltered overview'
+);
+SELECT extensions.throws_ok(
+  $$SELECT public.get_participation_map_stats('student')$$,
+  '42501', 'This account is not authorized for this portal action',
+  'ordinary authenticated cannot access filters even with professor in user metadata'
+);
+RESET ROLE;
+DO $actor$
+BEGIN
+  PERFORM set_config('request.jwt.claim.sub', '63000000-0000-4000-8000-000000000002', true);
+  PERFORM set_config('request.jwt.claims', '{"sub":"63000000-0000-4000-8000-000000000002","role":"authenticated","user_metadata":{"role":"professor"}}', true);
+END;
+$actor$;
+SET LOCAL ROLE authenticated;
+SELECT extensions.lives_ok(
+  $$SELECT public.get_participation_map_stats()$$,
+  'researcher can still view the unfiltered overview'
+);
+SELECT extensions.throws_ok(
+  $$SELECT public.get_participation_map_stats('student')$$,
+  '42501', 'This account is not authorized for this portal action',
+  'researcher cannot access filters even with professor in user metadata'
+);
+RESET ROLE;
+DO $actor$
+BEGIN
+  PERFORM set_config('request.jwt.claim.sub', '63000000-0000-4000-8000-000000000003', true);
+  PERFORM set_config('request.jwt.claims', '{"sub":"63000000-0000-4000-8000-000000000003","role":"authenticated","user_metadata":{"role":"professor"}}', true);
+END;
+$actor$;
+SET LOCAL ROLE authenticated;
+SELECT extensions.lives_ok(
+  $$SELECT public.get_participation_map_stats()$$,
+  'disabled administrator can still view the unfiltered overview'
+);
+SELECT extensions.throws_ok(
+  $$SELECT public.get_participation_map_stats('student')$$,
+  '42501', 'This account is not authorized for this portal action',
+  'disabled administrator cannot access filters even with professor in user metadata'
+);
+RESET ROLE;
+DO $actor$
+BEGIN
+  PERFORM set_config('request.jwt.claim.sub', '63000000-0000-4000-8000-000000000004', true);
+  PERFORM set_config('request.jwt.claims', '{"sub":"63000000-0000-4000-8000-000000000004","role":"authenticated","user_metadata":{"role":"professor"}}', true);
+END;
+$actor$;
+SET LOCAL ROLE authenticated;
+SELECT extensions.is(
+  (public.get_participation_map_stats('student', 'RO', 'en', '2001-01-01', '2001-01-01', 'current')->>'total')::bigint,
+  10::bigint, 'enabled doctor can combine all map filters'
+);
+SELECT extensions.throws_ok(
+  $$SELECT public.get_participation_map_stats('all', 'ZZ')$$,
+  '22023', 'Invalid participation map filters',
+  'enabled doctor still receives validated filter errors'
+);
+RESET ROLE;
+DO $actor$
+BEGIN
+  PERFORM set_config('request.jwt.claim.sub', '63000000-0000-4000-8000-000000000005', true);
+  PERFORM set_config('request.jwt.claims', '{"sub":"63000000-0000-4000-8000-000000000005","role":"authenticated","user_metadata":{"role":"professor"}}', true);
+END;
+$actor$;
+SET LOCAL ROLE authenticated;
+SELECT extensions.is(
+  (public.get_participation_map_stats('student', 'RO', 'en', '2001-01-01', '2001-01-01', 'current')->>'total')::bigint,
+  10::bigint, 'enabled professor can combine all map filters'
+);
+SELECT extensions.throws_ok(
+  $$SELECT public.get_participation_map_stats('all', 'ZZ')$$,
+  '22023', 'Invalid participation map filters',
+  'enabled professor still receives validated filter errors'
+);
+RESET ROLE;
+-- Disabling a portal account takes effect on the next request; a still-valid
+-- authenticated JWT and its stale metadata cannot preserve filter access.
+UPDATE private.researchers SET enabled = false
+WHERE user_id = '63000000-0000-4000-8000-000000000005';
+SET LOCAL ROLE authenticated;
+SELECT extensions.throws_ok(
+  $$SELECT public.get_participation_map_stats('student')$$,
+  '42501', 'This account is not authorized for this portal action',
+  'revoking professor access immediately removes map filtering permission'
+);
+RESET ROLE;
 
 SELECT * FROM extensions.finish();
 ROLLBACK;

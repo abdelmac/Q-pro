@@ -2,6 +2,12 @@
 
 The map reuses `student_responses` for students and explorers (`participant_role = curious`) and `specialist_responses` for specialists. The public API translates `curious` to `non_medical`. No third response table or parallel scoring system is introduced.
 
+## Filter access
+
+The unfiltered map remains public, including zoom, panning and selecting a country to inspect its already-published counts. All filter controls (participant type, country, language, period and version) require an enabled `doctor` or `professor` portal account. Sign in through the dashboard, then return to the participation map in the same browser. Selecting “specialist” in the questionnaire does not grant administrative access; read-only `researcher` accounts do not have this permission either.
+
+The UI checks `current_user_portal_profile` and clears filters and displayed filtered data when the session changes or access is denied. The SQL facade independently checks `private.require_portal_role` before accepting any non-default filter. Anonymous users, ordinary signed-in users and disabled accounts receive SQLSTATE `42501` if they call filtered queries directly. No additional raw data or table grants are introduced.
+
 ## Collection and provenance
 
 `submit_student_response_v6` keeps all v5 parameters and adds nullable `p_country_code` and `p_region`. It creates participant schema 5. `submit_specialist_response_v5` keeps all v4 parameters and adds the same two fields; it creates specialist schema 3. Both require `research-consent-2026-09-16-geography`. The optional medicine prompt remains `medicine-view-optional-v2`; the scoring, questionnaire and calibration versions are unchanged.
@@ -12,7 +18,7 @@ Same-ID retries with an identical normalized payload return the original ID. Cha
 
 ## Public API
 
-Call Supabase RPC `get_participation_map_stats`, available to `anon` and `authenticated`:
+Call Supabase RPC `get_participation_map_stats`, available to `anon` and `authenticated` **without filters**:
 
 ```ts
 await supabase.rpc('get_participation_map_stats', {
@@ -37,7 +43,7 @@ The public endpoint reads only `private.participation_map_cells`. It never count
 
 Each monthly snapshot is sealed in `private.participation_map_months`. A transaction advisory lock serializes concurrent publishers. Publication is idempotent and includes empty months. Triggers forbid changing/removing released cells or metadata and forbid inserting a cell into a sealed month. Late-arriving/backdated records therefore cannot change a previously published count and reveal a difference of one. The release tables use RLS without public policies and no public table privileges. The public wrapper has an empty search path and explicitly limited execute grants; private publication is executable by the service role/database owner only.
 
-This is threshold suppression and rounding, not a formal differential-privacy guarantee. It reduces disclosure through the application's supported public filters. It does not prove respondents are unique people or prevent dishonest questionnaire submissions; the map counts submitted questionnaires, not verified individuals.
+This is threshold suppression and rounding, not a formal differential-privacy guarantee. It reduces disclosure through the published aggregates, including administrator-only filtered views. It does not prove respondents are unique people or prevent dishonest questionnaire submissions; the map counts submitted questionnaires, not verified individuals.
 
 ## Operations and verification
 

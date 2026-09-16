@@ -123,10 +123,15 @@ export function mapRpcArguments(filters: ParticipationMapFilters) {
   };
 }
 
+export class MapFilterAccessError extends Error {
+  constructor() { super('Map filters require administrator access'); }
+}
+
 export async function fetchParticipationMapStats(filters: ParticipationMapFilters, signal?: AbortSignal): Promise<ParticipationMapStats> {
   if (!supabase) throw new Error('Map service unavailable');
   const query = supabase.rpc('get_participation_map_stats', mapRpcArguments(filters));
-  const { data, error } = await (signal ? query.abortSignal(signal) : query);
+  const { data, error, status } = await (signal ? query.abortSignal(signal) : query);
+  if (error && (error.code === '42501' || status === 401 || status === 403)) throw new MapFilterAccessError();
   if (error) throw new Error('Map service unavailable');
   return parseParticipationMapStats(data);
 }

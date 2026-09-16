@@ -46,27 +46,31 @@ function validateMap(map) {
     assert.equal(map[summary], map.groups.reduce((sum, row) => sum + row[group], 0));
   }
 }
-const roles = ['all', 'student', 'specialist', 'non_medical'];
-const maps = await Promise.all(roles.map(async role => {
-  const { status, value } = await rpc('get_participation_map_stats', { p_respondent_type: role });
-  assert.equal(status, 200, `${role} public map RPC must resolve`);
+for (const payload of [{}, {
+  p_respondent_type: 'all', p_country_code: null, p_language: 'all',
+  p_month_from: null, p_month_to: null, p_data_version: 'all',
+}]) {
+  const { status, value } = await rpc('get_participation_map_stats', payload);
+  assert.equal(status, 200, 'Unfiltered public map RPC must resolve');
   validateMap(value);
-  if (role !== 'all') {
-    const selected = { student: 'students', specialist: 'specialists', non_medical: 'nonMedical' }[role];
-    assert.equal(value.total, value[selected]);
-  }
-  return value;
-}));
-assert.equal(maps[0].total, maps.slice(1).reduce((sum, map) => sum + map.total, 0));
+}
 for (const payload of [
+  { p_respondent_type: 'student' },
+  { p_respondent_type: 'specialist' },
+  { p_respondent_type: 'non_medical' },
+  { p_country_code: 'RO' },
+  { p_language: 'en' },
+  { p_month_from: '2001-01-01' },
+  { p_month_to: '2001-01-01' },
+  { p_data_version: 'current' },
   { p_country_code: 'ZZ' },
   { p_month_from: '2001-01-02' },
   { p_language: 'unknown' },
   { p_data_version: 'unknown' },
 ]) {
   const { status, value } = await rpc('get_participation_map_stats', payload);
-  assert.equal(status, 400);
-  assert.equal(value.code, '22023');
+  assert([401, 403].includes(status), 'Anonymous map filtering must be denied');
+  assert.equal(value.code, '42501');
 }
 for (const table of ['student_responses', 'specialist_responses']) {
   const response = await fetch(`${url}/rest/v1/${table}?select=id,country_code,region&limit=1`, {
@@ -103,4 +107,4 @@ for (const [name, payload] of invalid) {
   assert.equal(value.code, '22023');
   assert.equal(value.message, 'Invalid voluntary geography');
 }
-console.log('Participation map runtime: public aggregates, filter validation, private-row protection and both versioned geography RPCs passed. No records created.');
+console.log('Participation map runtime: public unfiltered aggregates, anonymous filters denied, private-row protection and both versioned geography RPCs passed. No records created.');

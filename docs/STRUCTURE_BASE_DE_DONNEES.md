@@ -464,7 +464,9 @@ Ces nouveaux points d'entrée reprennent les validations des RPC précédentes e
 
 #### `get_participation_map_stats(...)`
 
-Façade publique de lecture d'agrégats uniquement. Filtres : type `all/student/specialist/non_medical`, pays, langue, premier et dernier mois inclus, version `all/current`. Les dates doivent désigner le premier jour d'un mois clos. La réponse contient les totaux arrondis, les groupes par pays et les paramètres de confidentialité ; jamais de région, texte libre, spécialité, identifiant de réponse ou date individuelle. L'agrégation s'effectue dans PostgreSQL, pas après téléchargement des réponses privées dans le navigateur.
+Restriction administrative : `supabase/migrations/20260916155938_admin_only_participation_map_filters.sql`.
+
+Façade de lecture d'agrégats uniquement. La vue sans filtre reste publique ; tout filtre exige un compte activé de rôle `doctor` ou `professor`, vérifié côté serveur dans `private.researchers`. Les visiteurs, les simples utilisateurs authentifiés et les comptes `researcher` ne peuvent pas filtrer, même par appel direct à l'API (refus `42501`). Filtres administratifs : type `all/student/specialist/non_medical`, pays, langue, premier et dernier mois inclus, version `all/current`. Les dates doivent désigner le premier jour d'un mois clos. La réponse contient les totaux arrondis, les groupes par pays et les paramètres de confidentialité ; jamais de région, texte libre, spécialité, identifiant de réponse ou date individuelle. L'agrégation s'effectue dans PostgreSQL, pas après téléchargement des réponses privées dans le navigateur.
 
 ### 6.5 Consultation et export des réponses qualitatives
 

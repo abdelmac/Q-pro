@@ -24,6 +24,13 @@
 - `npm run build`, `npm run build:mobile` et synchronisation Capacitor Android/iOS.
 - Document Word régénéré et archive/XML validés par `scripts/generate_database_docx.py`.
 
+## Restriction complémentaire : filtres administrateurs
+
+- La carte publique conserve les agrégats globaux, le zoom, le déplacement et les détails de pays. Les filtres de type de participant, pays, langue, période et version sont réservés aux comptes activés `doctor`/`professor`, après connexion au dashboard ; le choix « spécialiste » du questionnaire ne donne aucun privilège.
+- Migration additive `20260916155938_admin_only_participation_map_filters.sql` : tout argument non standard exige une autorisation serveur avant validation du filtre. Aucun nouveau droit de lecture des réponses individuelles.
+- Tests navigateur réussis : public sans filtres en trois langues, administrateurs sur mobile/bureau, refus des chercheurs/comptes désactivés/profils invalides, déconnexion avec panneau ouvert, révocation après erreur `42501` et réponse d'autorisation tardive après déconnexion. Appels Auth/recherche intégralement simulés.
+- Tests carte, dashboard, mobile, contenu multilingue, lint, typage, builds web/mobile, synchronisation Capacitor et validation Word réussis. Contrôle local PostgreSQL/WASM : les quinze migrations et 82 assertions carte passent ; Auth/Cron/pgTAP y sont simulés et la CI Supabase demeure le contrôle intégré.
+
 ## Limites et points à conserver visibles
 
 Les compteurs publics ne sont ni instantanés ni exacts, et ne représentent pas des personnes uniques vérifiées. Une carte vide au lancement est normale : aucune localisation historique n'est inventée et aucun petit groupe n'est divulgué.

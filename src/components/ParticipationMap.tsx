@@ -4,8 +4,9 @@ import { useLanguage } from '@/lib/LanguageContext';
 import { countryOptions, getCountryName } from '@/data/geography';
 import { MAP_TRANSLATIONS, type MapStrings } from '@/data/mapI18n';
 import world from '@/data/worldMapPaths.json';
+import { useMapFilterAccess } from '@/lib/useMapFilterAccess';
 import {
-  areValidMapDates, DEFAULT_MAP_FILTERS, fetchParticipationMapStats, latestClosedMonth,
+  areValidMapDates, DEFAULT_MAP_FILTERS, fetchParticipationMapStats, latestClosedMonth, MapFilterAccessError,
   type ParticipationMapFilters, type ParticipationMapStats,
 } from '@/lib/participationMap';
 import PageBackButton from './PageBackButton';
@@ -67,9 +68,14 @@ function MapFilters({ value, onChange, onApply, onReset, copy, prefix }: {
 export default function ParticipationMap({ onBack }: ParticipationMapProps) {
   const { lang } = useLanguage();
   const copy = MAP_TRANSLATIONS[lang];
-  const [filters, setFilters] = useState<ParticipationMapFilters>({ ...DEFAULT_MAP_FILTERS });
+  const { accessKey, recheckAccess } = useMapFilterAccess();
+  const canFilter = accessKey !== null;
+  const [selection, setSelection] = useState<{ accessKey: string | null; filters: ParticipationMapFilters }>({ accessKey: null, filters: DEFAULT_MAP_FILTERS });
+  const filters = canFilter && selection.accessKey === accessKey ? selection.filters : DEFAULT_MAP_FILTERS;
   const [draft, setDraft] = useState<ParticipationMapFilters>({ ...DEFAULT_MAP_FILTERS });
-  const [stats, setStats] = useState<ParticipationMapStats | null>(null);
+  const [response, setResponse] = useState<{ accessKey: string | null; filters: ParticipationMapFilters; stats: ParticipationMapStats } | null>(null);
+  // Never render data from a previous account, authorization check or filter set.
+  const stats = response?.accessKey === accessKey && response.filters === filters ? response.stats : null;
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
   const [retry, setRetry] = useState(0);
@@ -84,16 +90,24 @@ export default function ParticipationMap({ onBack }: ParticipationMapProps) {
 
   useEffect(() => {
     const controller = new AbortController();
-    setLoading(true); setStats(null); setError(false); setSelectedCode(null);
+    setLoading(true); setResponse(null); setError(false); setSelectedCode(null);
     fetchParticipationMapStats(filters, controller.signal).then(result => {
-      if (!controller.signal.aborted) setStats(result);
-    }).catch(() => {
-      if (!controller.signal.aborted) setError(true);
+      if (!controller.signal.aborted) setResponse({ accessKey, filters, stats: result });
+    }).catch(cause => {
+      if (!controller.signal.aborted) {
+        setError(true);
+        if (accessKey !== null && cause instanceof MapFilterAccessError) recheckAccess();
+      }
     }).finally(() => {
       if (!controller.signal.aborted) setLoading(false);
     });
     return () => controller.abort();
-  }, [filters, retry]);
+  }, [accessKey, filters, retry, recheckAccess]);
+
+  useEffect(() => {
+    setDraft({ ...DEFAULT_MAP_FILTERS });
+    dialogRef.current?.close();
+  }, [accessKey]);
 
   const byCountry = useMemo(() => new Map(stats?.groups.map(group => [group.countryCode, group]) ?? []), [stats]);
   const maxCount = Math.max(10, ...(stats?.groups.map(group => group.count) ?? []));
@@ -144,8 +158,8 @@ export default function ParticipationMap({ onBack }: ParticipationMapProps) {
     if (event.type === 'pointerup' && pointer?.code && !pointer.moved) selectCountry(pointer.code);
   };
 
-  const applyFilters = () => { setFilters({ ...draft }); dialogRef.current?.close(); };
-  const resetFilters = () => { setDraft({ ...DEFAULT_MAP_FILTERS }); setFilters({ ...DEFAULT_MAP_FILTERS }); dialogRef.current?.close(); };
+  const applyFilters = () => { if (canFilter) setSelection({ accessKey, filters: { ...draft } }); dialogRef.current?.close(); };
+  const resetFilters = () => { setDraft({ ...DEFAULT_MAP_FILTERS }); setSelection({ accessKey, filters: DEFAULT_MAP_FILTERS }); dialogRef.current?.close(); };
   const respondentOptions = [
     ['all', copy.all], ['non_medical', copy.nonMedical], ['student', copy.students], ['specialist', copy.specialists],
   ] as const;
@@ -176,16 +190,16 @@ export default function ParticipationMap({ onBack }: ParticipationMapProps) {
         </div>)}
       </div>
 
-      <div className="mb-6 mt-7 flex flex-wrap items-center gap-2" aria-label={copy.filters}>
-        {respondentOptions.map(([type, label]) => <button key={type} type="button" aria-pressed={filters.respondentType === type} onClick={() => { setFilters(previous => ({ ...previous, respondentType: type })); setDraft(previous => ({ ...previous, respondentType: type })); }} className={`min-h-11 rounded-full border px-4 py-2 text-sm font-medium transition ${filters.respondentType === type ? 'border-brand-800 bg-brand-800 text-white' : 'border-ink-200 bg-white text-ink-600 hover:border-brand-400'}`}>{label}</button>)}
+      {canFilter && <div className="mb-6 mt-7 flex flex-wrap items-center gap-2" aria-label={copy.filters}>
+        {respondentOptions.map(([type, label]) => <button key={type} type="button" aria-pressed={filters.respondentType === type} onClick={() => { setSelection({ accessKey, filters: { ...filters, respondentType: type } }); setDraft(previous => ({ ...previous, respondentType: type })); }} className={`min-h-11 rounded-full border px-4 py-2 text-sm font-medium transition ${filters.respondentType === type ? 'border-brand-800 bg-brand-800 text-white' : 'border-ink-200 bg-white text-ink-600 hover:border-brand-400'}`}>{label}</button>)}
         <button type="button" className={`${BUTTON} ml-auto gap-2 lg:hidden`} onClick={() => dialogRef.current?.showModal()}><SlidersHorizontal className="h-4 w-4" aria-hidden="true" />{copy.filters}</button>
-      </div>
+      </div>}
 
-      <div className="grid items-start gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
-        <aside className="hidden rounded-2xl border border-ink-100 bg-white p-5 lg:block">
+      <div className={`grid items-start gap-6 ${canFilter ? 'lg:grid-cols-[260px_minmax(0,1fr)]' : 'mt-7'}`}>
+        {canFilter && <aside className="hidden rounded-2xl border border-ink-100 bg-white p-5 lg:block">
           <h2 className="mb-5 flex items-center gap-2 text-base font-semibold text-ink-800"><SlidersHorizontal className="h-4 w-4" aria-hidden="true" />{copy.filters}</h2>
           <MapFilters value={draft} onChange={setDraft} onApply={applyFilters} onReset={resetFilters} copy={copy} prefix="desktop-map" />
-        </aside>
+        </aside>}
         <div className="min-w-0">
           <section className="overflow-hidden rounded-2xl border border-ink-200 bg-white" aria-label={copy.mapLabel} aria-busy={loading}>
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-ink-100 p-3">
@@ -233,9 +247,9 @@ export default function ParticipationMap({ onBack }: ParticipationMapProps) {
         </div>
       </div>
     </main>
-    <dialog ref={dialogRef} aria-labelledby="map-filter-title" className="fixed inset-x-0 bottom-0 top-auto m-0 max-h-[90dvh] w-full max-w-none overflow-y-auto rounded-t-3xl bg-white p-5 shadow-2xl backdrop:bg-ink-900/50 sm:inset-0 sm:m-auto sm:max-w-md sm:rounded-3xl" onClick={event => { if (event.target === event.currentTarget) dialogRef.current?.close(); }}>
+    {canFilter && <dialog ref={dialogRef} aria-labelledby="map-filter-title" className="fixed inset-x-0 bottom-0 top-auto m-0 max-h-[90dvh] w-full max-w-none overflow-y-auto rounded-t-3xl bg-white p-5 shadow-2xl backdrop:bg-ink-900/50 sm:inset-0 sm:m-auto sm:max-w-md sm:rounded-3xl" onClick={event => { if (event.target === event.currentTarget) dialogRef.current?.close(); }}>
       <div className="mb-6 flex items-center justify-between"><h2 id="map-filter-title" className="text-xl font-semibold text-ink-900">{copy.filters}</h2><button type="button" className={BUTTON} onClick={() => dialogRef.current?.close()} aria-label={copy.close}><X className="h-5 w-5" aria-hidden="true" /></button></div>
       <MapFilters value={draft} onChange={setDraft} onApply={applyFilters} onReset={resetFilters} copy={copy} prefix="mobile-map" />
-    </dialog>
+    </dialog>}
   </div>;
 }
