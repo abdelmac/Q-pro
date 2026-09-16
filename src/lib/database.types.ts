@@ -21,6 +21,9 @@ export type Database = {
           career_satisfaction: number | null
           consent_version: string
           created_at: string
+          country_code: string | null
+          country_name: string | null
+          region: string | null
           current_specialty_view: string | null
           id: string
           intention_to_change: string | null
@@ -51,6 +54,9 @@ export type Database = {
           career_satisfaction?: number | null
           consent_version: string
           created_at?: string
+          country_code?: string | null
+          country_name?: string | null
+          region?: string | null
           current_specialty_view?: string | null
           id?: string
           intention_to_change?: string | null
@@ -81,6 +87,9 @@ export type Database = {
           career_satisfaction?: number | null
           consent_version?: string
           created_at?: string
+          country_code?: string | null
+          country_name?: string | null
+          region?: string | null
           current_specialty_view?: string | null
           id?: string
           intention_to_change?: string | null
@@ -112,6 +121,9 @@ export type Database = {
           client_scores: Json
           consent_version: string
           created_at: string
+          country_code: string | null
+          country_name: string | null
+          region: string | null
           id: string
           language: string
           medicine_view: string | null
@@ -133,6 +145,9 @@ export type Database = {
           client_scores: Json
           consent_version: string
           created_at?: string
+          country_code?: string | null
+          country_name?: string | null
+          region?: string | null
           id?: string
           language?: string
           medicine_view?: string | null
@@ -154,6 +169,9 @@ export type Database = {
           client_scores?: Json
           consent_version?: string
           created_at?: string
+          country_code?: string | null
+          country_name?: string | null
+          region?: string | null
           id?: string
           language?: string
           medicine_view?: string | null
@@ -178,6 +196,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_participation_map_stats: {
+        Args: {
+          p_respondent_type?: string
+          p_country_code?: string | null
+          p_language?: string
+          p_month_from?: string | null
+          p_month_to?: string | null
+          p_data_version?: string
+        }
+        Returns: Json
+      }
       current_user_portal_profile: { Args: never; Returns: Json }
       current_user_is_researcher: { Args: never; Returns: boolean }
       get_active_specialty_catalog: { Args: never; Returns: Json }
@@ -335,6 +364,31 @@ export type Database = {
         }
         Returns: string
       }
+      submit_specialist_response_v5: {
+        Args: {
+          p_country_code: string | null
+          p_region: string | null
+          p_actual_specialty: string
+          p_calibration_version: string
+          p_consent_version: string
+          p_current_specialty_view: string
+          p_language: string
+          p_most_important_specialty_quality: string
+          p_questionnaire_completed: boolean
+          p_questionnaire_version: string
+          p_ratings: Json
+          p_selected_values: Json
+          p_specialty_catalog_version: string
+          p_specialty_changes_over_years: string
+          p_specialty_config_version_id: string
+          p_student_self_question: string
+          p_submission_id: string
+          p_value_catalog_version: string
+          p_would_choose_again_code: string
+          p_would_not_choose_again_reason: string | null
+        }
+        Returns: string
+      }
       submit_student_response_v3: {
         Args: {
           p_client_scores: Json
@@ -376,6 +430,29 @@ export type Database = {
       }
       submit_student_response_v5: {
         Args: {
+          p_client_scores: Json
+          p_consent_version: string
+          p_language: string
+          p_medicine_view: string
+          p_participant_reflection_version: string
+          p_participant_role: string
+          p_preferred_specialty: string
+          p_questionnaire_version: string
+          p_ratings: Json
+          p_scoring_version: string
+          p_selected_values: Json
+          p_specialty_catalog_version: string
+          p_specialty_config_version_id: string
+          p_study_year: number
+          p_submission_id: string
+          p_value_catalog_version: string
+        }
+        Returns: string
+      }
+      submit_student_response_v6: {
+        Args: {
+          p_country_code: string | null
+          p_region: string | null
           p_client_scores: Json
           p_consent_version: string
           p_language: string

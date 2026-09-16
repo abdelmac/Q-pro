@@ -629,8 +629,8 @@ for (const [language, requiredCopy] of [
 
 assert.deepEqual(
   [...PARTICIPANT_ROLES],
-  ['student', 'specialist', 'curious'],
-  'The initial identity gate must expose student, specialist, and curious roles in that order',
+  ['curious', 'student', 'specialist'],
+  'The initial identity gate follows before, during, and after medical studies',
 );
 assert.equal(
   INITIAL_PARTICIPANT_ROLE,
@@ -642,6 +642,14 @@ const roleSelectionCopy: RoleSelectionCopy = {
   appName: 'Q-Pro',
   title: 'Identify your profile',
   description: 'Choose the profile that applies to you.',
+  introspection: 'What draws you to medicine?',
+  perspective: 'A retrospective clinical perspective.',
+  connection: 'Connecting people through medicine.',
+  curiousStage: 'Before medical studies',
+  studentStage: 'During medical studies',
+  specialistStage: 'After medical studies',
+  creditsLabel: 'Project credits',
+  worldMapLabel: 'Around the world',
   studentLabel: 'Student',
   studentDescription: 'Complete the orientation questionnaire.',
   specialistLabel: 'Specialist',
@@ -654,10 +662,12 @@ const selectedRoles: ParticipantRole[] = [];
 const roleSelection = RoleSelectionView({
   copy: roleSelectionCopy,
   onSelectRole: (role) => selectedRoles.push(role),
+  onOpenCredits: () => undefined,
+  onOpenWorldMap: () => undefined,
 });
 const roleFieldsets = elementPropsByType(roleSelection, 'fieldset');
 const roleLegends = elementPropsByType(roleSelection, 'legend');
-const roleButtons = elementPropsByType(roleSelection, 'button');
+const roleButtons = elementPropsByType(roleSelection, 'button').filter((button) => button['data-participant-role']);
 assert.equal(roleFieldsets.length, 1, 'The identity choices must be grouped in one fieldset');
 assert.equal(roleLegends.length, 1, 'The identity choice group must have one accessible legend');
 assert.equal(roleLegends[0].children, roleSelectionCopy.title);
@@ -665,7 +675,7 @@ assert.equal(roleButtons.length, 3, 'The identity gate must render one button pe
 assert.deepEqual(
   roleButtons.map((button) => button['data-participant-role']),
   PARTICIPANT_ROLES,
-  'Role buttons must preserve the canonical student-then-specialist ordering',
+  'Role buttons must follow the before, during, and after medical studies order',
 );
 for (const [index, button] of roleButtons.entries()) {
   assert.equal(button.type, 'button', 'Role choices must not submit an enclosing form');
@@ -675,9 +685,9 @@ for (const [index, button] of roleButtons.entries()) {
     'Each role button must expose a visible keyboard focus treatment',
   );
   const expectedCopy = [
+    [roleSelectionCopy.curiousLabel, roleSelectionCopy.curiousDescription],
     [roleSelectionCopy.studentLabel, roleSelectionCopy.studentDescription],
     [roleSelectionCopy.specialistLabel, roleSelectionCopy.specialistDescription],
-    [roleSelectionCopy.curiousLabel, roleSelectionCopy.curiousDescription],
   ][index];
   const [expectedLabel, expectedDescription] = expectedCopy;
   const accessibleText = elementTextContent(button.children);
@@ -1278,6 +1288,18 @@ const participantWithoutReflection: StudentResponseRow = {
 };
 
 const validAnalysis = analyzeSpecialistResponse(specialist);
+assert.equal(analyzeSpecialistResponse({ ...specialist,
+  submission_schema_version: DATA_VERSIONS.specialistSubmissionSchema,
+  consent_version: DATA_VERSIONS.specialistConsent,
+}).eligible, true, 'Optional geography must not invalidate the specialist quantitative protocol');
+assert.equal(analyzeSpecialistResponse({ ...specialist,
+  submission_schema_version: DATA_VERSIONS.specialistSubmissionSchema,
+  consent_version: DATA_VERSIONS.consent,
+}).eligible, false, 'New geography schemas require their matching consent');
+assert.equal(analyzeStudentResponse({ ...curiousParticipant,
+  submission_schema_version: DATA_VERSIONS.optionalReflectionSubmissionSchema,
+  consent_version: DATA_VERSIONS.optionalReflectionConsent,
+}).eligible, true, 'Historic optional-reflection responses remain quantitatively eligible');
 assert.equal(validAnalysis.eligible, true);
 assert.equal(validAnalysis.ranking.length, SPECIALTIES.length);
 assert.ok(validAnalysis.ranking.every(({ rankMin, rankMax }) => rankMin <= rankMax));

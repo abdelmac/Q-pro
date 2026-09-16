@@ -8,6 +8,8 @@
 
 **Périmètre :** Supabase Auth, PostgreSQL, collecte de recherche, catalogue éditable des spécialités, sécurité, versionnement et provenance scientifique.
 
+**Extension géographique et mobile :** `supabase/migrations/20260916122348_geographic_participation_map.sql`. Les protocoles actifs sont désormais participant v6 / schéma 5 et spécialiste v5 / schéma 3. Les RPC antérieures décrites ci-dessous restent documentées pour la compatibilité historique.
+
 Ce document décrit la structure fonctionnelle et technique de la base Q Project après l’introduction du portail Specialist/Admin. Il ne contient aucun secret, aucune adresse de compte et aucun mot de passe.
 
 <!-- PAGEBREAK -->
@@ -48,10 +50,12 @@ Les principes structurants sont les suivants :
 - Doctor et Professor peuvent modifier un brouillon ;
 - seul Professor peut publier ou demander la restauration d’une version historique ;
 - une version publiée est un instantané immuable ;
-- chaque nouvelle soumission, envoyée par la RPC participant v5 ou spécialiste v4, enregistre la version exacte du catalogue utilisée ;
+- chaque nouvelle soumission, envoyée par la RPC participant v6 ou spécialiste v5, enregistre la version exacte du catalogue utilisée ;
 - toute nouvelle réponse étudiante limite l’année d’études facultative aux années 1 à 6 ;
 - le rôle `student` ou `curious` est enregistré explicitement ; le verbatim sur la perception de la médecine est facultatif et son absence est stockée comme `NULL` ;
-- l'entretien spécialiste de schéma 2 collecte toujours cinq réponses qualitatives ; les 81 items et les valeurs professionnelles sont facultatifs et leur complétion est enregistrée explicitement ;
+- l'entretien spécialiste des schémas 2 et 3 collecte toujours cinq réponses qualitatives ; les 81 items et les valeurs professionnelles sont facultatifs et leur complétion est enregistrée explicitement ;
+- le pays et la région sont facultatifs ; aucune adresse, position GPS ou adresse IP n'est collectée par le formulaire ;
+- la carte publique ne lit que des cellules mensuelles agrégées, figées, avec un seuil de dix réponses et un arrondi inférieur au multiple de cinq ;
 - les anciennes colonnes et les anciennes RPC restent présentes afin de conserver l'historique sans le mélanger au protocole courant ;
 - les indicateurs Top-k sont descriptifs et ne modifient jamais automatiquement les poids.
 
@@ -65,7 +69,7 @@ La migration `20260831120000_specialist_admin_portal.sql` ajoute la couche édit
 │                                                                     │
 │  Questionnaire public             Dashboard sécurisé                │
 │  - catalogue actif                - réponses de recherche            │
-│  - participant v5 / spécialiste v4 - réponses qualitatives           │
+│  - participant v6 / spécialiste v5 - réponses qualitatives           │
 │                                    - publication / historique        │
 └───────────────┬───────────────────────────────┬─────────────────────┘
                 │ clé publique                  │ session Auth JWT
@@ -75,7 +79,7 @@ La migration `20260831120000_specialist_admin_portal.sql` ajoute la couche édit
 │                                                                     │
 │ RPC publiques validées             RPC administratives contrôlées   │
 │ get_active_specialty_catalog       current_user_portal_profile      │
-│ submit_*_response_v1/v2/v3/v4/v5   get/save/publish/list/restore     │
+│ submit_*_response_v1 à v6          get/save/publish/list/restore     │
 └───────────────┬───────────────────────────────┬─────────────────────┘
                 ▼                               ▼
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -91,7 +95,7 @@ La migration `20260831120000_specialist_admin_portal.sql` ajoute la couche édit
 
 1. L’application charge l’unique catalogue publié avec `get_active_specialty_catalog()`.
 2. Le moteur construit le profil et le classement dans le navigateur.
-3. La soumission v5 étudiant/explorateur transmet l’identifiant UUID de la version publiée utilisée et crée une ligne de `submission_schema_version = 4`; la soumission spécialiste v4 conserve le schéma 2.
+3. La soumission v6 étudiant/explorateur transmet l’identifiant UUID de la version publiée utilisée et crée une ligne de `submission_schema_version = 5` ; la soumission spécialiste v5 utilise le schéma 3. Toutes deux acceptent un pays et une région facultatifs.
 4. PostgreSQL vérifie que cet UUID correspond bien à un instantané publié.
 5. La réponse et la révision du catalogue sont enregistrées ensemble.
 6. Le spécialiste choisit soit le profil quantitatif complet (81 notes et 1 à 4 valeurs), soit l'accès direct aux cinq questions qualitatives. En cas de passage direct, les éventuelles réponses partielles ne sont pas envoyées à la base ; aucun profil incomplet n'est enregistré.
@@ -324,16 +328,29 @@ Comme pour les étudiants, la paire `(specialty_config_version_id, specialty_con
 
 Pour les protocoles courants, les versions enregistrées sont :
 
-- `submission_schema_version = 4` pour les étudiants et explorateurs, `2` pour les spécialistes ;
+- `submission_schema_version = 5` pour les étudiants et explorateurs, `3` pour les spécialistes ;
 - `questionnaire_version = q81-v1` ;
 - `value_catalog_version = career-values-v1` ;
 - `specialty_catalog_version = medical-specialties-v1` ;
 - `scoring_version = client-scoring-v2` pour les étudiants et explorateurs ;
 - `calibration_version = calibration-v2-qualitative` pour les spécialistes ;
-- `participant_reflection_version = medicine-view-optional-v2` et `consent_version = research-consent-2026-09-16` pour les étudiants et explorateurs ; cette version décrit la présentation de la question même si la réponse reste `NULL` ;
-- `consent_version = research-consent-2026-09-04` pour les spécialistes.
+- `participant_reflection_version = medicine-view-optional-v2` pour les étudiants et explorateurs ; cette version décrit la présentation de la question même si la réponse reste `NULL` ;
+- `consent_version = research-consent-2026-09-16-geography` pour les deux groupes.
 
 Le libellé stable `medical-specialties-v1` désigne le format canonique du catalogue. La provenance de son contenu effectif est donnée séparément par l'UUID et la révision de l'instantané publié.
+
+### 5.9 Géographie volontaire et cellules publiques
+
+Les tables `public.student_responses` et `public.specialist_responses` reçoivent trois colonnes `text` facultatives : `country_code`, `country_name` et `region`. Le serveur valide le code dans une liste canonique ISO 3166-1 alpha-2 de 249 pays/territoires et déduit lui-même le nom. La région, limitée à 100 caractères sans caractères de contrôle, reste une donnée privée de recherche. Une région sans pays est refusée. Les anciennes réponses restent sans localisation : aucune déduction ni réécriture rétrospective n'est effectuée.
+
+| Table privée | Rôle | Clé / champs essentiels |
+| --- | --- | --- |
+| `participation_map_months` | Scelle définitivement un mois publié, même vide | `month`, `published_at`, `cell_count` |
+| `participation_map_cells` | Cellules disjointes autorisées à la publication | mois × pays × type × langue × version questionnaire × version collecte ; `response_count` |
+
+Les deux tables ont RLS activée et aucun accès direct pour `anon` ou `authenticated`. Les cellules de moins de dix réponses ne sont ni publiées ni ajoutées aux totaux. Chaque effectif publié est arrondi vers le bas au multiple de cinq. Seuls les questionnaires complets ayant fourni un pays sous le nouveau consentement sont éligibles ; les entretiens spécialistes sans les 81 réponses n'entrent pas dans la carte. Le rôle historique `curious` est conservé en base et traduit en `non_medical` dans l'API publique.
+
+Les déclencheurs rendent les publications immuables. Les filtres ne font que sommer ces mêmes cellules déjà publiées : un sous-groupe masqué ne peut pas être récupéré en soustrayant un total exact d'un total filtré. Les compteurs sont donc des réponses publiables approximatives, pas le total exact de la recherche ni un nombre de personnes uniques vérifiées. La publication est différée jusqu'après la clôture du mois UTC. Voir `docs/PARTICIPATION_MAP.md` pour la planification et la reprise opérationnelle.
 
 ## 6. Fonctions RPC et points d’entrée
 
@@ -440,6 +457,14 @@ Point d'entrée courant des spécialistes. Il reçoit le booléen `p_questionnai
 La fonction impose un invariant tout-ou-rien : `true` exige les 81 notes et 1 à 4 valeurs valides ; `false` exige exactement `{}` et `[]`. Elle normalise les espaces périphériques, vérifie les longueurs et le caractère conditionnel de la justification, exige `calibration-v2-qualitative`, `research-consent-2026-09-04` et une provenance publiée, puis écrit une ligne de schéma 2. Les anciens champs d'expérience, satisfaction, intention de changement et caractère volontaire sont volontairement écrits à `NULL`.
 
 Les façades publiques v3, v4 et v5 nécessaires sont exécutables par `anon` et `authenticated`. Elles délèguent aux implémentations privées correspondantes, auxquelles ces rôles n'ont aucun droit direct.
+
+#### `submit_student_response_v6(...)` et `submit_specialist_response_v5(...)`
+
+Ces nouveaux points d'entrée reprennent les validations des RPC précédentes et ajoutent `p_country_code` et `p_region`, facultatifs. Ils exigent le consentement géographique et écrivent respectivement les schémas 5 et 3. L'UUID de soumission fourni par le client est conservé : un rejeu identique retourne le même identifiant, mais un changement du pays, de la région ou du reste du contenu sous le même UUID est refusé. Les RPC antérieures ne peuvent pas ajouter de localisation.
+
+#### `get_participation_map_stats(...)`
+
+Façade publique de lecture d'agrégats uniquement. Filtres : type `all/student/specialist/non_medical`, pays, langue, premier et dernier mois inclus, version `all/current`. Les dates doivent désigner le premier jour d'un mois clos. La réponse contient les totaux arrondis, les groupes par pays et les paramètres de confidentialité ; jamais de région, texte libre, spécialité, identifiant de réponse ou date individuelle. L'agrégation s'effectue dans PostgreSQL, pas après téléchargement des réponses privées dans le navigateur.
 
 ### 6.5 Consultation et export des réponses qualitatives
 
@@ -588,7 +613,7 @@ Une recommandation reproductible dépend de plusieurs éléments :
 - la version du protocole de la question libre participant, lorsque le schéma vaut 3 ou 4 ;
 - l’UUID et la révision du catalogue dynamique publié.
 
-Les RPC v2, v3, v4 et v5 enregistrent l’UUID et la révision du catalogue publié dans la ligne de réponse. Les RPC courantes v5 participant et v4 spécialiste les rendent obligatoires respectivement pour les schémas 4 et 2. Cela permet de retrouver l'instantané exact même après plusieurs publications et d'éviter d'analyser une réponse avec un catalogue différent de celui réellement utilisé.
+Les RPC v2 à v6 enregistrent l’UUID et la révision du catalogue publié dans la ligne de réponse. Les RPC courantes v6 participant et v5 spécialiste les rendent obligatoires respectivement pour les schémas 5 et 3. Cela permet de retrouver l'instantané exact même après plusieurs publications et d'éviter d'analyser une réponse avec un catalogue différent de celui réellement utilisé.
 
 Le `checksum` sert à détecter une différence de contenu et à identifier un instantané. Il n’est pas un secret et ne remplace pas le contrôle d’accès.
 
@@ -600,7 +625,8 @@ Le `checksum` sert à détecter une différence de contenu et à identifier un i
 
 Les fonctions v1 à v4 restent disponibles pour la compatibilité et certaines lignes anciennes peuvent ne pas avoir une provenance dynamique complète. Le dashboard distingue :
 
-- données participantes de schéma 4 et données spécialistes de schéma 2, courantes et reproductibles ;
+- données participantes de schéma 5 et données spécialistes de schéma 3, courantes et reproductibles ;
+- données participantes de schéma 4 et spécialistes de schéma 2 encore exploitables avec leur consentement propre, sans géographie ;
 - données participantes de schéma 3, issues de l'ancien protocole à verbatim obligatoire, encore exploitables quantitativement avec leur provenance propre ;
 - données participantes de schéma 2 encore exploitables pour le questionnaire quantitatif, mais dépourvues du verbatim et du rôle explicite du nouveau protocole ;
 - données de schéma 0 ou 1 consultables et exportables comme legacy ;
@@ -699,6 +725,14 @@ Les mécanismes de sauvegarde disponibles dépendent du plan Supabase. Ils doive
 - un test documenté de restauration ;
 - une conservation séparée des journaux nécessaires à l’audit ;
 - une procédure d’incident et de révocation des comptes.
+
+### 12.4 Application mobile et reprise locale
+
+La même application React/TypeScript est embarquée dans les projets Capacitor Android et iOS. Il n'existe pas de second moteur de calcul : les identifiants de questions, mappings, traductions, versions, profils et contrats API sont partagés. Le catalogue publié exact est figé pendant un questionnaire et conservé avec son brouillon ; une nouvelle publication distante ne remplace pas silencieusement les poids d'une session en cours.
+
+La progression se conserve localement, avec un choix de reprise et des commandes d'effacement. Dans le navigateur, ce stockage n'est pas chiffré et un avertissement invite à l'effacer sur un appareil partagé. En mobile natif, brouillons, contributions en attente et session d'administration utilisent le stockage sécurisé de l'appareil, sans synchronisation iCloud ni repli silencieux en clair. Un brouillon de plus de trente jours ou incompatible n'est pas chargé automatiquement.
+
+Seul un clic explicite d'enregistrement crée une contribution à synchroniser. La file garde le payload et l'UUID exacts ; les erreurs réseau autorisent un renvoi, les refus de validation restent visibles sans renvoi automatique. La durée des tentatives est limitée à sept jours. Les copies expirées restent signalées et peuvent être effacées explicitement. Un message « en attente » est distinct d'un accusé de réception serveur. Effacer une copie locale ne supprime pas une réponse déjà reçue par Supabase. Voir `docs/MOBILE.md` pour la compilation et les limites de validation des plateformes.
 
 ## 13. Tests et déploiement
 

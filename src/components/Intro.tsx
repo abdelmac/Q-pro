@@ -3,7 +3,7 @@ import type { ParticipantRole } from '@/lib/participantProfile';
 import { FEATURE_FLAGS } from '@/config/features';
 import LanguageSwitcher from './LanguageSwitcher';
 import PageBackButton from './PageBackButton';
-import { Stethoscope, Brain, HeartPulse, Sparkles, ArrowRight, Compass, BookOpen, BarChart3, GraduationCap, RefreshCw } from 'lucide-react';
+import { Stethoscope, Brain, Heart, HeartPulse, Sparkles, ArrowRight, Compass, Globe2, BookOpen, BarChart3, GraduationCap, RefreshCw } from 'lucide-react';
 
 interface IntroProps {
   onStart: () => void;
@@ -14,9 +14,11 @@ interface IntroProps {
   onOpenExplorer: () => void;
   onOpenMethodology: () => void;
   onOpenDashboard: () => void;
+  onOpenCredits: () => void;
+  onOpenWorldMap: () => void;
 }
 
-export default function Intro({ onStart, totalQuestions, participantRole, onBack, onChangeRole, onOpenExplorer, onOpenMethodology, onOpenDashboard }: IntroProps) {
+export default function Intro({ onStart, totalQuestions, participantRole, onBack, onChangeRole, onOpenExplorer, onOpenMethodology, onOpenDashboard, onOpenCredits, onOpenWorldMap }: IntroProps) {
   const { t } = useLanguage();
   const isSpecialist = participantRole === 'specialist';
   const isCurious = participantRole === 'curious';
@@ -119,7 +121,7 @@ export default function Intro({ onStart, totalQuestions, participantRole, onBack
       </main>
 
       <footer className="px-6 py-8 text-center">
-        <div className="flex items-center justify-center gap-2 mb-5">
+        <div className="mb-5 flex flex-wrap items-center justify-center gap-2">
           <button onClick={onOpenExplorer} className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold text-ink-500 hover:text-ink-900 hover:bg-ink-100 transition-colors">
             <Compass className="w-3.5 h-3.5" /> {t.navExplorer}
           </button>
@@ -130,6 +132,12 @@ export default function Intro({ onStart, totalQuestions, participantRole, onBack
           )}
           <button onClick={onOpenDashboard} className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold text-ink-500 hover:text-ink-900 hover:bg-ink-100 transition-colors">
             <BarChart3 className="w-3.5 h-3.5" /> Dashboard
+          </button>
+          <button type="button" onClick={onOpenWorldMap} className="inline-flex min-h-11 items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-semibold text-ink-500 transition-colors hover:bg-ink-100 hover:text-ink-900">
+            <Globe2 className="h-3.5 w-3.5" aria-hidden="true" />{t.navWorldMap}
+          </button>
+          <button type="button" onClick={onOpenCredits} className="inline-flex min-h-11 items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-semibold text-ink-500 transition-colors hover:bg-ink-100 hover:text-ink-900">
+            <Heart className="h-3.5 w-3.5" aria-hidden="true" />{t.navCredits}
           </button>
         </div>
         <p className="text-xs text-ink-400">{t.footerNote}</p>

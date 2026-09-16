@@ -43,9 +43,13 @@ export interface SpecialtyCatalogSnapshot {
 }
 
 export interface SpecialtyCatalogContextValue extends SpecialtyCatalogSnapshot {
+  snapshot: SpecialtyCatalogSnapshot;
   isLoading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
+  restoreSnapshot: (snapshot: SpecialtyCatalogSnapshot) => boolean;
+  lock: () => void;
+  unlock: () => void;
   getDescription: (specialtyName: string, language: Language) => string;
   getClinicalSummary: (specialtyName: string, language: Language) => string;
 }
@@ -321,11 +325,64 @@ export function mergeSpecialtyCatalog(value: unknown): SpecialtyCatalogSnapshot 
 
 const SpecialtyCatalogContext = createContext<SpecialtyCatalogContextValue | null>(null);
 
+const CATALOG_CACHE_KEY = 'specialty-match:published-catalog:v1';
+
+export function restorePublishedCatalog(snapshot: SpecialtyCatalogSnapshot): SpecialtyCatalogSnapshot {
+  if (snapshot.source !== 'remote'
+    || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu.test(snapshot.version.id)
+    || !/^md5:[0-9a-f]{32}$/u.test(snapshot.version.content_hash)) {
+    throw new Error('Only a previously published catalog can be restored.');
+  }
+  return mergeSpecialtyCatalog({
+    version: snapshot.version,
+    specialties: snapshot.specialties.map((specialty) => ({
+      ...specialty,
+      descriptions: snapshot.descriptions[specialty.name],
+      clinical_summaries: snapshot.clinicalSummaries[specialty.name],
+    })),
+  });
+}
+
+function readCachedCatalog(): SpecialtyCatalogSnapshot {
+  try {
+    const cache = JSON.parse(localStorage.getItem(CATALOG_CACHE_KEY) ?? 'null');
+    if (!cache || Date.now() - cache.savedAt > 30 * 24 * 60 * 60 * 1000) return FALLBACK_SPECIALTY_CATALOG;
+    return restorePublishedCatalog(cache.snapshot);
+  } catch {
+    return FALLBACK_SPECIALTY_CATALOG;
+  }
+}
+
 export function SpecialtyCatalogProvider({ children }: { children: ReactNode }) {
-  const [snapshot, setSnapshot] = useState<SpecialtyCatalogSnapshot>(FALLBACK_SPECIALTY_CATALOG);
+  const [snapshot, setSnapshot] = useState<SpecialtyCatalogSnapshot>(readCachedCatalog);
   const [isLoading, setIsLoading] = useState(Boolean(supabase));
   const [error, setError] = useState<string | null>(getSupabaseConfigurationError());
   const requestId = useRef(0);
+  const locked = useRef(false);
+  const nextPublishedSnapshot = useRef<SpecialtyCatalogSnapshot | null>(null);
+  const lock = useCallback(() => { locked.current = true; }, []);
+  const unlock = useCallback(() => {
+    locked.current = false;
+    if (nextPublishedSnapshot.current) {
+      setSnapshot(nextPublishedSnapshot.current);
+      nextPublishedSnapshot.current = null;
+    }
+  }, []);
+  const restoreSnapshot = useCallback((saved: SpecialtyCatalogSnapshot) => {
+    try {
+      const restored = restorePublishedCatalog(saved);
+      const latestCached = readCachedCatalog();
+      if (latestCached.source === 'remote' && latestCached.revision > restored.revision) {
+        nextPublishedSnapshot.current = latestCached;
+      }
+      locked.current = true;
+      requestId.current += 1;
+      setSnapshot(restored);
+      setIsLoading(false);
+      setError(null);
+      return true;
+    } catch { return false; }
+  }, []);
 
   const refresh = useCallback(async () => {
     const currentRequest = ++requestId.current;
@@ -344,7 +401,13 @@ export function SpecialtyCatalogProvider({ children }: { children: ReactNode }) 
       const { data, error: rpcError } = await rpcClient.rpc('get_active_specialty_catalog');
       if (rpcError) throw new Error(rpcError.message);
       const nextSnapshot = mergeSpecialtyCatalog(data);
-      if (currentRequest === requestId.current) setSnapshot(nextSnapshot);
+      if (currentRequest === requestId.current) {
+        if (!locked.current) setSnapshot(nextSnapshot);
+        else nextPublishedSnapshot.current = nextSnapshot;
+        try {
+          localStorage.setItem(CATALOG_CACHE_KEY, JSON.stringify({ savedAt: Date.now(), snapshot: nextSnapshot }));
+        } catch { /* Public catalog caching is optional; never block online use. */ }
+      }
     } catch (refreshError) {
       if (currentRequest === requestId.current) {
         setError(refreshError instanceof Error ? refreshError.message : 'Unable to load the specialty catalog.');
@@ -363,9 +426,13 @@ export function SpecialtyCatalogProvider({ children }: { children: ReactNode }) 
 
   const value = useMemo<SpecialtyCatalogContextValue>(() => ({
     ...snapshot,
+    snapshot,
     isLoading,
     error,
     refresh,
+    restoreSnapshot,
+    lock,
+    unlock,
     getDescription: (specialtyName, language) => (
       snapshot.descriptions[specialtyName]?.[language]
       ?? snapshot.descriptions[specialtyName]?.en
@@ -378,7 +445,7 @@ export function SpecialtyCatalogProvider({ children }: { children: ReactNode }) 
       ?? FALLBACK_SPECIALTY_CATALOG.clinicalSummaries[specialtyName]?.en
       ?? ''
     ),
-  }), [error, isLoading, refresh, snapshot]);
+  }), [error, isLoading, refresh, snapshot, restoreSnapshot, lock, unlock]);
 
   return <SpecialtyCatalogContext.Provider value={value}>{children}</SpecialtyCatalogContext.Provider>;
 }

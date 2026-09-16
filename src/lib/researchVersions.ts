@@ -1,9 +1,10 @@
 export const DATA_VERSIONS = {
-  // Specialist interviews remain on schema 2. Student and curious-participant
-  // reflections use their own additive schemas so participant collection
-  // changes do not make the specialist protocol artificially incompatible.
+  // Keep the original quantitative baseline stable for historic eligibility
+  // and checksums; optional geography adds collection schemas, not new scores.
   submissionSchema: 2,
-  studentSubmissionSchema: 4,
+  specialistSubmissionSchema: 3,
+  studentSubmissionSchema: 5,
+  optionalReflectionSubmissionSchema: 4,
   requiredReflectionSubmissionSchema: 3,
   questionnaire: 'q81-v1',
   valueCatalog: 'career-values-v1',
@@ -11,7 +12,9 @@ export const DATA_VERSIONS = {
   scoring: 'client-scoring-v2',
   calibration: 'calibration-v2-qualitative',
   consent: 'research-consent-2026-09-04',
-  studentConsent: 'research-consent-2026-09-16',
+  specialistConsent: 'research-consent-2026-09-16-geography',
+  studentConsent: 'research-consent-2026-09-16-geography',
+  optionalReflectionConsent: 'research-consent-2026-09-16',
   participantReflection: 'medicine-view-optional-v2',
   requiredReflectionConsent: 'research-consent-2026-09-11',
   requiredParticipantReflection: 'medicine-view-v1',

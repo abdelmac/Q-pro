@@ -4,6 +4,10 @@ import { SPECIALTIES } from '@/data/specialties';
 import { VALUE_OPTIONS } from '@/data/traits';
 import { DATA_VERSIONS } from '@/lib/researchVersions';
 import { isValidOptionalStudentStudyYear } from '@/lib/participantProfile';
+import { normalizeGeography } from '@/data/geography';
+import { getLocalResearchStorage, notifyQueueChange } from '@/lib/localResearchStorage';
+import { classifySubmissionFailure, type PendingSubmission, type SubmissionSendResult } from '@/lib/submissionQueue';
+import { getAppStorage, isNativeApp } from '@/lib/mobileRuntime';
 import type { Database, Json } from '@/lib/database.types';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.trim();
@@ -55,6 +59,11 @@ export const supabase = !supabaseConfigurationError && supabaseUrl && supabaseBr
         autoRefreshToken: true,
         detectSessionInUrl: true,
         persistSession: true,
+        ...(isNativeApp() ? { storage: {
+          getItem: async (key: string) => (await getAppStorage()).getItem(`auth:${key}`),
+          setItem: async (key: string, value: string) => (await getAppStorage()).setItem(`auth:${key}`, value),
+          removeItem: async (key: string) => (await getAppStorage()).removeItem(`auth:${key}`),
+        } } : {}),
       },
     })
   : null;
@@ -89,8 +98,10 @@ export function formatSupabaseError(
     || message.includes('submit_student_response_v3')
     || message.includes('submit_student_response_v4')
     || message.includes('submit_student_response_v5')
+    || message.includes('submit_student_response_v6')
     || message.includes('submit_specialist_response_v3')
     || message.includes('submit_specialist_response_v4')
+    || message.includes('submit_specialist_response_v5')
   ) {
     return localized(language, {
       en: 'The Supabase database is not up to date. Deploy every migration in supabase/migrations.',
@@ -124,6 +135,8 @@ export function formatSupabaseError(
 
 export interface SpecialistResponse {
   submission_id: string;
+  country_code?: string | null;
+  region?: string | null;
   actual_specialty: string;
   ratings: Record<string, number>;
   selected_values: string[];
@@ -140,6 +153,8 @@ export interface SpecialistResponse {
 
 export interface StudentResponse {
   submission_id: string;
+  country_code?: string | null;
+  region?: string | null;
   participant_role: 'student' | 'curious';
   medicine_view?: string | null;
   study_year?: number | null;
@@ -153,6 +168,7 @@ export interface StudentResponse {
 
 export interface SubmissionResult {
   success: boolean;
+  queued?: boolean;
   id?: string;
   error?: string;
 }
@@ -213,6 +229,8 @@ function validateSharedResponse(
 }
 
 function validateSpecialistResponse(data: SpecialistResponse): string | null {
+  const geographyError = validateGeography(data);
+  if (geographyError) return geographyError;
   if (!supportedLanguages.has(data.language)) return localized(data.language, {
     en: 'The questionnaire language is invalid.',
     ro: 'Limba chestionarului nu este validă.',
@@ -285,6 +303,8 @@ function validateSpecialistResponse(data: SpecialistResponse): string | null {
 }
 
 function validateStudentResponse(data: StudentResponse): string | null {
+  const geographyError = validateGeography(data);
+  if (geographyError) return geographyError;
   const sharedError = validateSharedResponse(data.ratings, data.selected_values, data.language);
   if (sharedError) return sharedError;
   if (data.participant_role !== 'student' && data.participant_role !== 'curious') {
@@ -348,6 +368,19 @@ function validateStudentResponse(data: StudentResponse): string | null {
   return null;
 }
 
+function validateGeography(data: { country_code?: string | null; region?: string | null; language: SupportedLanguage }): string | null {
+  try {
+    normalizeGeography({ countryCode: data.country_code ?? '', region: data.region ?? '' });
+    return null;
+  } catch {
+    return localized(data.language, {
+      en: 'Check the optional country and region (100 characters maximum).',
+      fr: 'Vérifiez le pays et la région facultatifs (100 caractères maximum).',
+      ro: 'Verifică țara și regiunea opționale (maximum 100 de caractere).',
+    });
+  }
+}
+
 export async function submitSpecialistResponse(data: SpecialistResponse): Promise<SubmissionResult> {
   const configurationError = getSupabaseConfigurationError();
   if (!supabase || configurationError) {
@@ -376,19 +409,15 @@ export async function submitSpecialistResponse(data: SpecialistResponse): Promis
     p_value_catalog_version: DATA_VERSIONS.valueCatalog,
     p_specialty_catalog_version: DATA_VERSIONS.specialtyCatalog,
     p_calibration_version: DATA_VERSIONS.calibration,
-    p_consent_version: DATA_VERSIONS.consent,
+    p_consent_version: DATA_VERSIONS.specialistConsent,
+    p_country_code: data.country_code?.trim().toUpperCase() || null,
+    p_region: data.region?.trim() || null,
   };
-  const { data: responseId, error } = await supabase.rpc(
-    'submit_specialist_response_v4',
-    asPostgresRoutineArgs<Database['public']['Functions']['submit_specialist_response_v4']['Args']>({
-      ...rpcArguments,
-      p_specialty_config_version_id: data.specialty_config_version_id,
-    }),
-  );
-
-  return error
-    ? { success: false, error: formatSupabaseError(error, data.language) }
-    : { success: true, id: responseId };
+  return saveConsentedSubmission('specialist', {
+    ...rpcArguments,
+    p_specialty_config_version_id: data.specialty_config_version_id,
+    rpc_name: 'submit_specialist_response_v5',
+  }, data.language);
 }
 
 export async function submitStudentResponse(data: StudentResponse): Promise<SubmissionResult> {
@@ -418,16 +447,77 @@ export async function submitStudentResponse(data: StudentResponse): Promise<Subm
     p_scoring_version: DATA_VERSIONS.scoring,
     p_consent_version: DATA_VERSIONS.studentConsent,
     p_participant_reflection_version: DATA_VERSIONS.participantReflection,
+    p_country_code: data.country_code?.trim().toUpperCase() || null,
+    p_region: data.region?.trim() || null,
   };
-  const { data: responseId, error } = await supabase.rpc(
-    'submit_student_response_v5',
-    asPostgresRoutineArgs<Database['public']['Functions']['submit_student_response_v5']['Args']>({
-      ...rpcArguments,
-      p_specialty_config_version_id: data.specialty_config_version_id,
-    }),
-  );
+  return saveConsentedSubmission('student', {
+    ...rpcArguments,
+    p_specialty_config_version_id: data.specialty_config_version_id,
+    rpc_name: 'submit_student_response_v6',
+  }, data.language);
+}
 
-  return error
-    ? { success: false, error: formatSupabaseError(error, data.language) }
-    : { success: true, id: responseId };
+const confirmedSubmissionPayloads = new Map<string, string>();
+
+async function sendPendingSubmission(item: PendingSubmission): Promise<SubmissionSendResult> {
+  if (!supabase || (typeof navigator !== 'undefined' && !navigator.onLine)) return { status: 'retry', errorCode: 'offline' };
+  const { rpc_name: rpcName, ...args } = item.payload;
+  if (args.p_submission_id !== item.id || args.p_specialty_config_version_id !== item.catalogVersionId) {
+    return { status: 'rejected', errorCode: 'invalid_identity' };
+  }
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 20_000);
+  const response = await (async () => {
+    try {
+      return rpcName === 'submit_student_response_v6' && item.kind === 'student'
+        ? await supabase.rpc(rpcName, asPostgresRoutineArgs<Database['public']['Functions']['submit_student_response_v6']['Args']>(args)).abortSignal(controller.signal)
+        : rpcName === 'submit_specialist_response_v5' && item.kind === 'specialist'
+          ? await supabase.rpc(rpcName, asPostgresRoutineArgs<Database['public']['Functions']['submit_specialist_response_v5']['Args']>(args)).abortSignal(controller.signal)
+          : null;
+    } finally { clearTimeout(timeout); }
+  })();
+  if (!response) return { status: 'rejected', errorCode: 'unsupported_protocol' };
+  if (response.error) return {
+    status: classifySubmissionFailure({ ...response.error, status: response.status }),
+    errorCode: response.error.code || 'transport',
+  };
+  if (response.data === item.id) {
+    confirmedSubmissionPayloads.set(item.id, JSON.stringify(item.payload));
+    return { status: 'sent' };
+  }
+  return { status: 'rejected', errorCode: 'invalid_receipt' };
+}
+
+export async function flushPendingResearchSubmissions(force = false) {
+  const { queue } = await getLocalResearchStorage();
+  if (typeof navigator !== 'undefined' && !navigator.onLine) return { sent: [], pending: await queue.list() };
+  const result = await queue.flush(sendPendingSubmission, { force });
+  notifyQueueChange();
+  return result;
+}
+
+async function saveConsentedSubmission(kind: 'student' | 'specialist', payload: Record<string, unknown>, language: SupportedLanguage): Promise<SubmissionResult> {
+  const id = payload.p_submission_id as string;
+  try {
+    const { queue } = await getLocalResearchStorage();
+    await queue.enqueue({ id, kind, payload, consent: true, catalogVersionId: payload.p_specialty_config_version_id as string });
+    notifyQueueChange();
+    const result = await flushPendingResearchSubmissions(true);
+    const pending = result.pending.find((item) => item.id === id);
+    if (result.sent.includes(id) || (!pending && confirmedSubmissionPayloads.get(id) === JSON.stringify(payload))) {
+      return { success: true, id };
+    }
+    if (pending?.status === 'pending') return { success: false, queued: true, id };
+    return { success: false, error: localized(language, {
+      en: 'This contribution was not accepted. Check its status in the local storage panel above; remove it before correcting and resubmitting.',
+      fr: 'Cette contribution n’a pas été acceptée. Consultez son état dans le panneau de stockage local ci-dessus ; retirez-la avant de la corriger et de la renvoyer.',
+      ro: 'Contribuția nu a fost acceptată. Verifică starea din panoul de stocare locală de mai sus; elimin-o înainte de corectare și retrimitere.',
+    }) };
+  } catch {
+    return { success: false, error: localized(language, {
+      en: 'The contribution could not be saved on this device. Your answers remain on this page. Check local storage before trying again.',
+      fr: 'Impossible d’enregistrer la contribution sur cet appareil. Vos réponses restent sur cette page. Vérifiez le stockage local avant de réessayer.',
+      ro: 'Contribuția nu a putut fi salvată pe acest dispozitiv. Răspunsurile rămân pe pagină. Verifică stocarea locală înainte de a reîncerca.',
+    }) };
+  }
 }

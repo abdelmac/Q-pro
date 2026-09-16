@@ -2,6 +2,8 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { submitStudentResponse, type SupportedLanguage } from '@/lib/supabase';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useSpecialtyCatalog } from '@/lib/SpecialtyCatalogContext';
+import GeographyFields from './GeographyFields';
+import { LOCAL_PROGRESS_COPY } from '@/data/localProgressI18n';
 import ParticipantReflectionForm, {
   PARTICIPANT_MEDICINE_VIEW_MAX_LENGTH,
   PARTICIPANT_MEDICINE_VIEW_MIN_LENGTH,
@@ -39,6 +41,7 @@ export default function StudentPrompt({
   const { version, source } = useSpecialtyCatalog();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [queued, setQueued] = useState(false);
   const mountedRef = useRef(true);
 
   useEffect(() => {
@@ -68,6 +71,8 @@ export default function StudentPrompt({
         submission_id: draft.submissionId,
         participant_role: participantRole,
         medicine_view: normalizedMedicineView || null,
+        country_code: draft.geography?.countryCode || null,
+        region: draft.geography?.region.trim() || null,
         study_year: participantRole === 'student' && draft.studyYear ? Number(draft.studyYear) : null,
         preferred_specialty: preferredSpecialty,
         ratings,
@@ -78,6 +83,7 @@ export default function StudentPrompt({
       });
       if (!mountedRef.current) return;
       if (result.success) onDone(true);
+      else if (result.queued) setQueued(true);
       else setError(result.error ?? t.specialistError);
     } catch (submissionError) {
       if (mountedRef.current) {
@@ -91,6 +97,11 @@ export default function StudentPrompt({
     }
   };
 
+  if (queued) return <div role="status" className="mx-auto max-w-xl space-y-5 px-6 py-12 text-center">
+    <p>{LOCAL_PROGRESS_COPY[language].queued}</p>
+    <button type="button" onClick={() => onDone(true)} className="min-h-12 rounded-full bg-brand-800 px-6 py-3 font-semibold text-white">{LOCAL_PROGRESS_COPY[language].continue}</button>
+  </div>;
+
   return (
     <ParticipantReflectionForm
       participantRole={participantRole}
@@ -101,6 +112,14 @@ export default function StudentPrompt({
       copy={t}
       onSubmit={(event) => void handleSubmit(event)}
       onSkip={() => onDone(false)}
+      extraFields={(
+        <><GeographyFields
+          value={draft.geography ?? { countryCode: '', region: '' }}
+          onChange={(geography) => onDraftChange({ ...draft, geography })}
+          disabled={submitting}
+          idPrefix="participant"
+        /><p className="mt-4 text-xs leading-relaxed text-ink-500">{LOCAL_PROGRESS_COPY[language].queuedConsent}</p></>
+      )}
     />
   );
 }

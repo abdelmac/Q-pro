@@ -1,4 +1,4 @@
-import { ArrowRight, Compass, GraduationCap, Stethoscope } from 'lucide-react';
+import { ArrowRight, Compass, Globe2, GraduationCap, Heart, Stethoscope } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 import type { ParticipantRole } from '@/lib/participantProfile';
 import LanguageSwitcher from './LanguageSwitcher';
@@ -7,6 +7,14 @@ export interface RoleSelectionCopy {
   appName: string;
   title: string;
   description: string;
+  introspection: string;
+  perspective: string;
+  connection: string;
+  curiousStage: string;
+  studentStage: string;
+  specialistStage: string;
+  creditsLabel: string;
+  worldMapLabel: string;
   studentLabel: string;
   studentDescription: string;
   specialistLabel: string;
@@ -19,13 +27,24 @@ export interface RoleSelectionCopy {
 interface RoleSelectionViewProps {
   copy: RoleSelectionCopy;
   onSelectRole: (role: ParticipantRole) => void;
+  onOpenCredits: () => void;
+  onOpenWorldMap: () => void;
 }
 
-export function RoleSelectionView({ copy, onSelectRole }: RoleSelectionViewProps) {
+export function RoleSelectionView({ copy, onSelectRole, onOpenCredits, onOpenWorldMap }: RoleSelectionViewProps) {
   const choices = [
+    {
+      role: 'curious' as const,
+      label: copy.curiousLabel,
+      stage: copy.curiousStage,
+      description: copy.curiousDescription,
+      icon: Compass,
+      iconClassName: 'bg-amber-50 text-amber-700',
+    },
     {
       role: 'student' as const,
       label: copy.studentLabel,
+      stage: copy.studentStage,
       description: copy.studentDescription,
       icon: GraduationCap,
       iconClassName: 'bg-brand-50 text-brand-600',
@@ -33,16 +52,10 @@ export function RoleSelectionView({ copy, onSelectRole }: RoleSelectionViewProps
     {
       role: 'specialist' as const,
       label: copy.specialistLabel,
+      stage: copy.specialistStage,
       description: copy.specialistDescription,
       icon: Stethoscope,
       iconClassName: 'bg-accent-100 text-accent-700',
-    },
-    {
-      role: 'curious' as const,
-      label: copy.curiousLabel,
-      description: copy.curiousDescription,
-      icon: Compass,
-      iconClassName: 'bg-amber-50 text-amber-700',
     },
   ];
 
@@ -58,17 +71,24 @@ export function RoleSelectionView({ copy, onSelectRole }: RoleSelectionViewProps
         <LanguageSwitcher />
       </header>
 
-      <main className="flex flex-1 items-center justify-center px-6 py-12 sm:py-16">
+      <main className="flex flex-1 flex-col items-center justify-center px-6 py-8 sm:py-12">
+        <div className="mb-10 max-w-3xl text-center">
+          <h1 className="font-display text-3xl font-semibold leading-tight tracking-tight text-ink-900 text-balance sm:text-5xl">
+            {copy.introspection}
+          </h1>
+          <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-ink-600">{copy.perspective}</p>
+          <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-ink-500">{copy.connection}</p>
+        </div>
         <fieldset className="w-full max-w-5xl text-center">
-          <legend className="w-full font-display text-3xl font-semibold tracking-tight text-ink-900 sm:text-5xl">
+          <legend className="w-full font-display text-xl font-semibold tracking-tight text-ink-900 sm:text-2xl">
             {copy.title}
           </legend>
-          <p className="mx-auto mt-4 max-w-xl text-base leading-relaxed text-ink-500 sm:text-lg">
+          <p className="mx-auto mt-2 max-w-xl text-sm leading-relaxed text-ink-500">
             {copy.description}
           </p>
 
-          <div className="mx-auto mt-10 grid max-w-5xl gap-4 md:grid-cols-3">
-            {choices.map(({ role, label, description, icon: Icon, iconClassName }) => (
+          <div className="mx-auto mt-6 grid max-w-5xl gap-4 md:grid-cols-3">
+            {choices.map(({ role, label, stage, description, icon: Icon, iconClassName }) => (
               <button
                 key={role}
                 type="button"
@@ -80,6 +100,7 @@ export function RoleSelectionView({ copy, onSelectRole }: RoleSelectionViewProps
                   <Icon className="h-6 w-6" strokeWidth={2} />
                 </span>
                 <span className="flex min-w-0 flex-1 flex-col self-stretch">
+                  <span className="mb-2 text-xs font-semibold text-brand-700">{stage}</span>
                   <span className="text-lg font-semibold text-ink-900">{label}</span>
                   <span className="mt-2 text-sm leading-relaxed text-ink-500">{description}</span>
                   <span className="mt-auto flex justify-end pt-4 text-brand-700 transition-transform group-hover:translate-x-0.5" aria-hidden="true">
@@ -92,21 +113,41 @@ export function RoleSelectionView({ copy, onSelectRole }: RoleSelectionViewProps
         </fieldset>
       </main>
 
-      <footer className="px-6 py-8 text-center text-xs text-ink-400">{copy.footerNote}</footer>
+      <footer className="px-6 py-6 text-center text-xs text-ink-500">
+        <nav className="mb-3 flex flex-wrap justify-center gap-2">
+          <button type="button" onClick={onOpenWorldMap} className="inline-flex min-h-11 items-center gap-2 rounded-full px-4 font-semibold hover:bg-white hover:text-brand-800 focus-visible:ring-2 focus-visible:ring-brand-500">
+            <Globe2 className="h-4 w-4" aria-hidden="true" />{copy.worldMapLabel}
+          </button>
+          <button type="button" onClick={onOpenCredits} className="inline-flex min-h-11 items-center gap-2 rounded-full px-4 font-semibold hover:bg-white hover:text-brand-800 focus-visible:ring-2 focus-visible:ring-brand-500">
+            <Heart className="h-4 w-4" aria-hidden="true" />{copy.creditsLabel}
+          </button>
+        </nav>
+        {copy.footerNote}
+      </footer>
     </div>
   );
 }
 
-export default function RoleSelection({ onSelectRole }: { onSelectRole: (role: ParticipantRole) => void }) {
+export default function RoleSelection({ onSelectRole, onOpenCredits, onOpenWorldMap }: Omit<RoleSelectionViewProps, 'copy'>) {
   const { t } = useLanguage();
 
   return (
     <RoleSelectionView
       onSelectRole={onSelectRole}
+      onOpenCredits={onOpenCredits}
+      onOpenWorldMap={onOpenWorldMap}
       copy={{
         appName: t.appName,
         title: t.roleSelectionTitle,
         description: t.roleSelectionDescription,
+        introspection: t.roleIntrospection,
+        perspective: t.projectPerspective,
+        connection: t.projectConnection,
+        curiousStage: t.curiousStage,
+        studentStage: t.studentStage,
+        specialistStage: t.specialistStage,
+        creditsLabel: t.navCredits,
+        worldMapLabel: t.navWorldMap,
         studentLabel: t.studentMode,
         studentDescription: t.studentRoleDescription,
         specialistLabel: t.specialistMode,

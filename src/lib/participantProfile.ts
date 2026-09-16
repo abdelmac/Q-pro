@@ -1,4 +1,4 @@
-export const PARTICIPANT_ROLES = ['student', 'specialist', 'curious'] as const;
+export const PARTICIPANT_ROLES = ['curious', 'student', 'specialist'] as const;
 
 export type ParticipantRole = (typeof PARTICIPANT_ROLES)[number];
 

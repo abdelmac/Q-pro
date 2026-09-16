@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { useLanguage } from '@/lib/LanguageContext';
 import { CATEGORY_ORDER, type Specialty } from '@/data/specialties';
 import { translateSpecialtyName, translateCategory } from '@/data/i18n';
@@ -9,13 +9,28 @@ import {
 } from '@/lib/supabase';
 import { Check, Search, Loader2, AlertCircle, PartyPopper, Pencil } from 'lucide-react';
 import { useSpecialtyCatalog } from '@/lib/SpecialtyCatalogContext';
+import GeographyFields from './GeographyFields';
+import { LOCAL_PROGRESS_COPY } from '@/data/localProgressI18n';
 import {
   getSpecialistPromptNavigationScrollKey,
   useScrollToPageTop,
 } from '@/lib/scrollToTop';
 
+export interface SpecialistDraft {
+  submissionId: string;
+  actualSpecialty: string | null;
+  geography?: { countryCode: string; region: string };
+  currentSpecialtyView: string;
+  specialtyChangesOverYears: string;
+  mostImportantSpecialtyQuality: string;
+  wouldChooseAgain: WouldChooseAgainCode | null;
+  wouldNotChooseAgainReason: string;
+  studentSelfQuestion: string;
+}
+
 interface SpecialistPromptProps {
-  initialSpecialty?: string | null;
+  draft: SpecialistDraft;
+  onDraftChange: (draft: SpecialistDraft) => void;
   ratings: Record<string, number>;
   selectedValues: string[];
   questionnaireCompleted: boolean;
@@ -25,7 +40,8 @@ interface SpecialistPromptProps {
 }
 
 export default function SpecialistPrompt({
-  initialSpecialty = null,
+  draft,
+  onDraftChange,
   ratings,
   selectedValues,
   questionnaireCompleted,
@@ -35,19 +51,17 @@ export default function SpecialistPrompt({
 }: SpecialistPromptProps) {
   const { t, lang } = useLanguage();
   const { specialties, version, source } = useSpecialtyCatalog();
-  const [actualSpecialty, setActualSpecialty] = useState<string | null>(initialSpecialty);
-  const [editingSpecialty, setEditingSpecialty] = useState(!initialSpecialty);
+  const { actualSpecialty, currentSpecialtyView, specialtyChangesOverYears,
+    mostImportantSpecialtyQuality, wouldChooseAgain, wouldNotChooseAgainReason,
+    studentSelfQuestion, submissionId } = draft;
+  const geography = draft.geography ?? { countryCode: '', region: '' };
+  const updateDraft = <K extends keyof SpecialistDraft>(key: K, value: SpecialistDraft[K]) => onDraftChange({ ...draft, [key]: value });
+  const [editingSpecialty, setEditingSpecialty] = useState(!actualSpecialty);
   const [query, setQuery] = useState('');
-  const [currentSpecialtyView, setCurrentSpecialtyView] = useState('');
-  const [specialtyChangesOverYears, setSpecialtyChangesOverYears] = useState('');
-  const [mostImportantSpecialtyQuality, setMostImportantSpecialtyQuality] = useState('');
-  const [wouldChooseAgain, setWouldChooseAgain] = useState<WouldChooseAgainCode | null>(null);
-  const [wouldNotChooseAgainReason, setWouldNotChooseAgainReason] = useState('');
-  const [studentSelfQuestion, setStudentSelfQuestion] = useState('');
-  const [submissionId] = useState(() => crypto.randomUUID());
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [queued, setQueued] = useState(false);
   const mountedRef = useRef(true);
   useScrollToPageTop(getSpecialistPromptNavigationScrollKey(success));
 
@@ -90,6 +104,8 @@ export default function SpecialistPrompt({
         ratings,
         selected_values: selectedValues,
         questionnaire_completed: questionnaireCompleted,
+        country_code: geography.countryCode || null,
+        region: geography.region.trim() || null,
         language,
         current_specialty_view: currentSpecialtyView.trim(),
         specialty_changes_over_years: specialtyChangesOverYears.trim(),
@@ -104,6 +120,8 @@ export default function SpecialistPrompt({
       if (!mountedRef.current) return;
       if (result.success) {
         setSuccess(true);
+      } else if (result.queued) {
+        setQueued(true);
       } else {
         setError(result.error ?? t.specialistError);
       }
@@ -119,17 +137,17 @@ export default function SpecialistPrompt({
     }
   };
 
-  if (success) {
+  if (success || queued) {
     return (
       <div className="max-w-xl mx-auto px-6 py-16 text-center animate-fade-up">
         <div className="w-16 h-16 rounded-2xl bg-brand-50 flex items-center justify-center text-brand-600 mx-auto mb-6">
           <PartyPopper className="w-8 h-8" />
         </div>
         <h2 className="font-display text-3xl font-semibold text-ink-900 mb-3 text-balance">
-          {t.specialistThankYou}
+          {queued ? LOCAL_PROGRESS_COPY[language].title : t.specialistThankYou}
         </h2>
         <p className="text-ink-500 leading-relaxed mb-8 text-balance">
-          {questionnaireCompleted ? t.specialistThankYouDesc : t.specialistThankYouDescSkipped}
+          {queued ? LOCAL_PROGRESS_COPY[language].queued : questionnaireCompleted ? t.specialistThankYouDesc : t.specialistThankYouDescSkipped}
         </p>
         <button
           onClick={onDone}
@@ -161,9 +179,10 @@ export default function SpecialistPrompt({
 
       {/* Specialty confirmation */}
       <div className="mb-8">
-        <label className="text-sm font-semibold text-ink-700 mb-3 block">
-          {t.specialistActualSpecialty}
-        </label>
+        <h3 className="mb-2 font-display text-xl font-semibold text-ink-900">
+          {t.specialistSpecialtyTitle}
+        </h3>
+        <p className="mb-4 text-sm leading-relaxed text-ink-500">{t.specialistSpecialtySubtitle}</p>
 
         {actualSpecialty && !editingSpecialty ? (
           <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-brand-200 bg-brand-50 text-brand-900">
@@ -212,7 +231,7 @@ export default function SpecialistPrompt({
                             key={s.name}
                             disabled={submitting}
                             onClick={() => {
-                              setActualSpecialty(s.name);
+                              updateDraft('actualSpecialty', s.name);
                               setEditingSpecialty(false);
                               setQuery('');
                             }}
@@ -248,21 +267,21 @@ export default function SpecialistPrompt({
             label={t.specialistCurrentView}
             placeholder={t.specialistCurrentViewPlaceholder}
             value={currentSpecialtyView}
-            onChange={setCurrentSpecialtyView}
+            onChange={(value) => updateDraft('currentSpecialtyView', value)}
           />
 
           <QualitativeTextarea
             label={t.specialistChangesOverYears}
             placeholder={t.specialistChangesOverYearsPlaceholder}
             value={specialtyChangesOverYears}
-            onChange={setSpecialtyChangesOverYears}
+            onChange={(value) => updateDraft('specialtyChangesOverYears', value)}
           />
 
           <QualitativeTextarea
             label={t.specialistMostImportantQuality}
             placeholder={t.specialistMostImportantQualityPlaceholder}
             value={mostImportantSpecialtyQuality}
-            onChange={setMostImportantSpecialtyQuality}
+            onChange={(value) => updateDraft('mostImportantSpecialtyQuality', value)}
           />
 
           {/* Would choose again */}
@@ -279,8 +298,8 @@ export default function SpecialistPrompt({
                   key={option.code}
                   active={wouldChooseAgain === option.code}
                   onClick={() => {
-                    setWouldChooseAgain(option.code);
-                    if (option.code === 'yes') setWouldNotChooseAgainReason('');
+                    onDraftChange({ ...draft, wouldChooseAgain: option.code,
+                      wouldNotChooseAgainReason: option.code === 'yes' ? '' : wouldNotChooseAgainReason });
                   }}
                 >
                   {option.label}
@@ -294,7 +313,7 @@ export default function SpecialistPrompt({
               label={t.specialistWhyNotChooseAgain}
               placeholder={t.specialistWhyNotChooseAgainPlaceholder}
               value={wouldNotChooseAgainReason}
-              onChange={setWouldNotChooseAgainReason}
+              onChange={(value) => updateDraft('wouldNotChooseAgainReason', value)}
               maxLength={2000}
             />
           )}
@@ -303,11 +322,14 @@ export default function SpecialistPrompt({
             label={t.specialistStudentSelfQuestion}
             placeholder={t.specialistStudentSelfQuestionPlaceholder}
             value={studentSelfQuestion}
-            onChange={setStudentSelfQuestion}
+            onChange={(value) => updateDraft('studentSelfQuestion', value)}
             maxLength={1000}
           />
         </fieldset>
       )}
+
+      <GeographyFields value={geography} onChange={(value) => updateDraft('geography', value)} disabled={submitting} idPrefix="specialist" />
+      <p className="mb-5 mt-4 text-xs leading-relaxed text-ink-500">{LOCAL_PROGRESS_COPY[language].queuedConsent}</p>
 
       {error && (
         <div className="mb-4 p-3.5 rounded-xl bg-red-50 border border-red-200 flex items-center gap-2.5 text-sm text-red-700">
@@ -347,12 +369,14 @@ function QualitativeTextarea({
   onChange: (value: string) => void;
   maxLength?: number;
 }) {
+  const fieldId = useId();
   return (
     <div>
-      <label className="text-sm font-semibold text-ink-700 mb-2 block">
+      <label htmlFor={fieldId} className="text-sm font-semibold text-ink-700 mb-2 block">
         {label} <span className="text-red-500" aria-hidden="true">*</span>
       </label>
       <textarea
+        id={fieldId}
         rows={4}
         required
         minLength={3}
@@ -372,6 +396,8 @@ function QualitativeTextarea({
 function ChipButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
     <button
+      type="button"
+      aria-pressed={active}
       onClick={onClick}
       className={`px-3.5 py-2 rounded-full text-xs font-semibold border transition-all duration-150 ${
         active

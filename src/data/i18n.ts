@@ -28,6 +28,23 @@ export interface UIStrings {
   questionsCount: (n: number) => string;
   roleSelectionTitle: string;
   roleSelectionDescription: string;
+  roleIntrospection: string;
+  projectPerspective: string;
+  projectConnection: string;
+  curiousStage: string;
+  studentStage: string;
+  specialistStage: string;
+  navCredits: string;
+  navWorldMap: string;
+  creditsTitle: string;
+  creditsSubtitle: string;
+  creditsMotivationTitle: string;
+  creditsMotivation: string;
+  creditsMotivationDescription: string;
+  creditsPerspectiveTitle: string;
+  creditsPerspectiveDescription: string;
+  creditsCommunityTitle: string;
+  creditsCommunityDescription: string;
   studentRoleDescription: string;
   specialistRoleDescription: string;
   curiousRoleDescription: string;
@@ -321,6 +338,23 @@ const en: UIStrings = {
   questionsCount: (n: number) => `${n} questions · ~8 minutes`,
   roleSelectionTitle: 'First, tell us who you are',
   roleSelectionDescription: 'Choose your profile so the questionnaire follows the right path.',
+  roleIntrospection: 'What draws you to medicine, and what are you hoping to find in it?',
+  projectPerspective: 'Shaped by the retrospective perspective of a specialist in psychiatry, Specialty Match explores the human side of medicine, beyond stereotypes and textbooks.',
+  projectConnection: 'A place for those considering medicine, those studying it, and those practising it to share perspectives and discover where they belong.',
+  curiousStage: 'Before medical studies',
+  studentStage: 'During medical studies',
+  specialistStage: 'After medical studies',
+  navCredits: 'Project credits',
+  navWorldMap: 'Around the world',
+  creditsTitle: 'The people and purpose behind Specialty Match',
+  creditsSubtitle: 'An invitation to understand medicine through the people who imagine it, study it, and live it.',
+  creditsMotivationTitle: 'Why we made it',
+  creditsMotivation: 'We made this project because we really wanted to make it.',
+  creditsMotivationDescription: 'It began with a simple curiosity: what does a life in medicine actually feel like, and how can we help people ask themselves the questions that matter?',
+  creditsPerspectiveTitle: 'A perspective shaped by experience',
+  creditsPerspectiveDescription: 'The project draws on the retrospective perspective of a specialist in psychiatry. Specialty descriptions also give space to the words and experience of practising specialists, bringing the everyday human realities of medicine into the conversation.',
+  creditsCommunityTitle: 'A conversation across generations',
+  creditsCommunityDescription: 'Thank you to the specialists who share their experience, the students who reflect on their path, and everyone curious enough to explore medicine. Their perspectives connect life before, during, and after medical studies, beyond stereotypes and textbooks.',
   studentRoleDescription: 'I am a medical student.',
   specialistRoleDescription: 'I am a doctor or medical specialist.',
   curiousRoleDescription: "I'm curious about medicine and not yet sure whether I want to study it.",
@@ -374,7 +408,7 @@ const en: UIStrings = {
   specialistTitle: 'Are you a medical specialist?',
   specialistSubtitle: 'Help us improve the matching algorithm. Data is stored only if you explicitly submit it for research, without your name or email.',
   specialistSpecialtyTitle: 'What specialty do you practice?',
-  specialistSpecialtySubtitle: 'Select your current specialty so we can compare your profile with your field.',
+  specialistSpecialtySubtitle: 'Tell us which specialty you currently practise so your reflections can be understood in the context of your experience.',
   specialistSpecialtyRequired: 'Required — select the specialty you currently practice.',
   specialistPromptTitle: 'Tell us about your practice',
   specialistPromptDesc: 'Answer these five questions about your specialty. The 81-item questionnaire is optional for specialists, and only the data from your chosen path is stored after you submit.',
@@ -600,6 +634,23 @@ const ro: UIStrings = {
   questionsCount: (n: number) => `${n} întrebări · ~8 minute`,
   roleSelectionTitle: 'Mai întâi, spune-ne cine ești',
   roleSelectionDescription: 'Alege profilul tău pentru ca chestionarul să urmeze parcursul potrivit.',
+  roleIntrospection: 'Ce te atrage la medicină și ce speri să găsești în ea?',
+  projectPerspective: 'Pornind de la perspectiva retrospectivă a unui medic specialist în psihiatrie, Specialty Match explorează latura umană a medicinei, dincolo de prejudecăți și manuale.',
+  projectConnection: 'Un loc în care cei care se gândesc la medicină, cei care o studiază și cei care o practică își pot împărtăși perspectivele și își pot descoperi locul.',
+  curiousStage: 'Înainte de studiile medicale',
+  studentStage: 'În timpul studiilor medicale',
+  specialistStage: 'După studiile medicale',
+  navCredits: 'Despre proiect și contribuții',
+  navWorldMap: 'În jurul lumii',
+  creditsTitle: 'Oamenii și ideea din spatele Specialty Match',
+  creditsSubtitle: 'O invitație de a înțelege medicina prin oamenii care și-o imaginează, o studiază și o trăiesc.',
+  creditsMotivationTitle: 'De ce l-am creat',
+  creditsMotivation: 'Am creat acest proiect pentru că ne-am dorit cu adevărat să îl realizăm.',
+  creditsMotivationDescription: 'Totul a pornit de la o curiozitate simplă: cum se simte, de fapt, o viață în medicină și cum îi putem ajuta pe oameni să își pună întrebările care contează?',
+  creditsPerspectiveTitle: 'O perspectivă formată prin experiență',
+  creditsPerspectiveDescription: 'Proiectul pornește de la perspectiva retrospectivă a unui medic specialist în psihiatrie. Descrierile specialităților oferă, de asemenea, spațiu cuvintelor și experienței medicilor practicieni, aducând în discuție realitățile umane ale vieții medicale de zi cu zi.',
+  creditsCommunityTitle: 'Un dialog între generații',
+  creditsCommunityDescription: 'Le mulțumim specialiștilor care își împărtășesc experiența, studenților care reflectează asupra parcursului lor și tuturor celor curioși să descopere medicina. Perspectivele lor leagă viața de dinaintea, din timpul și de după studiile medicale, dincolo de prejudecăți și manuale.',
   studentRoleDescription: 'Sunt student sau studentă la medicină.',
   specialistRoleDescription: 'Sunt medic sau medic specialist.',
   curiousRoleDescription: 'Mă interesează medicina, dar nu știu încă dacă vreau să o studiez.',
@@ -653,7 +704,7 @@ const ro: UIStrings = {
   specialistTitle: 'Ești specialist medical?',
   specialistSubtitle: 'Ajută-ne să îmbunătățim algoritmul. Datele sunt stocate numai dacă le trimiți explicit pentru cercetare, fără nume sau adresă de e-mail.',
   specialistSpecialtyTitle: 'Ce specialitate practici?',
-  specialistSpecialtySubtitle: 'Selectează specialitatea în care profesezi în prezent, pentru a-ți putea compara profilul cu domeniul tău.',
+  specialistSpecialtySubtitle: 'Indică specialitatea în care profesezi în prezent, pentru a putea înțelege reflecțiile tale în contextul experienței tale.',
   specialistSpecialtyRequired: 'Obligatoriu — selectează specialitatea pe care o practici în prezent.',
   specialistPromptTitle: 'Spune-ne despre experiența ta profesională',
   specialistPromptDesc: 'Răspunde la aceste cinci întrebări despre specialitatea ta. Chestionarul cu 81 de itemi este opțional pentru specialiști, iar după trimitere sunt stocate numai datele din parcursul ales.',
@@ -879,6 +930,23 @@ const fr: UIStrings = {
   questionsCount: (n: number) => `${n} questions · ~8 minutes`,
   roleSelectionTitle: 'D’abord, indiquez-nous qui vous êtes',
   roleSelectionDescription: 'Choisissez votre profil afin que le questionnaire suive le parcours adapté.',
+  roleIntrospection: 'Qu’est-ce qui vous attire dans la médecine, et qu’espérez-vous y trouver ?',
+  projectPerspective: 'Nourri du regard rétrospectif d’un médecin spécialiste en psychiatrie, Specialty Match explore la dimension humaine de la médecine, au-delà des préjugés et des manuels.',
+  projectConnection: 'Un lieu de rencontre entre celles et ceux qui envisagent la médecine, l’étudient ou l’exercent, pour croiser les expériences et découvrir la place qui leur ressemble.',
+  curiousStage: 'Avant les études de médecine',
+  studentStage: 'Pendant les études de médecine',
+  specialistStage: 'Après les études de médecine',
+  navCredits: 'Crédits du projet',
+  navWorldMap: 'À travers le monde',
+  creditsTitle: 'Les personnes et l’intention derrière Specialty Match',
+  creditsSubtitle: 'Une invitation à comprendre la médecine à travers celles et ceux qui l’imaginent, l’étudient et la vivent.',
+  creditsMotivationTitle: 'Pourquoi nous l’avons créé',
+  creditsMotivation: 'Nous avons créé ce projet parce que nous en avions profondément envie.',
+  creditsMotivationDescription: 'Tout est parti d’une curiosité simple : à quoi ressemble vraiment une vie en médecine, et comment aider chacun à se poser les questions qui comptent ?',
+  creditsPerspectiveTitle: 'Un regard nourri par l’expérience',
+  creditsPerspectiveDescription: 'Le projet s’appuie sur le regard rétrospectif d’un médecin spécialiste en psychiatrie. Les présentations des spécialités donnent aussi la parole aux praticiens, afin de faire une place aux réalités humaines du quotidien médical.',
+  creditsCommunityTitle: 'Un dialogue entre les générations',
+  creditsCommunityDescription: 'Merci aux spécialistes qui partagent leur expérience, aux étudiants qui interrogent leur parcours et à toutes les personnes curieuses de découvrir la médecine. Leurs points de vue relient l’avant, le pendant et l’après des études, au-delà des préjugés et des manuels.',
   studentRoleDescription: 'Je suis étudiant ou étudiante en médecine.',
   specialistRoleDescription: 'Je suis médecin ou spécialiste.',
   curiousRoleDescription: 'La médecine m’intéresse, mais je ne sais pas encore si je souhaite l’étudier.',
@@ -932,7 +1000,7 @@ const fr: UIStrings = {
   specialistTitle: 'Êtes-vous un spécialiste médical ?',
   specialistSubtitle: 'Aidez-nous à améliorer l\'algorithme. Les données ne sont conservées que si vous les soumettez explicitement pour la recherche, sans nom ni adresse e-mail.',
   specialistSpecialtyTitle: 'Quelle spécialité exercez-vous ?',
-  specialistSpecialtySubtitle: 'Sélectionnez votre spécialité actuelle afin que nous puissions comparer votre profil à votre domaine.',
+  specialistSpecialtySubtitle: 'Indiquez la spécialité que vous exercez aujourd’hui pour situer vos réflexions dans le contexte de votre expérience.',
   specialistSpecialtyRequired: 'Obligatoire — sélectionnez la spécialité que vous exercez actuellement.',
   specialistPromptTitle: 'Parlez-nous de votre pratique',
   specialistPromptDesc: 'Répondez à ces cinq questions sur votre spécialité. Le questionnaire de 81 items est facultatif pour les spécialistes et seules les données du parcours choisi sont conservées après l’envoi.',

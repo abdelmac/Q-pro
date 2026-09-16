@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState, useMemo, useCallback, useEffect, useReducer } from 'react';
+import { lazy, Suspense, useState, useMemo, useCallback, useEffect, useReducer, useRef } from 'react';
 import { RATING_SECTIONS, ALL_QUESTION_IDS } from '@/data/questions';
 import { translateSection } from '@/data/i18n';
 import {
@@ -19,7 +19,7 @@ import ValuesStep from '@/components/ValuesStep';
 import RatingStep from '@/components/RatingStep';
 import Results from '@/components/Results';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
-import SpecialistPrompt from '@/components/SpecialistPrompt';
+import SpecialistPrompt, { type SpecialistDraft } from '@/components/SpecialistPrompt';
 import SpecialistQuestionnaireChoice from '@/components/SpecialistQuestionnaireChoice';
 import StudentPrompt, { type ParticipantReflectionDraft } from '@/components/StudentPrompt';
 import QProfile from '@/components/QProfile';
@@ -27,6 +27,13 @@ import SpecialtyExplorer from '@/components/SpecialtyExplorer';
 import SpecialtyDetail from '@/components/SpecialtyDetail';
 import SpecialtyComparison from '@/components/SpecialtyComparison';
 import MethodologyPage from '@/components/MethodologyPage';
+import ProjectCredits from '@/components/ProjectCredits';
+import LocalProgressPanel from '@/components/LocalProgressPanel';
+import { getLocalResearchStorage } from '@/lib/localResearchStorage';
+import { getAppStorage, installMobileLifecycle } from '@/lib/mobileRuntime';
+import { LOCAL_PROGRESS_COPY } from '@/data/localProgressI18n';
+import { flushPendingResearchSubmissions } from '@/lib/supabase';
+import type { QuestionnaireDraft } from '@/lib/questionnairePersistence';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import PageBackButton from '@/components/PageBackButton';
 import {
@@ -46,6 +53,8 @@ import {
 } from '@/lib/participantProfile';
 
 const Dashboard = lazy(() => import('@/components/Dashboard'));
+const ParticipationMap = lazy(() => import('@/components/ParticipationMap'));
+const AUTOSAVE_PREFERENCE_KEY = 'qpro.autosave-enabled.v1';
 
 type SpecialistQuestionnaireMode = 'completed' | 'skipped' | null;
 
@@ -67,9 +76,16 @@ function createParticipantReflectionDraft(): ParticipantReflectionDraft {
   };
 }
 
+function createSpecialistDraft(): SpecialistDraft {
+  return { submissionId: crypto.randomUUID(), actualSpecialty: null,
+    currentSpecialtyView: '', specialtyChangesOverYears: '', mostImportantSpecialtyQuality: '',
+    wouldChooseAgain: null, wouldNotChooseAgainReason: '', studentSelfQuestion: '' };
+}
+
 function AppContent() {
-  const { t, lang } = useLanguage();
-  const { specialties, source: catalogSource, isLoading: catalogLoading, error: catalogError, refresh: refreshCatalog } = useSpecialtyCatalog();
+  const { t, lang, setLang } = useLanguage();
+  const { specialties, snapshot: catalogSnapshot, restoreSnapshot, lock: lockCatalog, unlock: unlockCatalog,
+    source: catalogSource, isLoading: catalogLoading, error: catalogError, refresh: refreshCatalog } = useSpecialtyCatalog();
   const [navigation, dispatchNavigation] = useReducer(
     appNavigationReducer,
     undefined,
@@ -88,8 +104,14 @@ function AppContent() {
     createParticipantReflectionDraft,
   );
   const [contributionSubmitting, setContributionSubmitting] = useState(false);
+  const [specialistDraft, setSpecialistDraft] = useState<SpecialistDraft>(createSpecialistDraft);
   const [priorities, setPriorities] = useState<PriorityWeights>(DEFAULT_PRIORITY_WEIGHTS);
   const [catalogGateMessage, setCatalogGateMessage] = useState<string | null>(null);
+  const [localSaveEnabled, setLocalSaveEnabled] = useState(true);
+  const [storageStatus, setStorageStatus] = useState<'loading' | 'ready' | 'saving' | 'saved' | 'unavailable' | 'invalid'>('loading');
+  const [resumeDraft, setResumeDraft] = useState<QuestionnaireDraft | null>(null);
+  const loadedStorage = useRef(false);
+  const saveGeneration = useRef(0);
   const isSpecialist = participantRole === 'specialist';
 
   // Specialists who opt into the quantitative profile identify their actual
@@ -135,6 +157,7 @@ function AppContent() {
       return;
     }
     setCatalogGateMessage(null);
+    lockCatalog();
     setSpecialistQuestionnaireMode(null);
     goTo(isSpecialist ? { phase: 'specialist-choice' } : { phase: 'quiz', stepIndex: 0 });
   };
@@ -182,6 +205,8 @@ function AppContent() {
   };
 
   const clearAssessment = () => {
+    saveGeneration.current += 1;
+    unlockCatalog();
     setPreferredSpecialty(null);
     setActualSpecialty(null);
     setSelectedValues([]);
@@ -190,8 +215,12 @@ function AppContent() {
     setPriorities(DEFAULT_PRIORITY_WEIGHTS);
     setSpecialistQuestionnaireMode(null);
     setParticipantReflectionDraft(createParticipantReflectionDraft());
+    setSpecialistDraft(createSpecialistDraft());
     setContributionSubmitting(false);
     setCatalogGateMessage(null);
+    setResumeDraft(null);
+    void getLocalResearchStorage().then(({ drafts }) => drafts.clear())
+      .then(() => setStorageStatus('ready')).catch(() => setStorageStatus('unavailable'));
   };
 
   const restart = () => {
@@ -207,6 +236,7 @@ function AppContent() {
   };
 
   const selectParticipantRole = (role: ParticipantRole) => {
+    if ((resumeDraft || storageStatus === 'invalid') && !window.confirm(LOCAL_PROGRESS_COPY[lang].discardConfirm)) return;
     clearAssessment();
     setParticipantRole(role);
     dispatchNavigation(resetNavigation());
@@ -241,17 +271,99 @@ function AppContent() {
   const handleBeforeUnload = useCallback((e: BeforeUnloadEvent) => {
     const hasDraft = Object.keys(ratings).length > 0
       || selectedValues.length > 0
-      || participantReflectionDraft.medicineView.trim().length > 0;
-    if (hasDraft && phase !== 'results' && phase !== 'intro' && phase !== 'role') {
+      || participantReflectionDraft.medicineView.trim().length > 0
+      || specialistDraft.currentSpecialtyView.trim().length > 0;
+    if (hasDraft && storageStatus !== 'saved' && phase !== 'results' && phase !== 'intro' && phase !== 'role') {
       e.preventDefault();
       e.returnValue = '';
     }
-  }, [participantReflectionDraft.medicineView, phase, ratings, selectedValues.length]);
+  }, [participantReflectionDraft.medicineView, specialistDraft.currentSpecialtyView, phase, ratings, selectedValues.length, storageStatus]);
 
   useEffect(() => {
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [handleBeforeUnload]);
+
+  useEffect(() => {
+    let active = true;
+    void getLocalResearchStorage().then(async ({ drafts }) => {
+      const [result, preference] = await Promise.all([
+        drafts.load(), getAppStorage().then(storage => storage.getItem(AUTOSAVE_PREFERENCE_KEY)),
+      ]);
+      if (!active) return;
+      setLocalSaveEnabled(preference !== 'false');
+      if (result.status === 'restored') {
+        setResumeDraft(result.draft);
+        setLang(result.draft.language);
+      }
+      setStorageStatus(result.status === 'unavailable' ? 'unavailable'
+        : result.status === 'invalid' || result.status === 'stale' ? 'invalid' : 'ready');
+      loadedStorage.current = true;
+    }).catch(() => { if (active) { setStorageStatus('unavailable'); loadedStorage.current = true; } });
+    return () => { active = false; };
+  }, [setLang]);
+
+  useEffect(() => {
+    if (!loadedStorage.current || !localSaveEnabled || resumeDraft || storageStatus === 'invalid'
+      || !participantRole || catalogSource !== 'remote' || phase === 'dashboard') return;
+    const draft: QuestionnaireDraft = {
+      participantRole, language: lang, location,
+      navigationStack: navigation.stack.filter(item => item.phase !== 'dashboard').slice(-256),
+      ratings, selectedValues, preferredSpecialty, actualSpecialty, priorities,
+      specialistQuestionnaireMode, participantReflectionDraft, specialistDraft, catalog: catalogSnapshot,
+    };
+    const generation = ++saveGeneration.current;
+    setStorageStatus('saving');
+    void getLocalResearchStorage().then(({ drafts }) => drafts.save(draft))
+      .then(() => { if (saveGeneration.current === generation) setStorageStatus('saved'); })
+      .catch(() => { if (saveGeneration.current === generation) setStorageStatus('unavailable'); });
+    // storageStatus deliberately is not a dependency: status updates must not
+    // re-save a large snapshot or retry unavailable storage in a render loop.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [localSaveEnabled, resumeDraft, participantRole, lang, navigation, ratings, selectedValues,
+    preferredSpecialty, actualSpecialty, priorities, specialistQuestionnaireMode,
+    participantReflectionDraft, specialistDraft, catalogSnapshot, catalogSource]);
+
+  const resumeQuestionnaire = () => {
+    if (!resumeDraft) return;
+    if (!restoreSnapshot(resumeDraft.catalog)) { setStorageStatus('invalid'); return; }
+    const draft = resumeDraft;
+    setLang(draft.language); setParticipantRole(draft.participantRole);
+    setRatings(draft.ratings); setSelectedValues(draft.selectedValues);
+    setPreferredSpecialty(draft.preferredSpecialty); setActualSpecialty(draft.actualSpecialty);
+    setPriorities(draft.priorities); setSpecialistQuestionnaireMode(draft.specialistQuestionnaireMode);
+    setParticipantReflectionDraft(draft.participantReflectionDraft);
+    setSpecialistDraft(draft.specialistDraft ?? createSpecialistDraft());
+    setScores(Object.keys(draft.ratings).length === ALL_QUESTION_IDS.length ? reRankWithPriorities({
+      ratings: draft.ratings, selectedValues: draft.selectedValues,
+      preferredSpecialty: draft.participantRole === 'specialist' ? null : draft.preferredSpecialty,
+    }, draft.priorities, draft.catalog.specialties) : []);
+    dispatchNavigation(resetNavigation());
+    for (const previous of draft.navigationStack ?? [{ phase: 'intro' } as AppLocation, draft.location]) {
+      dispatchNavigation(navigateTo(previous));
+    }
+    setResumeDraft(null); setStorageStatus('saved');
+  };
+
+  const discardLocalDraft = () => {
+    saveGeneration.current += 1;
+    setResumeDraft(null);
+    setLocalSaveEnabled(false);
+    void getAppStorage().then(storage => storage.setItem(AUTOSAVE_PREFERENCE_KEY, 'false'))
+      .catch(() => setStorageStatus('unavailable'));
+    void getLocalResearchStorage().then(({ drafts }) => drafts.clear())
+      .then(() => setStorageStatus('ready')).catch(() => setStorageStatus('unavailable'));
+  };
+
+  useEffect(() => {
+    let cleanup: (() => void) | undefined;
+    let disposed = false;
+    void installMobileLifecycle({
+      onResume: () => { void flushPendingResearchSubmissions().catch(() => undefined); },
+      onBack: () => { if (!contributionSubmitting) goBack(); },
+    }).then(stop => { if (disposed) stop(); else cleanup = stop; });
+    return () => { disposed = true; cleanup?.(); };
+  }, [goBack, contributionSubmitting]);
 
   // App navigation is state-based, so the browser otherwise preserves the
   // previous document offset when a new screen or questionnaire step renders.
@@ -261,14 +373,27 @@ function AppContent() {
     explorerSpecialty,
   ));
 
+  const renderPage = () => {
+  if (phase === 'credits') {
+    return <ProjectCredits onBack={goBack} />;
+  }
+
+  if (phase === 'participation-map') {
+    return (
+      <Suspense fallback={<main className="min-h-screen bg-accent-50 p-6"><PageBackButton onClick={goBack} label={t.back} /></main>}>
+        <ParticipationMap onBack={goBack} />
+      </Suspense>
+    );
+  }
+
   if (phase === 'role' || participantRole === null) {
-    return <RoleSelection onSelectRole={selectParticipantRole} />;
+    return <RoleSelection onSelectRole={selectParticipantRole} onOpenCredits={() => goTo({ phase: 'credits' })} onOpenWorldMap={() => goTo({ phase: 'participation-map' })} />;
   }
 
   if (phase === 'intro') {
     return (
       <>
-        <Intro onStart={startQuiz} totalQuestions={totalQuestions} participantRole={participantRole} onBack={goBack} onChangeRole={changeParticipantRole} onOpenExplorer={() => goTo({ phase: 'explorer' })} onOpenMethodology={() => goTo({ phase: 'methodology' })} onOpenDashboard={() => goTo({ phase: 'dashboard' })} />
+        <Intro onStart={startQuiz} totalQuestions={totalQuestions} participantRole={participantRole} onBack={goBack} onChangeRole={changeParticipantRole} onOpenExplorer={() => goTo({ phase: 'explorer' })} onOpenMethodology={() => goTo({ phase: 'methodology' })} onOpenDashboard={() => goTo({ phase: 'dashboard' })} onOpenCredits={() => goTo({ phase: 'credits' })} onOpenWorldMap={() => goTo({ phase: 'participation-map' })} />
         {(catalogGateMessage || (catalogError && catalogSource !== 'remote')) && (
           <div role="alert" className="fixed bottom-5 left-1/2 z-50 w-[min(92vw,680px)] -translate-x-1/2 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 shadow-lift">
             <p className="font-semibold">{catalogGateMessage ?? (lang === 'fr' ? 'Catalogue publié indisponible.' : 'Published catalog unavailable.')}</p>
@@ -343,7 +468,6 @@ function AppContent() {
           onSubmittingChange={setContributionSubmitting}
           onDone={(saved) => {
             if (saved) {
-              setParticipantReflectionDraft(createParticipantReflectionDraft());
               replaceCurrentPage({ phase: 'results' });
             } else {
               goTo({ phase: 'results' });
@@ -362,13 +486,16 @@ function AppContent() {
           <LanguageSwitcher />
         </header>
         <SpecialistPrompt
-          initialSpecialty={isSpecialist ? actualSpecialty : null}
+          draft={specialistDraft}
+          onDraftChange={setSpecialistDraft}
           ratings={specialistQuestionnaireMode === 'skipped' ? {} : ratings}
           selectedValues={specialistQuestionnaireMode === 'skipped' ? [] : selectedValues}
           questionnaireCompleted={specialistQuestionnaireMode !== 'skipped'}
           language={lang}
           onSubmittingChange={setContributionSubmitting}
-          onDone={() => replaceCurrentPage({ phase: specialistQuestionnaireMode === 'skipped' ? 'explorer' : 'results' })}
+          onDone={() => {
+            replaceCurrentPage({ phase: specialistQuestionnaireMode === 'skipped' ? 'explorer' : 'results' });
+          }}
         />
       </div>
     );
@@ -521,6 +648,22 @@ function AppContent() {
       </footer>
     </div>
   );
+  };
+
+  return <>
+    <LocalProgressPanel
+      enabled={localSaveEnabled} status={storageStatus} hasResume={Boolean(resumeDraft)}
+      onResume={resumeQuestionnaire} onDiscard={discardLocalDraft}
+      onEnabledChange={enabled => {
+        if (enabled) {
+          setLocalSaveEnabled(true);
+          void getAppStorage().then(storage => storage.setItem(AUTOSAVE_PREFERENCE_KEY, 'true'))
+            .catch(() => setStorageStatus('unavailable'));
+        } else discardLocalDraft();
+      }}
+    />
+    {renderPage()}
+  </>;
 }
 
 export default function App() {

@@ -1,4 +1,4 @@
-import type { FormEvent } from 'react';
+import type { FormEvent, ReactNode } from 'react';
 import type { UIStrings } from '@/data/i18n';
 import { AlertCircle, ArrowRight, Compass, GraduationCap, Loader2 } from 'lucide-react';
 import { STUDENT_STUDY_YEARS } from '@/lib/participantProfile';
@@ -10,6 +10,7 @@ export interface ParticipantReflectionDraft {
   submissionId: string;
   studyYear: string;
   medicineView: string;
+  geography?: { countryCode: string; region: string };
 }
 
 export interface ParticipantReflectionFormProps {
@@ -21,6 +22,7 @@ export interface ParticipantReflectionFormProps {
   copy: UIStrings;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onSkip: () => void;
+  extraFields?: ReactNode;
 }
 
 export default function ParticipantReflectionForm({
@@ -32,6 +34,7 @@ export default function ParticipantReflectionForm({
   copy,
   onSubmit,
   onSkip,
+  extraFields,
 }: ParticipantReflectionFormProps) {
   const isStudent = participantRole === 'student';
   const normalizedMedicineViewLength = draft.medicineView.trim().length;
@@ -106,6 +109,8 @@ export default function ParticipantReflectionForm({
             </select>
           </div>
         )}
+
+        {extraFields}
 
         {error && (
           <div className="mt-5 flex items-center gap-2.5 rounded-xl border border-red-200 bg-red-50 p-3.5 text-sm text-red-700" role="alert">

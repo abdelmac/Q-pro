@@ -254,7 +254,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
       supabase.from('specialist_responses').select('id', { count: 'exact', head: true }),
       supabase.from('student_responses').select('id', { count: 'exact', head: true }).eq('participant_role', 'student').not('study_year', 'is', null),
       supabase.from('specialist_responses').select('id', { count: 'exact', head: true })
-        .eq('submission_schema_version', DATA_VERSIONS.submissionSchema)
+        .in('submission_schema_version', [DATA_VERSIONS.submissionSchema, DATA_VERSIONS.specialistSubmissionSchema])
         .not('current_specialty_view', 'is', null)
         .not('specialty_changes_over_years', 'is', null)
         .not('most_important_specialty_quality', 'is', null)
@@ -278,12 +278,12 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
         if (languageFilter !== 'all') query = query.eq('language', languageFilter);
         if (dataVersionFilter === 'current') {
           query = query
-            .eq('submission_schema_version', DATA_VERSIONS.submissionSchema)
+            .in('submission_schema_version', [DATA_VERSIONS.submissionSchema, DATA_VERSIONS.specialistSubmissionSchema])
             .eq('questionnaire_version', DATA_VERSIONS.questionnaire)
             .eq('value_catalog_version', DATA_VERSIONS.valueCatalog)
             .eq('specialty_catalog_version', DATA_VERSIONS.specialtyCatalog)
             .eq('calibration_version', DATA_VERSIONS.calibration)
-            .eq('consent_version', DATA_VERSIONS.consent);
+            .in('consent_version', [DATA_VERSIONS.consent, DATA_VERSIONS.specialistConsent]);
         } else if (dataVersionFilter === 'legacy') {
           query = query.lt('submission_schema_version', DATA_VERSIONS.submissionSchema);
         }
@@ -564,12 +564,12 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
       if (languageFilter !== 'all') query = query.eq('language', languageFilter);
       if (dataVersionFilter === 'current') {
         query = query
-          .eq('submission_schema_version', DATA_VERSIONS.submissionSchema)
+          .in('submission_schema_version', [DATA_VERSIONS.submissionSchema, DATA_VERSIONS.specialistSubmissionSchema])
           .eq('questionnaire_version', DATA_VERSIONS.questionnaire)
           .eq('value_catalog_version', DATA_VERSIONS.valueCatalog)
           .eq('specialty_catalog_version', DATA_VERSIONS.specialtyCatalog)
           .eq('calibration_version', DATA_VERSIONS.calibration)
-          .eq('consent_version', DATA_VERSIONS.consent);
+          .in('consent_version', [DATA_VERSIONS.consent, DATA_VERSIONS.specialistConsent]);
       } else if (dataVersionFilter === 'legacy') {
         query = query.lt('submission_schema_version', DATA_VERSIONS.submissionSchema);
       }

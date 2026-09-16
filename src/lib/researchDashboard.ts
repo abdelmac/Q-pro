@@ -295,9 +295,17 @@ function assessSharedVersions(row: SharedVersionFields): EligibilityReason[] {
 }
 
 export function assessSpecialistEligibility(row: SpecialistResponseRow): EligibilityAssessment {
-  const reasons = row.questionnaire_completed
+  const sharedReasons = row.questionnaire_completed
     ? assessSharedVersions(row)
     : assessSharedVersionsWithoutPayload(row);
+  const reasons: EligibilityReason[] = sharedReasons.filter((reason) => reason !== 'schema_version' && reason !== 'consent_version');
+  if (row.submission_schema_version === DATA_VERSIONS.submissionSchema) {
+    if (row.consent_version !== DATA_VERSIONS.consent) reasons.push('consent_version');
+  } else if (row.submission_schema_version === DATA_VERSIONS.specialistSubmissionSchema) {
+    if (row.consent_version !== DATA_VERSIONS.specialistConsent) reasons.push('consent_version');
+  } else {
+    reasons.push('schema_version');
+  }
   if (!row.questionnaire_completed) {
     reasons.push('questionnaire_skipped');
     if (!row.ratings || Array.isArray(row.ratings) || typeof row.ratings !== 'object') {
@@ -318,10 +326,10 @@ export function assessSpecialistEligibility(row: SpecialistResponseRow): Eligibi
 }
 
 export function assessStudentEligibility(row: StudentResponseRow): EligibilityAssessment {
-  // Participant responses have three intentionally supported protocols.
+  // Participant responses have four intentionally supported protocols.
   // Schema 2 is the historical student-only questionnaire, schema 3 introduced
-  // a required reflection, and schema 4 makes that reflection optional. All
-  // three contain the same q81-v1 quantitative payload, so collection-protocol
+  // a required reflection, schema 4 makes it optional, and schema 5 adds
+  // optional geography. All contain the same q81-v1 payload, so collection-protocol
   // changes must not invalidate otherwise usable historical measurements.
   const reasons: EligibilityReason[] = assessSharedVersions(row).filter((reason) => (
     reason !== 'schema_version' && reason !== 'consent_version'
@@ -338,6 +346,9 @@ export function assessStudentEligibility(row: StudentResponseRow): EligibilityAs
     if (row.participant_reflection_version !== DATA_VERSIONS.participantReflection) {
       reasons.push('analysis_version');
     }
+  } else if (row.submission_schema_version === DATA_VERSIONS.optionalReflectionSubmissionSchema) {
+    if (row.consent_version !== DATA_VERSIONS.optionalReflectionConsent) reasons.push('consent_version');
+    if (row.participant_reflection_version !== DATA_VERSIONS.participantReflection) reasons.push('analysis_version');
   } else {
     reasons.push('schema_version');
   }

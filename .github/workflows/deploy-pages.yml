@@ -36,6 +36,21 @@ jobs:
       - name: Validate multilingual specialty content
         run: npm run test:specialty-content
 
+      - name: Validate participation map and offline research storage
+        run: |
+          npm run test:map
+          npm run test:mobile
+
+      - name: Install test browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Check responsive flows and offline synchronization
+        env:
+          # Synthetic host: every request is intercepted by the browser suite.
+          VITE_SUPABASE_URL: https://browser-fixture.supabase.co
+          VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_browser_fixture
+        run: npm run test:browser
+
       - name: Build app
         env:
           # Both values are intentionally public and are embedded in the browser bundle.
