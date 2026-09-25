@@ -2,6 +2,10 @@ BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
 SELECT extensions.no_plan();
 
+-- This suite tests enabled-map suppression/rounding. The separate feature
+-- suite verifies fail-closed defaults and every visibility transition.
+UPDATE private.public_features SET public_map_enabled = true WHERE singleton;
+
 -- Minimal Auth fixtures; authorization comes from the private allowlist,
 -- never from a role string supplied in editable user metadata or JWT claims.
 INSERT INTO auth.users (id, email) VALUES

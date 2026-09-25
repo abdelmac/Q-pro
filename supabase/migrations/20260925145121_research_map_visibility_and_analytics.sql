@@ -524,4 +524,9 @@ REVOKE ALL ON FUNCTION public.research_cohort_summary(jsonb),public.research_res
   FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.research_cohort_summary(jsonb),public.research_response_page(jsonb,integer,jsonb,text),
   public.research_question_summary(jsonb,text),public.research_item_correlation(jsonb,text,text),
-  public.create_research_analysis_run(jsonb,jsonb),publi
+  public.create_research_analysis_run(jsonb,jsonb),public.list_research_analysis_runs(),public.get_research_analysis_run(uuid),public.delete_research_analysis_run(uuid),
+  public.list_research_cohorts(),public.save_research_cohort(text,jsonb,uuid),public.delete_research_cohort(uuid)
+  TO authenticated;
+
+NOTIFY pgrst, 'reload schema';
+COMMIT;
