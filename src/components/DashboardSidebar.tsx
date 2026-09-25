@@ -67,9 +67,7 @@ export default function DashboardSidebar({
       <div className="flex h-full flex-col overflow-y-auto p-5 scrollbar-thin sm:p-6">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
-            <div className="rounded-xl bg-white p-3 shadow-soft">
-              <BrandLogo className="w-full" />
-            </div>
+            <BrandLogo className="w-full max-w-52" tone="inverse" />
             <p className="mt-3 text-xs text-brand-200">
               {french ? 'Portail de recherche' : romanian ? 'Portal de cercetare' : 'Research portal'}
             </p>

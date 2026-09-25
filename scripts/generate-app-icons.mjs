@@ -1,5 +1,5 @@
-// Deterministic packaging of the existing code-native BrandLogo compass viewport.
-// The supplied PNG is never modified or redrawn. No network requests are needed.
+// Deterministic exports from the same vector paths as BrandLogo, not a bitmap crop.
+// The original supplied PNG is preserved as a reference. No network is needed.
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
@@ -11,7 +11,23 @@ import { chromium } from 'playwright';
 const source = await readFile('public/branding/specialty-match-logo.png');
 assert.equal(createHash('sha256').update(source).digest('hex'), 'a94bd5c7f200df275760278c506267f3fc833d53f26ab484d0f0836744b12c98', 'Review the supplied artwork before changing the icon source');
 const geometry = JSON.parse(await readFile('src/data/brandArtwork.json', 'utf8'));
-const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="${geometry.markViewBox}"><image href="data:image/png;base64,${source.toString('base64')}" width="${geometry.width}" height="${geometry.height}"/></svg>`;
+const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="${geometry.markViewBox}">
+  <defs>
+    <linearGradient id="compass-gradient" x1="2" y1="65" x2="98" y2="35" gradientUnits="userSpaceOnUse">
+      <stop stop-color="${geometry.blue}"/><stop offset="1" stop-color="${geometry.teal}"/>
+    </linearGradient>
+    <mask id="compass-needle" maskUnits="userSpaceOnUse" x="0" y="0" width="100" height="100">
+      <path d="${geometry.northPath} ${geometry.southPath}" fill="white"/>
+      <circle cx="49" cy="50" r="4" fill="black"/>
+    </mask>
+  </defs>
+  <path d="${geometry.ringPath}" fill="url(#compass-gradient)"/>
+  <g mask="url(#compass-needle)">
+    <path d="${geometry.northPath}" fill="${geometry.teal}"/>
+    <path d="${geometry.southPath}" fill="${geometry.blue}"/>
+  </g>
+</svg>
+`;
 const sourceUrl = `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`;
 
 function chunk(type, bytes) {
@@ -62,7 +78,8 @@ function ico(images) {
 const edge = 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe';
 const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE || (existsSync(edge) ? edge : undefined);
 const browser = await chromium.launch({headless:true, ...(executablePath ? {executablePath} : {})});
-let written = 0;
+await writeFile('public/branding/compass.svg', svg);
+let written = 1;
 try {
   const page = await browser.newPage();
   await page.route('http{,s}://**/*', route => route.abort());
@@ -88,7 +105,7 @@ try {
     return {size, bytes};
   };
   const favicons = [];
-  for (const size of [16,32,48]) favicons.push(await exportIcon(`public/branding/favicon-${size}.png`, size, {fraction:1, opaque:false}));
+  for (const size of [16,32,48]) favicons.push(await exportIcon(`public/branding/favicon-${size}.png`, size, {fraction:1, foreground:true, opaque:false}));
   await writeFile('public/branding/favicon.ico', ico(favicons)); written++;
   await exportIcon('public/branding/apple-touch-icon.png', 180);
   for (const size of [192,512]) await exportIcon(`public/branding/icon-${size}.png`, size);
@@ -101,5 +118,5 @@ try {
     await exportIcon(`${directory}/ic_launcher_foreground.png`, adaptive, {fraction:0.6, foreground:true, opaque:false});
   }
   await exportIcon('ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png', 1024);
-  console.log(`Exported ${written} browser, home-screen, Android and iOS icon assets from the existing compass viewport; source PNG unchanged.`);
+  console.log(`Exported ${written} vector/browser, home-screen, Android and iOS icon assets from shared vector paths; original reference PNG unchanged.`);
 } finally { await browser.close(); }

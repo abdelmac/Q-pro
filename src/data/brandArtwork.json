@@ -1,5 +1,10 @@
 {
-  "width": 1254,
-  "height": 1254,
-  "markViewBox": "402 284 448 444"
+  "markViewBox": "0 0 100 100",
+  "ringPath": "M48 2 A48 48 0 0 0 2 48 H14 A36 36 0 0 1 48 14 Z M52 2 A48 48 0 0 1 98 48 H86 A36 36 0 0 0 52 14 Z M98 52 A48 48 0 0 1 52 98 V86 A36 36 0 0 0 86 52 Z M48 98 A48 48 0 0 1 2 52 H14 A36 36 0 0 0 48 86 Z",
+  "northPath": "M42 44 L70 28 L56 56 Z",
+  "southPath": "M42 44 L28 72 L56 56 Z",
+  "blue": "#1678e5",
+  "teal": "#10b5a8",
+  "wordBlue": "#09539c",
+  "wordTeal": "#009fa7"
 }
