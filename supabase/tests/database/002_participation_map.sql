@@ -271,48 +271,48 @@ $population$;
 SELECT extensions.is(private.publish_participation_map_month('2001-01-01'), 4,
   'only four complete disjoint cells meet the threshold');
 SELECT extensions.is(
-  (public.get_participation_map_stats('all', NULL, 'all', '2001-01-01', '2001-01-01')->>'total')::bigint,
+  (public.get_private_participation_map_stats('all', NULL, 'all', '2001-01-01', '2001-01-01')->>'total')::bigint,
   45::bigint, 'all counters exclude suppressed, skipped and unknown-country responses and round downward'
 );
 SELECT extensions.is(
-  public.get_participation_map_stats('all', NULL, 'all', '2001-01-01', '2001-01-01')->'groups',
+  public.get_private_participation_map_stats('all', NULL, 'all', '2001-01-01', '2001-01-01')->'groups',
   '[{"countryCode":"FR","country":"France","count":10,"students":10,"specialists":0,"nonMedical":0},
     {"countryCode":"RO","country":"Romania","count":35,"students":10,"specialists":10,"nonMedical":15}]'::jsonb,
   'country output has only rounded country totals and role counters'
 );
 SELECT extensions.is(
-  (public.get_participation_map_stats('student', NULL, 'all', '2001-01-01', '2001-01-01')->>'total')::bigint,
+  (public.get_private_participation_map_stats('student', NULL, 'all', '2001-01-01', '2001-01-01')->>'total')::bigint,
   20::bigint, 'student filter aggregates only students'
 );
 SELECT extensions.is(
-  (public.get_participation_map_stats('specialist', NULL, 'all', '2001-01-01', '2001-01-01')->>'total')::bigint,
+  (public.get_private_participation_map_stats('specialist', NULL, 'all', '2001-01-01', '2001-01-01')->>'total')::bigint,
   10::bigint, 'specialist filter excludes skipped questionnaires'
 );
 SELECT extensions.is(
-  (public.get_participation_map_stats('non_medical', NULL, 'all', '2001-01-01', '2001-01-01')->>'total')::bigint,
+  (public.get_private_participation_map_stats('non_medical', NULL, 'all', '2001-01-01', '2001-01-01')->>'total')::bigint,
   15::bigint, 'curious population maps to public non_medical'
 );
 SELECT extensions.is(
-  (public.get_participation_map_stats('all', 'ro', 'all', '2001-01-01', '2001-01-01')->>'total')::bigint,
+  (public.get_private_participation_map_stats('all', 'ro', 'all', '2001-01-01', '2001-01-01')->>'total')::bigint,
   35::bigint, 'country filter returns the corresponding released total'
 );
 SELECT extensions.is(
-  (public.get_participation_map_stats('all', NULL, 'ro', '2001-01-01', '2001-01-01')->>'total')::bigint,
+  (public.get_private_participation_map_stats('all', NULL, 'ro', '2001-01-01', '2001-01-01')->>'total')::bigint,
   0::bigint, 'small language cell contributes no public count'
 );
 SELECT extensions.is(
-  (public.get_participation_map_stats('all', NULL, 'all', '2001-01-01', '2001-01-01')->>'total')::bigint
-  - (public.get_participation_map_stats('all', NULL, 'en', '2001-01-01', '2001-01-01')->>'total')::bigint
-  - (public.get_participation_map_stats('all', NULL, 'fr', '2001-01-01', '2001-01-01')->>'total')::bigint,
+  (public.get_private_participation_map_stats('all', NULL, 'all', '2001-01-01', '2001-01-01')->>'total')::bigint
+  - (public.get_private_participation_map_stats('all', NULL, 'en', '2001-01-01', '2001-01-01')->>'total')::bigint
+  - (public.get_private_participation_map_stats('all', NULL, 'fr', '2001-01-01', '2001-01-01')->>'total')::bigint,
   0::bigint, 'subtracting released language totals cannot recover nine suppressed Romanian responses'
 );
 SELECT extensions.is(
-  public.get_participation_map_stats('all', NULL, 'all', '2001-01-01', '2001-01-01', 'current'),
-  public.get_participation_map_stats('all', NULL, 'all', '2001-01-01', '2001-01-01', 'all'),
+  public.get_private_participation_map_stats('all', NULL, 'all', '2001-01-01', '2001-01-01', 'current'),
+  public.get_private_participation_map_stats('all', NULL, 'all', '2001-01-01', '2001-01-01', 'all'),
   'current protocol filter reuses the same released cells'
 );
 SELECT extensions.is(
-  (public.get_participation_map_stats('all', NULL, 'all', '2001-02-01', '2001-02-01')->>'total')::bigint,
+  (public.get_private_participation_map_stats('all', NULL, 'all', '2001-02-01', '2001-02-01')->>'total')::bigint,
   0::bigint, 'inclusive full-month filter excludes other months'
 );
 
@@ -330,7 +330,7 @@ $late_arrival$;
 SELECT extensions.is(private.publish_participation_map_month('2001-01-01'), 0,
   'republishing a sealed month is an idempotent no-op');
 SELECT extensions.is(
-  (public.get_participation_map_stats('all', NULL, 'all', '2001-01-01', '2001-01-01')->>'total')::bigint,
+  (public.get_private_participation_map_stats('all', NULL, 'all', '2001-01-01', '2001-01-01')->>'total')::bigint,
   45::bigint, 'late arrivals cannot change a published month or expose a difference of one'
 );
 SELECT extensions.throws_ok(
@@ -358,36 +358,36 @@ SELECT extensions.throws_ok(
   '22023', 'Only a complete closed UTC month can be published', 'publication requires an exact month boundary'
 );
 SELECT extensions.throws_ok(
-  $$SELECT public.get_participation_map_stats('curious')$$,
+  $$SELECT public.get_private_participation_map_stats('curious')$$,
   '22023', 'Invalid participation map filters', 'public role filter only accepts the documented types'
 );
 SELECT extensions.throws_ok(
-  $$SELECT public.get_participation_map_stats('all', 'ZZ')$$,
+  $$SELECT public.get_private_participation_map_stats('all', 'ZZ')$$,
   '22023', 'Invalid participation map filters', 'invalid map country is rejected'
 );
 SELECT extensions.throws_ok(
-  $$SELECT public.get_participation_map_stats('all', NULL, 'de')$$,
+  $$SELECT public.get_private_participation_map_stats('all', NULL, 'de')$$,
   '22023', 'Invalid participation map filters', 'invalid map language is rejected'
 );
 SELECT extensions.throws_ok(
-  $$SELECT public.get_participation_map_stats('all', NULL, 'all', '2001-01-02')$$,
+  $$SELECT public.get_private_participation_map_stats('all', NULL, 'all', '2001-01-02')$$,
   '22023', 'Invalid participation map filters', 'arbitrary daily windows are forbidden'
 );
 SELECT extensions.throws_ok(
-  $$SELECT public.get_participation_map_stats('all', NULL, 'all', '2001-02-01', '2001-01-01')$$,
+  $$SELECT public.get_private_participation_map_stats('all', NULL, 'all', '2001-02-01', '2001-01-01')$$,
   '22023', 'Invalid participation map filters', 'inverted date ranges are rejected'
 );
 SELECT extensions.throws_ok(
-  $$SELECT public.get_participation_map_stats('all', NULL, 'all', NULL, NULL, 'unknown')$$,
+  $$SELECT public.get_private_participation_map_stats('all', NULL, 'all', NULL, NULL, 'unknown')$$,
   '22023', 'Invalid participation map filters', 'arbitrary version filters are rejected'
 );
 SELECT extensions.is(
-  public.get_participation_map_stats()->>'privacyThreshold', '10', 'API describes its minimum cell size'
+  public.get_private_participation_map_stats()->>'privacyThreshold', '10', 'API describes its minimum cell size'
 );
-SELECT extensions.is(public.get_participation_map_stats()->>'rounding', '5', 'API describes downward rounding');
-SELECT extensions.is(public.get_participation_map_stats()->>'granularity', 'month', 'API describes month granularity');
+SELECT extensions.is(public.get_private_participation_map_stats()->>'rounding', '5', 'API describes downward rounding');
+SELECT extensions.is(public.get_private_participation_map_stats()->>'granularity', 'month', 'API describes month granularity');
 SELECT extensions.ok(
-  NOT (public.get_participation_map_stats()::text ~ '(submission_id|created_at|region|actual_specialty|preferred_specialty)'),
+  NOT (public.get_private_participation_map_stats()::text ~ '(submission_id|created_at|region|actual_specialty|preferred_specialty)'),
   'public response excludes respondent identifiers, raw dates, regions and specialty data'
 );
 SELECT extensions.ok(
@@ -412,47 +412,47 @@ SELECT extensions.is(
 );
 SELECT extensions.throws_ok(
   $$SELECT public.get_participation_map_stats('student')$$,
-  '42501', 'This account is not authorized for this portal action',
+  '42501', 'Public map filters are not available',
   'anonymous respondent-type filtering is denied server-side'
 );
 SELECT extensions.throws_ok(
   $$SELECT public.get_participation_map_stats('all', 'RO')$$,
-  '42501', 'This account is not authorized for this portal action',
+  '42501', 'Public map filters are not available',
   'anonymous country filtering is denied server-side'
 );
 SELECT extensions.throws_ok(
   $$SELECT public.get_participation_map_stats('all', NULL, 'fr')$$,
-  '42501', 'This account is not authorized for this portal action',
+  '42501', 'Public map filters are not available',
   'anonymous language filtering is denied server-side'
 );
 SELECT extensions.throws_ok(
   $$SELECT public.get_participation_map_stats('all', NULL, 'all', '2001-01-01')$$,
-  '42501', 'This account is not authorized for this portal action',
+  '42501', 'Public map filters are not available',
   'anonymous start month filtering is denied server-side'
 );
 SELECT extensions.throws_ok(
   $$SELECT public.get_participation_map_stats('all', NULL, 'all', NULL, '2001-01-01')$$,
-  '42501', 'This account is not authorized for this portal action',
+  '42501', 'Public map filters are not available',
   'anonymous end month filtering is denied server-side'
 );
 SELECT extensions.throws_ok(
   $$SELECT public.get_participation_map_stats('all', NULL, 'all', NULL, NULL, 'current')$$,
-  '42501', 'This account is not authorized for this portal action',
+  '42501', 'Public map filters are not available',
   'anonymous data version filtering is denied server-side'
 );
 SELECT extensions.throws_ok(
   $$SELECT public.get_participation_map_stats(NULL)$$,
-  '42501', 'This account is not authorized for this portal action',
+  '42501', 'Public map filters are not available',
   'anonymous null type filtering is denied server-side'
 );
 SELECT extensions.throws_ok(
   $$SELECT public.get_participation_map_stats('all', '')$$,
-  '42501', 'This account is not authorized for this portal action',
+  '42501', 'Public map filters are not available',
   'anonymous empty country filtering is denied server-side'
 );
 SELECT extensions.throws_ok(
   $$SELECT public.get_participation_map_stats('all', 'ZZ')$$,
-  '42501', 'This account is not authorized for this portal action',
+  '42501', 'Public map filters are not available',
   'anonymous invalid country before payload validation filtering is denied server-side'
 );
 RESET ROLE;
@@ -469,7 +469,7 @@ SELECT extensions.lives_ok(
 );
 SELECT extensions.throws_ok(
   $$SELECT public.get_participation_map_stats('student')$$,
-  '42501', 'This account is not authorized for this portal action',
+  '42501', 'Public map filters are not available',
   'ordinary authenticated cannot access filters even with professor in user metadata'
 );
 RESET ROLE;
@@ -486,7 +486,7 @@ SELECT extensions.lives_ok(
 );
 SELECT extensions.throws_ok(
   $$SELECT public.get_participation_map_stats('student')$$,
-  '42501', 'This account is not authorized for this portal action',
+  '42501', 'Public map filters are not available',
   'researcher cannot access filters even with professor in user metadata'
 );
 RESET ROLE;
@@ -503,7 +503,7 @@ SELECT extensions.lives_ok(
 );
 SELECT extensions.throws_ok(
   $$SELECT public.get_participation_map_stats('student')$$,
-  '42501', 'This account is not authorized for this portal action',
+  '42501', 'Public map filters are not available',
   'disabled administrator cannot access filters even with professor in user metadata'
 );
 RESET ROLE;
@@ -515,11 +515,11 @@ END;
 $actor$;
 SET LOCAL ROLE authenticated;
 SELECT extensions.is(
-  (public.get_participation_map_stats('student', 'RO', 'en', '2001-01-01', '2001-01-01', 'current')->>'total')::bigint,
+  (public.get_private_participation_map_stats('student', 'RO', 'en', '2001-01-01', '2001-01-01', 'current')->>'total')::bigint,
   10::bigint, 'enabled doctor can combine all map filters'
 );
 SELECT extensions.throws_ok(
-  $$SELECT public.get_participation_map_stats('all', 'ZZ')$$,
+  $$SELECT public.get_private_participation_map_stats('all', 'ZZ')$$,
   '22023', 'Invalid participation map filters',
   'enabled doctor still receives validated filter errors'
 );
@@ -532,11 +532,11 @@ END;
 $actor$;
 SET LOCAL ROLE authenticated;
 SELECT extensions.is(
-  (public.get_participation_map_stats('student', 'RO', 'en', '2001-01-01', '2001-01-01', 'current')->>'total')::bigint,
+  (public.get_private_participation_map_stats('student', 'RO', 'en', '2001-01-01', '2001-01-01', 'current')->>'total')::bigint,
   10::bigint, 'enabled professor can combine all map filters'
 );
 SELECT extensions.throws_ok(
-  $$SELECT public.get_participation_map_stats('all', 'ZZ')$$,
+  $$SELECT public.get_private_participation_map_stats('all', 'ZZ')$$,
   '22023', 'Invalid participation map filters',
   'enabled professor still receives validated filter errors'
 );
@@ -547,7 +547,7 @@ UPDATE private.researchers SET enabled = false
 WHERE user_id = '63000000-0000-4000-8000-000000000005';
 SET LOCAL ROLE authenticated;
 SELECT extensions.throws_ok(
-  $$SELECT public.get_participation_map_stats('student')$$,
+  $$SELECT public.get_private_participation_map_stats('student')$$,
   '42501', 'This account is not authorized for this portal action',
   'revoking professor access immediately removes map filtering permission'
 );

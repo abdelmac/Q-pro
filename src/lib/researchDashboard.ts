@@ -135,7 +135,8 @@ export interface ClientScore {
   score: number;
 }
 
-const RANK_EPSILON = 1e-9;
+// Exact full-precision equality only. Display rounding must not create ties.
+const RANK_EPSILON = 0;
 const QUESTION_IDS = new Set(ALL_QUESTION_IDS);
 const SPECIALTY_NAMES = new Set(SPECIALTIES.map(({ name }) => name));
 const VALUE_NAMES = new Set(VALUE_OPTIONS);
@@ -702,7 +703,7 @@ export function buildCalibrationSummary(
 
 function csvCell(value: unknown): string {
   if (value === null || value === undefined) return '';
-  const text = typeof value === 'string' ? value : String(value);
+  const text = typeof value === 'object' ? JSON.stringify(value) : typeof value === 'string' ? value : String(value);
   const safeText = typeof value === 'string' && (
     /^[\t\r\n]/.test(text)
     || /^[\t\r\n ]*[=+\-@]/.test(text)
@@ -727,6 +728,7 @@ const SPECIALIST_METADATA_COLUMNS = [
   'submission_schema_version', 'questionnaire_version', 'value_catalog_version',
   'specialty_catalog_version', 'specialty_config_version_id', 'specialty_config_revision',
   'calibration_version', 'consent_version',
+  'country_code', 'region', 'scoring_context',
 ] as const;
 
 const STUDENT_METADATA_COLUMNS = [
@@ -735,6 +737,7 @@ const STUDENT_METADATA_COLUMNS = [
   'submission_schema_version', 'questionnaire_version', 'value_catalog_version',
   'specialty_catalog_version', 'specialty_config_version_id', 'specialty_config_revision',
   'scoring_version', 'consent_version',
+  'country_code', 'region', 'scoring_context',
 ] as const;
 
 const QUESTION_EXPORT_METADATA = new Map(
@@ -751,14 +754,14 @@ function exportQuestionIds(ratings: Record<string, number>): string[] {
   ];
 }
 
-function analyticProvenance(analysis: ResponseAnalysis, generatedAt: string): unknown[] {
+function analyticProvenance(analysis: ResponseAnalysis, generatedAt: string, context: Json | null): unknown[] {
   return [
     DASHBOARD_ANALYSIS_VERSION,
     analysis.engineRevision,
     analysis.modelChecksum,
     generatedAt,
     'current_engine_default_priority_weights',
-    false,
+    context != null,
     analysis.eligible,
     analysis.exclusionReasons.join('|'),
   ];
@@ -816,7 +819,7 @@ export function specialistAnalyticCsv(
     const analysis = analyzeSpecialistResponse(row, catalog);
     return [
       ...SPECIALIST_METADATA_COLUMNS.map((column) => row[column]),
-      ...analyticProvenance(analysis, generatedAt),
+      ...analyticProvenance(analysis, generatedAt, row.scoring_context),
       parseSelectedValues(row.selected_values).join('|'),
       analysis.actualRankMin,
       analysis.actualRankMax,
@@ -884,7 +887,7 @@ export function studentRawCsv(
       JSON.stringify(row.ratings),
       JSON.stringify(row.selected_values),
       JSON.stringify(row.client_scores),
-      false,
+      row.scoring_context != null,
       parseSelectedValues(row.selected_values).join('|'),
       ...ALL_QUESTION_IDS.map((id) => ratings[id] ?? null),
       ...catalog.map(({ name }) => clientScores.get(name) ?? null),
@@ -913,7 +916,7 @@ export function studentAnalyticCsv(
     const analysis = analyzeStudentResponse(row, catalog);
     return [
       ...STUDENT_METADATA_COLUMNS.map((column) => row[column]),
-      ...analyticProvenance(analysis, generatedAt),
+      ...analyticProvenance(analysis, generatedAt, row.scoring_context),
       parseSelectedValues(row.selected_values).join('|'),
       analysis.preferredRankMin,
       analysis.preferredRankMax,

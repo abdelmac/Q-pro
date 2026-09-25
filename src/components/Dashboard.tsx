@@ -6,6 +6,9 @@ import { DATA_VERSIONS, formatSupabaseError, getSupabaseConfigurationError, supa
 import type { Database } from '@/lib/database.types';
 import {
   buildCalibrationSummary,
+  assessSpecialistEligibility,
+  assessStudentEligibility,
+  dashboardModelChecksum,
   isSpecialistCalibrationComplete,
   specialistAnalyticCsv,
   specialistLongCsv,
@@ -60,6 +63,7 @@ import {
 const PAGE_SIZE = 50;
 const ParticipationMap = lazy(() => import('@/components/ParticipationMap'));
 const EXPORT_BATCH_SIZE = 250;
+const INTERACTIVE_EXPORT_LIMIT = 1000;
 const IDLE_SIGN_OUT_MS = 30 * 60 * 1000;
 
 type StudentListRow = Pick<
@@ -662,12 +666,18 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
     if (testMode) return filteredTestSpecialists;
     if (!supabase) throw new Error(getSupabaseConfigurationError() ?? 'Supabase is not configured.');
     const allRows: SpecialistResponseRow[] = [];
+    const snapshotAt = new Date().toISOString();
+    const started = Date.now();
+    const signal = dataAbort.current.signal;
     let cursor: { createdAt: string; id: string } | null = null;
     for (;;) {
+      signal.throwIfAborted();
+      if (Date.now() - started > 20_000) throw new Error('Export timed out. Narrow the cohort or use the operator research export workflow.');
       if (activeSource.current !== sourceKey) throw new Error('Data source changed');
       let query = supabase
         .from('specialist_responses')
         .select('*')
+        .lte('created_at', snapshotAt)
         .order('created_at', { ascending: false })
         .order('id', { ascending: false })
         .limit(EXPORT_BATCH_SIZE);
@@ -718,10 +728,11 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
         }
       }
       query = applyDateFilters(query, dateFrom, dateTo);
-      const { data, error: queryError } = await query.abortSignal(dataAbort.current.signal);
+      const { data, error: queryError } = await query.abortSignal(signal);
       if (queryError) throw queryError;
       const batch = data ?? [];
       allRows.push(...batch);
+      if (allRows.length > INTERACTIVE_EXPORT_LIMIT) throw new Error('Interactive exports are limited to 1000 submissions. Narrow the filters or use the operator research export workflow. No partial export was created.');
       if (batch.length < EXPORT_BATCH_SIZE) break;
       const last = batch[batch.length - 1];
       cursor = { createdAt: last.created_at, id: last.id };
@@ -743,12 +754,18 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
     if (testMode) return filteredTestStudents;
     if (!supabase) throw new Error(getSupabaseConfigurationError() ?? 'Supabase is not configured.');
     const allRows: StudentResponseRow[] = [];
+    const snapshotAt = new Date().toISOString();
+    const started = Date.now();
+    const signal = dataAbort.current.signal;
     let cursor: { createdAt: string; id: string } | null = null;
     for (;;) {
+      signal.throwIfAborted();
+      if (Date.now() - started > 20_000) throw new Error('Export timed out. Narrow the cohort or use the operator research export workflow.');
       if (activeSource.current !== sourceKey) throw new Error('Data source changed');
       let query = supabase
         .from('student_responses')
         .select('*')
+        .lte('created_at', snapshotAt)
         .order('created_at', { ascending: false })
         .order('id', { ascending: false })
         .limit(EXPORT_BATCH_SIZE);
@@ -772,10 +789,11 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
         query = query.lt('submission_schema_version', DATA_VERSIONS.studentSubmissionSchema);
       }
       query = applyDateFilters(query, dateFrom, dateTo);
-      const { data, error: queryError } = await query.abortSignal(dataAbort.current.signal);
+      const { data, error: queryError } = await query.abortSignal(signal);
       if (queryError) throw queryError;
       const batch = data ?? [];
       allRows.push(...batch);
+      if (allRows.length > INTERACTIVE_EXPORT_LIMIT) throw new Error('Interactive exports are limited to 1000 submissions. Narrow the filters or use the operator research export workflow. No partial export was created.');
       if (batch.length < EXPORT_BATCH_SIZE) break;
       const last = batch[batch.length - 1];
       cursor = { createdAt: last.created_at, id: last.id };
@@ -819,6 +837,9 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
   };
 
   const loadCalibrationAnalysis = async () => {
+    // Live cohort statistics are computed server-side. Never download every
+    // research response to recalculate dashboard statistics in this browser.
+    if (!testMode) { selectDashboardView('analytics'); return; }
     const requestId = ++analysisRequest.current;
     setAnalysisLoading(true);
     setError(null);
@@ -840,17 +861,42 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
   const exportData = async (kind: ExportKind) => {
     if (!isCohortView(view) || testBlocked) return;
     const requestId = ++exportRequest.current;
+    if (dataAbort.current.signal.aborted) dataAbort.current = new AbortController();
+    const controller = dataAbort.current;
+    const timeout = setTimeout(() => controller.abort(), 20_000);
     setExporting(kind);
     setError(null);
     try {
       const date = new Date().toISOString().slice(0, 10);
       const testId = testMode ? testDataset?.id : undefined;
       const prefix = testId ? `TEST_${testId}_` : '';
-      const jsonRows = (rows: SpecialistResponseRow[] | StudentResponseRow[]) => JSON.stringify(testId ? { is_test: true, test_dataset_id: testId, research_consent: false, notice: 'SYNTHETIC TEST DATA - NOT RESEARCH', rows } : rows, null, 2);
+      const exportMetadata = {
+        generated_at: new Date().toISOString(), snapshot_policy: 'created_at cutoff plus keyset pagination; raw records not frozen in the browser',
+        filters: { view, yearFilter, participantRoleFilter, studentSpecialtyFilter, specialtyFilter, questionnaireFilter, completenessFilter, chooseAgainFilter, languageFilter, dataVersionFilter, dateFrom, dateTo },
+        model: { ...DATA_VERSIONS, model_checksum: dashboardModelChecksum(specialties), catalog: catalogVersion },
+        personalized_settings: 'Use recorded scoring_context when available; never reconstruct missing historical settings.',
+        analytical_method: 'Canonical current-model analysis, not reconstruction of participant personalized results; per-row eligibility/exclusions are in analytical CSV.',
+        submissions: 0,
+        dataset_checksum: '',
+        dataset_checksum_method: 'SHA-256 of JSON.stringify(rows) in exported keyset order; not the SQL analysis membership digest',
+        exclusions: [] as Array<{ id: string; reasons: string[] }>,
+      };
+      const setMetadata = async (rows: SpecialistResponseRow[] | StudentResponseRow[]) => {
+        if (testId) return;
+        exportMetadata.submissions = rows.length;
+        const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(rows)));
+        exportMetadata.dataset_checksum = `sha256:${Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('')}`;
+        exportMetadata.exclusions = rows.flatMap(row => {
+          const assessment = 'actual_specialty' in row ? assessSpecialistEligibility(row) : assessStudentEligibility(row);
+          return assessment.eligible ? [] : [{ id: row.id, reasons: assessment.exclusionReasons }];
+        });
+      };
+      const jsonRows = (rows: SpecialistResponseRow[] | StudentResponseRow[]) => JSON.stringify(testId ? { is_test: true, test_dataset_id: testId, research_consent: false, notice: 'SYNTHETIC TEST DATA - NOT RESEARCH', rows } : { metadata: exportMetadata, rows }, null, 2);
       if (view === 'specialists') {
         // Always take a fresh, time-bounded snapshot. The on-screen analysis is
         // intentionally not reused because new submissions may have arrived.
         const rows = await fetchAllSpecialists();
+        await setMetadata(rows);
         if (requestId !== exportRequest.current || activeSource.current !== sourceKey) return;
         if (kind === 'json') {
           downloadTextFile(`${prefix}q-project-specialists-${date}.json`, jsonRows(rows), 'application/json;charset=utf-8');
@@ -861,9 +907,11 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
               ? specialistLongCsv(rows)
               : specialistAnalyticCsv(rows, specialties);
           downloadTextFile(`${prefix}q-project-specialists-${kind}-${date}.csv`, testId ? markPortalTestCsv(csv, testId) : csv, 'text/csv;charset=utf-8');
+          if (!testId) downloadTextFile(`q-project-specialists-${kind}-${date}.metadata.json`, JSON.stringify({ ...exportMetadata, submissions: rows.length }, null, 2), 'application/json');
         }
       } else {
         const rows = await fetchAllStudents();
+        await setMetadata(rows);
         if (requestId !== exportRequest.current || activeSource.current !== sourceKey) return;
         if (kind === 'json') {
           downloadTextFile(`${prefix}q-project-students-${date}.json`, jsonRows(rows), 'application/json;charset=utf-8');
@@ -874,6 +922,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
               ? studentLongCsv(rows)
               : studentAnalyticCsv(rows, specialties);
           downloadTextFile(`${prefix}q-project-students-${kind}-${date}.csv`, testId ? markPortalTestCsv(csv, testId) : csv, 'text/csv;charset=utf-8');
+          if (!testId) downloadTextFile(`q-project-students-${kind}-${date}.metadata.json`, JSON.stringify({ ...exportMetadata, submissions: rows.length }, null, 2), 'application/json');
         }
       }
     } catch (exportError) {
@@ -881,6 +930,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
         setError(formatSupabaseError(exportError instanceof Error ? exportError.message : exportError as { message: string }, lang));
       }
     } finally {
+      clearTimeout(timeout);
       if (requestId === exportRequest.current) setExporting(null);
     }
   };
@@ -949,7 +999,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
   };
 
   const refreshData = () => {
-    if (view === 'map') {
+    if (view === 'map' || view === 'analytics') {
       setMapRefreshKey(value => value + 1);
       return;
     }
@@ -1180,6 +1230,8 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
         </div>}
 
         {isCohortView(view) && <div className="mb-5 flex flex-wrap items-center justify-end gap-2">
+            {!testMode && <p className="mr-auto text-xs text-ink-500">{french ? 'Exports interactifs : 1 000 soumissions maximum. Analyses complètes dans Analyses de recherche.' : romanian ? 'Exporturi interactive: maximum 1.000 de trimiteri. Analize complete în Analize de cercetare.' : 'Interactive exports: up to 1,000 submissions. Full analyses under Research analyses.'}</p>}
+            {exporting && <button type="button" className="min-h-11 rounded-lg border px-3 text-sm" onClick={() => { exportRequest.current++; dataAbort.current.abort(); dataAbort.current = new AbortController(); setExporting(null); }}>{french ? 'Annuler l’export' : romanian ? 'Anulează exportul' : 'Cancel export'}</button>}
             <ExportButton icon={<Download className="h-4 w-4" />} label={french ? 'CSV large' : 'Wide CSV'} busy={exporting === 'raw'} disabled={exporting !== null} onClick={() => void exportData('raw')} />
             <ExportButton icon={<Download className="h-4 w-4" />} label={french ? 'CSV long' : 'Long CSV'} busy={exporting === 'long'} disabled={exporting !== null} onClick={() => void exportData('long')} />
             <ExportButton icon={<BarChart3 className="h-4 w-4" />} label={french ? 'CSV analytique' : 'Analytic CSV'} busy={exporting === 'analytic'} disabled={exporting !== null} onClick={() => void exportData('analytic')} />
@@ -1196,7 +1248,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
         )}
 
         {view === 'public-features' && portalProfile?.can_edit && <PublicFeaturesSettings testMode={testMode} />}
-        {view === 'analytics' && <ResearchAnalytics testMode={testMode} />}
+        {view === 'analytics' && <ResearchAnalytics testMode={testMode} refreshToken={mapRefreshKey} />}
 
         {view === 'configuration' && testMode && <p data-test-configuration-locked className="rounded-xl border border-amber-300 bg-amber-50 p-5 text-sm text-amber-950">{testCopy.locked}</p>}
         {view === 'configuration' && portalProfile && !testMode && (
@@ -1282,11 +1334,11 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-brand-200 bg-brand-50/60 p-4">
             <div>
               <p className="font-semibold text-ink-900">{french ? 'Calibration avec la cohorte filtrée' : 'Calibration using the filtered cohort'}</p>
-              <p className="mt-1 text-xs text-ink-600">{french ? 'Charge un instantané complet, exclut les protocoles incompatibles, puis recalcule le rang canonique de la spécialité réelle avec gestion des ex æquo.' : 'Loads a complete snapshot, excludes incompatible protocols, then recomputes the practiced specialty’s canonical rank with tie handling.'}</p>
+              <p className="mt-1 text-xs text-ink-600">{testMode ? 'Synthetic fixture: current canonical engine with explicit exclusions and ties.' : french ? 'Les statistiques sont calculées sur le serveur ; les évaluations avancées utilisent le workflow opérateur avec le même moteur versionné.' : romanian ? 'Statisticile sunt calculate pe server; evaluările avansate folosesc fluxul operatorului cu același motor versionat.' : 'Statistics are computed on the server; advanced evaluations use the operator workflow with the same versioned engine.'}</p>
             </div>
             <button type="button" disabled={analysisLoading} onClick={() => void loadCalibrationAnalysis()} className="inline-flex items-center gap-2 rounded-full bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50">
               {analysisLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Microscope className="h-4 w-4" />}
-              {analysisRows ? (french ? 'Recalculer l’analyse' : 'Recompute analysis') : (french ? 'Charger l’analyse complète' : 'Load full analysis')}
+              {!testMode ? (french ? 'Ouvrir les analyses serveur' : romanian ? 'Deschide analizele server' : 'Open server analyses') : analysisRows ? (french ? 'Recalculer l’analyse' : 'Recompute analysis') : (french ? 'Charger l’analyse complète' : 'Load full analysis')}
             </button>
           </div>
         )}

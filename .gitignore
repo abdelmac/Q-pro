@@ -24,3 +24,9 @@ dist-mobile
 *.sw?
 .env*
 !.env.example
+
+# Never commit production research exports, database backups or operator results.
+private-exports/
+backups/
+*.dump
+*.backup

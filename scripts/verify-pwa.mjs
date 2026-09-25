@@ -7,9 +7,104 @@ import { tmpdir } from 'node:os';
 import { join, resolve, sep, extname } from 'node:path';
 import { build } from 'vite';
 import { chromium } from 'playwright';
+import { runInNewContext } from 'node:vm';
+import { publicAppPwaPlugin } from './pwaBuildPlugin.ts';
+
+function verifyBuildPlugin() {
+  const plugin = publicAppPwaPlugin();
+  plugin.configResolved({ root: process.cwd(), base: '/Q-pro/' });
+  let output;
+  const run = code => plugin.generateBundle.call({ emitFile: file => { output = file; } }, {}, {
+    'index.html': { type: 'asset', source: '<html>synthetic public shell</html>' },
+    'assets/app-fixture.js': { type: 'chunk', code },
+    'exports/private.json': { type: 'asset', source: 'private fixture must not enter the worker' },
+  });
+  run('export const fixture = 1;');
+  const first = output.source;
+  assert.equal(output.fileName, 'sw.js');
+  assert.ok(first.includes('assets/app-fixture.js'));
+  assert.ok(!first.includes('exports/private.json'));
+  assert.ok(!first.includes('const PRECACHE = null'));
+  run('export const fixture = 2;');
+  assert.notEqual(first, output.source, 'Changing bundled code must change the cache version');
+  console.log('PASS PWA build manifest: exact public outputs only; content changes invalidate the shell cache.');
+}
+
+async function verifyWorkerPolicy() {
+  const template = await readFile('public/sw.js', 'utf8');
+  const listeners = new Map();
+  const buckets = new Map();
+  const requests = [];
+  let offline = false;
+  const normalize = key => typeof key === 'string' ? key : key.url;
+  const cacheStorage = {
+    keys: async () => [...buckets.keys()],
+    delete: async key => buckets.delete(key),
+    open: async name => {
+      if (!buckets.has(name)) buckets.set(name, new Map());
+      const entries = buckets.get(name);
+      return { put: async (key, response) => entries.set(normalize(key), response.clone()),
+        match: async key => entries.get(normalize(key))?.clone() };
+    },
+  };
+  buckets.set('unrelated-cache', new Map());
+  buckets.set('qpro-public-shell:/Q-pro/:old', new Map());
+  runInNewContext(template.replace('const PRECACHE = null;',
+    'const PRECACHE = {version:"fixture",files:["index.html","assets/public-code.js"]};'), {
+    self: { registration: { scope: 'https://fixture.test/Q-pro/' },
+      addEventListener: (type, handler) => listeners.set(type, handler), clients: { claim: async () => {} } },
+    URL, Request, Response, Set,
+    caches: cacheStorage,
+    fetch: async request => {
+      requests.push({ url: request.url, cache: request.cache });
+      if (offline) throw new Error('synthetic disconnected network');
+      return new Response('public fixture', { status: 200 });
+    },
+  });
+  let pending;
+  listeners.get('install')({ waitUntil: promise => { pending = promise; } });
+  await pending;
+  listeners.get('activate')({ waitUntil: promise => { pending = promise; } });
+  await pending;
+  assert.deepEqual([...buckets.keys()].sort(), ['qpro-public-shell:/Q-pro/:fixture', 'unrelated-cache']);
+  const intercepted = request => {
+    let result;
+    listeners.get('fetch')({ request, respondWith: promise => { result = promise; } });
+    return result;
+  };
+  const restricted = [
+    new Request('https://fixture.test/Q-pro/api/private'),
+    new Request('https://fixture.test/Q-pro/rest/v1/rpc/get_public_features'),
+    new Request('https://fixture.test/Q-pro/map'),
+    new Request('https://fixture.test/Q-pro/?view=map'),
+    new Request('https://fixture.test/Q-pro/exports/research.csv'),
+    new Request('https://backend.supabase.co/rest/v1/rpc/get_participation_map_stats'),
+    new Request('https://fixture.test/Q-pro/assets/public-code.js?v=secret'),
+    new Request('https://fixture.test/Q-pro/assets/public-code.js', { headers: { Authorization: 'Bearer fixture' } }),
+    new Request('https://fixture.test/Q-pro/assets/public-code.js', { method: 'POST', body: '{}' }),
+  ];
+  for (const request of restricted) {
+    await intercepted(request.clone());
+    assert.equal(requests.at(-1).cache, 'no-store');
+  }
+  offline = true;
+  for (const request of restricted) await assert.rejects(() => intercepted(request.clone()), /disconnected/);
+  assert.equal((await intercepted(new Request('https://fixture.test/Q-pro/assets/public-code.js'))).status, 200);
+  const rootNavigation = new Request('https://fixture.test/Q-pro/');
+  Object.defineProperty(rootNavigation, 'mode', { value: 'navigate' });
+  assert.equal((await intercepted(rootNavigation)).status, 200);
+  console.log('PASS service-worker policy: exact static allowlist, network-only protected/cross-origin/query/POST/authenticated requests, scoped cache cleanup.');
+}
+
+verifyBuildPlugin();
+await verifyWorkerPolicy();
+if (process.argv.includes('--policy-only')) process.exit(0);
 
 const temporaryRoot = await mkdtemp(join(tmpdir(), 'qpro-pwa-'));
 const fixtureSecret = 'SYNTHETIC_PRIVATE_RESPONSE_DO_NOT_CACHE';
+const hostedHeaders = await readFile('public/_headers', 'utf8');
+const csp = hostedHeaders.match(/^\s+Content-Security-Policy: (.+)$/m)?.[1];
+assert.ok(csp?.includes("frame-ancestors 'none'"));
 const contentTypes = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css',
   '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon', '.webmanifest': 'application/manifest+json' };
 let browser;
@@ -46,6 +141,7 @@ try {
       try {
         const bytes = await readFile(absolute);
         response.writeHead(200, { 'Content-Type': contentTypes[extname(absolute)] || 'application/octet-stream',
+          'Content-Security-Policy': csp,
           'Cache-Control': 'no-cache' });
         response.end(bytes);
       } catch { response.writeHead(404); response.end(); }
@@ -57,13 +153,16 @@ try {
       await context.route('https://**/*', route => route.abort());
       const page = await context.newPage();
       await page.goto(`${origin}${base}`, { waitUntil: 'networkidle' });
-      await page.evaluate(() => navigator.serviceWorker.ready);
+      await page.evaluate(() => Promise.race([
+        navigator.serviceWorker.ready,
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Worker activation timed out')), 20_000)),
+      ]));
       await page.waitForFunction(() => Boolean(navigator.serviceWorker.controller), null, { timeout: 20_000 });
       const scope = await page.evaluate(async () => (await navigator.serviceWorker.ready).scope);
       assert.equal(scope, `${origin}${base}`);
       const urls = [`${base}api/private`, `${base}rest/v1/rpc/get_participation_map_stats`,
         `${base}rest/v1/rpc/get_public_features`, `${base}auth/v1/user`, `${base}exports/research.csv`,
-        `${base}dashboard`, `${base}map`, `${base}settings`];
+        `${base}dashboard`, `${base}map`, `${base}settings`, `${base}?view=map`];
       for (const path of urls) {
         assert.equal(await page.evaluate(async path => (await fetch(path)).ok, path), true);
       }

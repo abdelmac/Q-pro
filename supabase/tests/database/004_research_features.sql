@@ -107,6 +107,8 @@ SELECT extensions.throws_ok($$SELECT public.research_cohort_summary('{"role":"pr
 SELECT extensions.throws_ok($$SELECT public.research_cohort_summary('{"study_year":12}')$$,'22023',NULL,'invalid study years rejected');
 SELECT extensions.throws_ok($$SELECT public.research_cohort_summary('{"date_from":"2026-02-01","date_to":"2026-01-01"}')$$,'22023',NULL,'inverted periods rejected');
 SELECT extensions.throws_ok($$SELECT public.research_response_page('{}',101)$$,'22023',NULL,'server enforces maximum page size');
+SELECT extensions.throws_ok($$SELECT public.research_response_page('{}',50,'{"created_at":"2026-01-01T00:00:00Z","id":"75000000-0000-4000-8000-000000000001","respondent_type":null}')$$,
+ '22023',NULL,'cursor respondent type cannot be null');
 SELECT set_config('test.page',public.research_response_page('{}',2)::text,true);
 SELECT extensions.is(jsonb_array_length(current_setting('test.page')::jsonb->'rows'),2,'bounded response page contains requested size');
 SELECT extensions.ok(current_setting('test.page')::jsonb->'next_cursor'<>'null'::jsonb,'cursor present when another page exists');
@@ -122,6 +124,7 @@ SELECT extensions.is(jsonb_array_length(public.research_question_summary('{}',cu
 SELECT extensions.throws_ok($$SELECT public.research_question_summary('{"questionnaire_version":"q82-v2"}',current_setting('test.question'))$$,'22023',NULL,'incompatible questionnaire versions cannot silently mix');
 SELECT extensions.is(public.research_item_correlation('{}',current_setting('test.question'),current_setting('test.question_b'))->'r','null'::jsonb,'zero variance correlation is undefined, not fabricated');
 SELECT extensions.is(public.research_item_correlation('{}',current_setting('test.question'),current_setting('test.question_b'))->>'n','2','correlation reports its actual eligible sample');
+SELECT extensions.is(public.research_cohort_summary()->>'missing_scoring_context','3','historical missing personalized settings remain explicitly unavailable');
 
 SELECT set_config('test.cohort',public.save_research_cohort('French participants','{"language":"fr"}')::text,true);
 SELECT extensions.is(jsonb_array_length(public.list_research_cohorts()),1,'researcher can persist a named live filter');
@@ -133,6 +136,17 @@ SELECT extensions.is(public.create_research_analysis_run('{}',jsonb_build_object
 SELECT extensions.ok(NOT current_setting('test.run')::jsonb ? 'snapshot_members','analysis response does not leak internal membership records');
 SELECT extensions.is(jsonb_array_length(public.list_research_analysis_runs()),1,'cached retry does not duplicate run');
 SELECT extensions.ok(NOT (public.list_research_analysis_runs()->0) ? 'results','run list is a bounded metadata response');
+RESET ROLE;
+
+-- A source change invalidates the exact-cache key; old results remain an
+-- explicit frozen analysis rather than being silently overwritten.
+UPDATE public.student_responses SET study_year=2 WHERE id='75000000-0000-4000-8000-000000000001';
+SET LOCAL ROLE authenticated;
+SELECT extensions.is(public.create_research_analysis_run('{}',jsonb_build_object('question_id',current_setting('test.question')))->>'cache_hit','false',
+ 'changing source metadata invalidates exact frozen-result cache');
+SELECT extensions.is(jsonb_array_length(public.list_research_analysis_runs()),2,'changed dataset creates a new frozen run without rewriting history');
+SELECT extensions.is(public.get_research_analysis_run((current_setting('test.run')::jsonb->>'id')::uuid)->>'dataset_checksum',
+ current_setting('test.run')::jsonb->>'dataset_checksum','old run retains original snapshot checksum');
 RESET ROLE;
 
 SELECT set_config('request.jwt.claim.sub','74000000-0000-4000-8000-000000000003',true);

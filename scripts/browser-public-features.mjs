@@ -123,6 +123,7 @@ export async function verifyBrowserPublicFeatures({ context, page, fixtureDefini
     await signOut();
     setEnabled(true);
     await refresh();
+    await page.reload({ waitUntil: 'networkidle' });
     await page.getByRole('button', { name: copy.navWorldMap, exact: true }).click();
     await publicMap.getByRole('button', { name: /^Romania ≈ 35$/ }).waitFor();
     assert.equal(await page.getByRole('button', { name: MAP_TRANSLATIONS.en.filters, exact: true }).count(), 0);

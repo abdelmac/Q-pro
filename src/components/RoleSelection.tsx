@@ -3,6 +3,7 @@ import { useLanguage } from '@/lib/LanguageContext';
 import type { ParticipantRole } from '@/lib/participantProfile';
 import LanguageSwitcher from './LanguageSwitcher';
 import BrandLogo from './BrandLogo';
+import InstallAppInstructions from './InstallAppInstructions';
 
 export interface RoleSelectionCopy {
   appName: string;
@@ -110,6 +111,7 @@ export function RoleSelectionView({ copy, onSelectRole, onOpenCredits, onOpenWor
       </main>
 
       <footer className="px-6 py-6 text-center text-xs text-ink-500">
+        <div className="mb-5"><InstallAppInstructions /></div>
         <nav className="mb-3 flex flex-wrap justify-center gap-2">
           {onOpenWorldMap && <button type="button" onClick={onOpenWorldMap} className="inline-flex min-h-11 items-center gap-2 rounded-full px-4 font-semibold hover:bg-white hover:text-brand-800 focus-visible:ring-2 focus-visible:ring-brand-500">
             <Globe2 className="h-4 w-4" aria-hidden="true" />{copy.worldMapLabel}

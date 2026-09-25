@@ -4,6 +4,8 @@ import { useLanguage } from '@/lib/LanguageContext';
 import { useSpecialtyCatalog } from '@/lib/SpecialtyCatalogContext';
 import GeographyFields from './GeographyFields';
 import { LOCAL_PROGRESS_COPY } from '@/data/localProgressI18n';
+import type { PriorityWeights } from '@/lib/scoring';
+import { createScoringContext, SCORING_CONTEXT_DISCLOSURE } from '@/lib/scoringProvenance';
 import ParticipantReflectionForm, {
   PARTICIPANT_MEDICINE_VIEW_MAX_LENGTH,
   PARTICIPANT_MEDICINE_VIEW_MIN_LENGTH,
@@ -19,6 +21,7 @@ interface StudentPromptProps {
   preferredSpecialty: string | null;
   ratings: Record<string, number>;
   selectedValues: string[];
+  priorities: PriorityWeights;
   scores: Array<{ specialty: { name: string }; score: number }>;
   language: SupportedLanguage;
   onDone: (saved: boolean) => void;
@@ -32,13 +35,14 @@ export default function StudentPrompt({
   preferredSpecialty,
   ratings,
   selectedValues,
+  priorities,
   scores,
   language,
   onDone,
   onSubmittingChange,
 }: StudentPromptProps) {
   const { t } = useLanguage();
-  const { version, source } = useSpecialtyCatalog();
+  const { specialties, version, source } = useSpecialtyCatalog();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [queued, setQueued] = useState(false);
@@ -77,6 +81,7 @@ export default function StudentPrompt({
         preferred_specialty: preferredSpecialty,
         ratings,
         selected_values: selectedValues,
+        scoring_context: createScoringContext(priorities, specialties),
         client_scores: scores.map(({ specialty, score }) => ({ specialty: specialty.name, score })),
         language,
         specialty_config_version_id: source === 'remote' ? version.id : null,
@@ -118,7 +123,7 @@ export default function StudentPrompt({
           onChange={(geography) => onDraftChange({ ...draft, geography })}
           disabled={submitting}
           idPrefix="participant"
-        /><p className="mt-4 text-xs leading-relaxed text-ink-500">{LOCAL_PROGRESS_COPY[language].queuedConsent}</p></>
+        /><p className="mt-4 text-xs leading-relaxed text-ink-500">{SCORING_CONTEXT_DISCLOSURE[language]}</p><p className="mt-4 text-xs leading-relaxed text-ink-500">{LOCAL_PROGRESS_COPY[language].queuedConsent}</p></>
       )}
     />
   );

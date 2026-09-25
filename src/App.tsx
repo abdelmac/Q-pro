@@ -405,6 +405,7 @@ function AppContent() {
           ratings={ratings}
           selectedValues={selectedValues}
           scores={scores}
+          priorities={priorities}
           language={lang}
           onSubmittingChange={setContributionSubmitting}
           onDone={(saved) => {
@@ -434,6 +435,7 @@ function AppContent() {
           ratings={specialistQuestionnaireMode === 'skipped' ? {} : ratings}
           selectedValues={specialistQuestionnaireMode === 'skipped' ? [] : selectedValues}
           questionnaireCompleted={specialistQuestionnaireMode !== 'skipped'}
+          priorities={priorities}
           language={lang}
           onSubmittingChange={setContributionSubmitting}
           onDone={() => {

@@ -129,6 +129,36 @@ CREATE VIEW private.research_response_index WITH (security_invoker = true) AS
   FROM public.student_responses s;
 REVOKE ALL ON private.research_response_index FROM PUBLIC, anon, authenticated;
 
+-- One bounded counter per allowlisted account, not an IP/activity log. These
+-- counters commit only with successful transactions; retries of failed work
+-- do not claim successful use. Anonymous abuse requires an approved gateway.
+CREATE TABLE private.research_request_windows (
+  user_id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  window_started_at timestamptz NOT NULL,
+  operation_count integer NOT NULL CHECK(operation_count BETWEEN 1 AND 30)
+);
+ALTER TABLE private.research_request_windows ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON private.research_request_windows FROM PUBLIC,anon,authenticated;
+CREATE FUNCTION private.consume_research_request_budget()
+RETURNS void LANGUAGE plpgsql VOLATILE SET search_path = '' AS $$
+DECLARE checked_at timestamptz:=clock_timestamp();
+BEGIN
+  PERFORM private.require_portal_role(ARRAY['researcher','doctor','professor']);
+  INSERT INTO private.research_request_windows AS budget(user_id,window_started_at,operation_count)
+  VALUES(auth.uid(),checked_at,1)
+  ON CONFLICT(user_id) DO UPDATE SET
+    window_started_at=CASE WHEN budget.window_started_at<=checked_at-interval '5 minutes' THEN checked_at ELSE budget.window_started_at END,
+    operation_count=CASE WHEN budget.window_started_at<=checked_at-interval '5 minutes' THEN 1 ELSE budget.operation_count+1 END
+  WHERE budget.window_started_at<=checked_at-interval '5 minutes' OR budget.operation_count<30;
+  IF NOT FOUND THEN
+    RAISE SQLSTATE 'PGRST' USING
+      MESSAGE='{"code":"RESEARCH_RATE_LIMIT","message":"Research request limit reached; try again in five minutes"}',
+      DETAIL='{"status":429,"headers":{"Retry-After":"300","Cache-Control":"no-store, private, max-age=0"}}';
+  END IF;
+END;
+$$;
+REVOKE ALL ON FUNCTION private.consume_research_request_budget() FROM PUBLIC,anon,authenticated;
+
 CREATE FUNCTION private.validate_research_filters(p_filters jsonb)
 RETURNS jsonb LANGUAGE plpgsql IMMUTABLE SET search_path = '' AS $$
 DECLARE k text; v jsonb; numeric_value integer;
@@ -178,7 +208,10 @@ END;
 $$;
 
 CREATE FUNCTION private.filtered_research_responses(f jsonb)
-RETURNS SETOF private.research_response_index LANGUAGE sql STABLE SET search_path = '' AS $$
+-- SECURITY INVOKER and no SET clause deliberately permit SQL-function inlining:
+-- the outer authorized RPC supplies its locked search_path, and every relation
+-- here is qualified. Cursor predicates/LIMIT can then use the raw-table indexes.
+RETURNS SETOF private.research_response_index LANGUAGE sql STABLE AS $$
   SELECT r.* FROM private.research_response_index r
   WHERE (NOT f ? 'respondent_type' OR r.respondent_type = f->>'respondent_type')
     AND (NOT f ? 'language' OR r.language = f->>'language')
@@ -236,7 +269,7 @@ BEGIN
 END;
 $$;
 
-CREATE FUNCTION public.research_cohort_summary(p_filters jsonb DEFAULT '{}')
+CREATE FUNCTION private.research_cohort_summary(p_filters jsonb DEFAULT '{}')
 RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = '' SET statement_timeout = '10s' AS $$
 DECLARE f jsonb; result jsonb;
 BEGIN
@@ -261,7 +294,8 @@ BEGIN
     'counts',coalesce((SELECT jsonb_object_agg(dimension,entries) FROM grouped),'{}'::jsonb),
     'exclusions',coalesce((SELECT jsonb_agg(jsonb_build_object('reason',reason,'count',count) ORDER BY reason) FROM exclusions),'[]'::jsonb),
     'filters',f,'generated_at',now(),'analysis_version','research-sql-q81-v1',
-    'completion_metrics',NULL,'personalized_settings','unavailable_for_historical_submissions') INTO result FROM cohort;
+    'completion_metrics',NULL,'personalized_settings','unavailable_for_historical_submissions',
+    'missing_scoring_context',count(*) FILTER(WHERE response->'scoring_context' IS NULL OR response->'scoring_context'='null'::jsonb)) INTO result FROM cohort;
   RETURN result;
 END;
 $$;
@@ -281,7 +315,7 @@ BEGIN
       RAISE EXCEPTION USING ERRCODE = '22023', MESSAGE = 'Invalid research cursor';
     END IF;
     cursor_time := (p_cursor->>'created_at')::timestamptz; cursor_id := (p_cursor->>'id')::uuid; cursor_type := p_cursor->>'respondent_type';
-    IF cursor_time IS NULL OR cursor_id IS NULL OR cursor_type NOT IN ('specialist','student','non_medical') THEN
+    IF cursor_time IS NULL OR cursor_id IS NULL OR cursor_type IS NULL OR cursor_type NOT IN ('specialist','student','non_medical') THEN
       RAISE EXCEPTION USING ERRCODE = '22023', MESSAGE = 'Invalid research cursor';
     END IF;
   END IF;
@@ -293,7 +327,11 @@ BEGIN
       CASE WHEN p_sort='newest' THEN r.respondent_type END DESC,
       CASE WHEN p_sort='oldest' THEN r.created_at END ASC,CASE WHEN p_sort='oldest' THEN r.id END ASC,
       CASE WHEN p_sort='oldest' THEN r.respondent_type END ASC LIMIT p_limit+1
-  ), numbered AS (SELECT *, row_number() OVER () ordinal FROM page_plus),
+  ), numbered AS (SELECT *, row_number() OVER (
+    ORDER BY CASE WHEN p_sort='newest' THEN created_at END DESC,CASE WHEN p_sort='newest' THEN id END DESC,
+      CASE WHEN p_sort='newest' THEN respondent_type END DESC,
+      CASE WHEN p_sort='oldest' THEN created_at END ASC,CASE WHEN p_sort='oldest' THEN id END ASC,
+      CASE WHEN p_sort='oldest' THEN respondent_type END ASC) ordinal FROM page_plus),
   page AS (SELECT * FROM numbered WHERE ordinal<=p_limit)
   SELECT jsonb_build_object('rows',coalesce(jsonb_agg(jsonb_build_object('respondent_type',respondent_type,'response',response) ORDER BY ordinal),'[]'::jsonb),
     'next_cursor',CASE WHEN (SELECT count(*) FROM page_plus)>p_limit THEN
@@ -303,7 +341,7 @@ BEGIN
 END;
 $$;
 
-CREATE FUNCTION public.research_question_summary(p_filters jsonb,p_question_id text)
+CREATE FUNCTION private.research_question_summary(p_filters jsonb,p_question_id text)
 RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = '' SET statement_timeout = '10s' AS $$
 DECLARE f jsonb; result jsonb;
 BEGIN
@@ -330,7 +368,7 @@ BEGIN
 END;
 $$;
 
-CREATE FUNCTION public.research_item_correlation(p_filters jsonb,p_question_a text,p_question_b text)
+CREATE FUNCTION private.research_item_correlation(p_filters jsonb,p_question_a text,p_question_b text)
 RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = '' SET statement_timeout = '10s' AS $$
 DECLARE f jsonb; result jsonb;
 BEGIN
@@ -351,6 +389,32 @@ BEGIN
   RETURN result;
 END;
 $$;
+
+-- Only these public boundaries consume budget. Nested analysis calculations
+-- call private cores directly: no session flag or user-controlled bypass exists.
+CREATE FUNCTION public.research_cohort_summary(p_filters jsonb DEFAULT '{}')
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = '' SET statement_timeout='10s' AS $$
+BEGIN
+  PERFORM private.consume_research_request_budget();
+  RETURN private.research_cohort_summary(p_filters);
+END;
+$$;
+CREATE FUNCTION public.research_question_summary(p_filters jsonb,p_question_id text)
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = '' SET statement_timeout='10s' AS $$
+BEGIN
+  PERFORM private.consume_research_request_budget();
+  RETURN private.research_question_summary(p_filters,p_question_id);
+END;
+$$;
+CREATE FUNCTION public.research_item_correlation(p_filters jsonb,p_question_a text,p_question_b text)
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = '' SET statement_timeout='10s' AS $$
+BEGIN
+  PERFORM private.consume_research_request_budget();
+  RETURN private.research_item_correlation(p_filters,p_question_a,p_question_b);
+END;
+$$;
+REVOKE ALL ON FUNCTION private.research_cohort_summary(jsonb),private.research_question_summary(jsonb,text),private.research_item_correlation(jsonb,text,text)
+  FROM PUBLIC,anon,authenticated;
 
 CREATE TABLE private.research_cohorts (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(), owner_id uuid NOT NULL,
@@ -415,7 +479,7 @@ ALTER TABLE private.research_analysis_runs ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON private.research_analysis_runs FROM PUBLIC,anon,authenticated;
 
 CREATE FUNCTION private.research_snapshot(f jsonb)
-RETURNS jsonb LANGUAGE plpgsql STABLE SET search_path = '' AS $$
+RETURNS jsonb LANGUAGE plpgsql STABLE SET search_path = '' SET timezone = 'UTC' AS $$
 DECLARE result jsonb; n integer;
 BEGIN
   -- Refuse oversized cohorts rather than silently sampling/truncating them.
@@ -423,9 +487,12 @@ BEGIN
   IF n>5000 THEN RAISE EXCEPTION USING ERRCODE='54000',MESSAGE='Analysis cohort exceeds 5000 submissions; narrow the filters or use the offline research workflow'; END IF;
   WITH cohort AS MATERIALIZED(SELECT * FROM private.filtered_research_responses(f)),
   versions AS (SELECT DISTINCT jsonb_build_object('questionnaire_version',questionnaire_version,
-    'schema_version',submission_schema_version,'scoring_version',scoring_version,
+    'schema_version',submission_schema_version,'scoring_version',scoring_version,'consent_version',consent_version,'language',language,
     'specialty_config_revision',specialty_config_revision,'value_catalog_version',response->>'value_catalog_version',
-    'specialty_catalog_version',response->>'specialty_catalog_version') version FROM cohort)
+    'specialty_catalog_version',response->>'specialty_catalog_version',
+    'engine_revision',response->'scoring_context'->>'engine_revision',
+    'trait_mapping_version',response->'scoring_context'->>'trait_mapping_version',
+    'model_checksum',response->'scoring_context'->>'model_checksum') version FROM cohort)
   SELECT jsonb_build_object('count',count(*),'checksum','md5:'||md5(coalesce(string_agg(
     respondent_type||':'||id||':'||md5(response::text),'|' ORDER BY respondent_type,id),'')),
     'members',coalesce(jsonb_agg(jsonb_build_object('id',id,'respondent_type',respondent_type,'checksum','md5:'||md5(response::text)) ORDER BY respondent_type,id),'[]'::jsonb),
@@ -441,6 +508,7 @@ DECLARE f jsonb; snapshot jsonb; rechecked jsonb; payload jsonb; saved private.r
 BEGIN
   PERFORM private.require_portal_role(ARRAY['researcher','doctor','professor']);
   PERFORM private.research_no_store();
+  PERFORM private.consume_research_request_budget();
   f:=private.validate_research_filters(p_filters);
   IF p_parameters IS NULL OR jsonb_typeof(p_parameters)<>'object' OR octet_length(p_parameters::text)>1024 THEN
     RAISE EXCEPTION USING ERRCODE='22023',MESSAGE='Invalid analysis parameters';
@@ -459,15 +527,20 @@ BEGIN
     ORDER BY created_at DESC LIMIT 1;
   IF FOUND THEN RETURN (to_jsonb(saved)-'owner_id'-'snapshot_members')||'{"cache_hit":true}'::jsonb; END IF;
   PERFORM pg_advisory_xact_lock(184205926,hashtext(auth.uid()::text));
+  -- A concurrent identical request may have completed while this one waited.
+  SELECT * INTO saved FROM private.research_analysis_runs WHERE owner_id=auth.uid() AND filters=f
+    AND parameters=p_parameters AND dataset_checksum=snapshot->>'checksum' AND analysis_version='research-sql-q81-v1'
+    ORDER BY created_at DESC LIMIT 1;
+  IF FOUND THEN RETURN (to_jsonb(saved)-'owner_id'-'snapshot_members')||'{"cache_hit":true}'::jsonb; END IF;
   IF (SELECT count(*) FROM private.research_analysis_runs WHERE owner_id=auth.uid())>=20 THEN
     RAISE EXCEPTION USING ERRCODE='54000',MESSAGE='At most 20 retained analysis runs per researcher; delete an old run first';
   END IF;
-  payload:=jsonb_build_object('summary',public.research_cohort_summary(f));
+  payload:=jsonb_build_object('summary',private.research_cohort_summary(f));
   IF p_parameters ? 'question_id' THEN
-    payload:=payload||jsonb_build_object('question',public.research_question_summary(f,p_parameters->>'question_id'));
+    payload:=payload||jsonb_build_object('question',private.research_question_summary(f,p_parameters->>'question_id'));
   END IF;
   IF p_parameters ? 'question_a' THEN
-    payload:=payload||jsonb_build_object('correlation',public.research_item_correlation(f,p_parameters->>'question_a',p_parameters->>'question_b'));
+    payload:=payload||jsonb_build_object('correlation',private.research_item_correlation(f,p_parameters->>'question_a',p_parameters->>'question_b'));
   END IF;
   -- Volatile PostgREST functions can observe concurrent commits across SQL
   -- statements: reject instead of attaching an old digest to newer statistics.

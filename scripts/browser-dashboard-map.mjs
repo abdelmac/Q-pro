@@ -125,6 +125,24 @@ export async function verifyBrowserDashboardMap({ context, page, fixtureDefiniti
       await page.locator('[data-dashboard-back]').click();
       await page.getByRole('heading', { level: 1, name: 'Participation map', exact: true }).waitFor();
       await map.getByRole('button', { name: copy.all, exact: true }).waitFor();
+      if (role === 'professor') {
+        await map.getByRole('button', { name: /^Romania ≈ 35$/ }).waitFor();
+        await page.waitForLoadState('networkidle');
+        setProfile({ authorized: false });
+        await Promise.all([
+          page.waitForResponse(response => response.url().includes('/rpc/get_private_participation_map_stats') && response.status() === 403),
+          map.getByRole('button', { name: copy.specialists, exact: true }).click(),
+        ]);
+        await page.waitForFunction(() => !document.querySelector('[data-participation-map] [aria-busy="true"]'));
+        await map.getByRole('button', { name: copy.all, exact: true }).waitFor({ state: 'hidden' });
+        assert.equal(await map.getByRole('button', { name: /^Romania ≈/ }).count(), 0, 'Role revocation clears previously rendered private aggregates');
+        const deniedReads = mapCalls.length;
+        await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+        assert.equal(mapCalls.length, deniedReads, 'Private denial must not fall back to a public geographic endpoint');
+        setProfile({ authorized: true, role, can_edit: true, can_publish: true });
+        await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+        await map.getByRole('button', { name: copy.all, exact: true }).waitFor();
+      }
       const signOutSidebar = await openSidebar(mobile);
       setProfile({ authorized: false });
       await signOutSidebar.getByRole('button', { name: 'Sign out', exact: true }).click();

@@ -30,7 +30,11 @@ export async function verifyBrowserResearchFlows({ page, context, catalog, fixtu
   // or application test backdoor is used to bypass questionnaire validation.
   const acceptedStudents = [];
   submissionMocks.handler = ({ route, rpc, args }) => {
-    assert.equal(rpc, 'submit_student_response_v6');
+    assert.equal(rpc, 'submit_student_response_v7');
+    assert.equal(args.p_scoring_context.engine_revision, 'scoring-engine-v2');
+    assert.equal(args.p_scoring_context.trait_mapping_version, 'question-traits-q81-v1');
+    assert.match(args.p_scoring_context.model_checksum, /^fnv1a64-[0-9a-f]{16}$/);
+    assert.equal(Object.keys(args.p_scoring_context.priorities).length, 5);
     acceptedStudents.push(structuredClone(args));
     return route.fulfill({ json: args.p_submission_id });
   };
@@ -87,7 +91,7 @@ export async function verifyBrowserResearchFlows({ page, context, catalog, fixtu
   assert.equal(queuedStudent.catalogVersionId, catalog.version.id);
   assert.equal(requests.filter(request => request.rpc.startsWith('submit_')).length, beforeSaving, 'Offline Save must not pretend the server received a submission');
   const { rpc_name: queuedRpc, ...frozenStudentPayload } = queuedStudent.payload;
-  assert.equal(queuedRpc, 'submit_student_response_v6');
+  assert.equal(queuedRpc, 'submit_student_response_v7');
   await context.setOffline(false);
   await waitQueueLength(0);
   await page.locator('[data-pending-submissions]').waitFor({ state: 'detached' });
@@ -102,7 +106,8 @@ export async function verifyBrowserResearchFlows({ page, context, catalog, fixtu
   // A prior success is not a receipt for a different payload using the same ID.
   const specialistCalls = [];
   submissionMocks.handler = ({ route, rpc, args }) => {
-    assert.equal(rpc, 'submit_specialist_response_v5');
+    assert.equal(rpc, 'submit_specialist_response_v6');
+    assert.equal(args.p_scoring_context, null, 'Skipped questionnaires do not invent scoring settings');
     specialistCalls.push(structuredClone(args));
     return specialistCalls.length === 1
       ? route.fulfill({ json: args.p_submission_id })

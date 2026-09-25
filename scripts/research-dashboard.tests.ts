@@ -64,6 +64,9 @@ import {
   type StudentResponseRow,
 } from '../src/lib/researchDashboard';
 import { DASHBOARD_ANALYSIS_VERSION, DATA_VERSIONS } from '../src/lib/researchVersions';
+import { summarizeRanks, buildResearchEvaluation } from '../src/lib/researchEvaluation';
+import { createScoringContext, isValidScoringContext } from '../src/lib/scoringProvenance';
+import { DEFAULT_PRIORITY_WEIGHTS } from '../src/data/dimensions';
 import { RESULTS_TOP_COUNT } from '../src/lib/resultsPresentation';
 import {
   getAppNavigationScrollKey,
@@ -446,7 +449,7 @@ assert.equal(dashboardNavs.length, 1, 'The sidebar sections must be grouped in o
 assert.equal(dashboardNavs[0]['aria-label'], 'Dashboard sections');
 assert.deepEqual(
   dashboardNavButtons.map((button) => button['data-dashboard-view']),
-  ['specialists', 'students', 'algorithm'],
+  ['specialists', 'students', 'analytics', 'map', 'algorithm'],
   'Rendered read-only navigation must preserve its canonical order and hide configuration',
 );
 for (const button of dashboardNavButtons) {
@@ -465,7 +468,7 @@ for (const button of dashboardNavButtons) {
 }
 assert.deepEqual(
   selectedDashboardViews,
-  ['specialists', 'students', 'algorithm'],
+  ['specialists', 'students', 'analytics', 'map', 'algorithm'],
   'Each sidebar destination must emit its exact dashboard view',
 );
 
@@ -481,11 +484,12 @@ const editorSidebar = DashboardSidebar({
 });
 const editorNavButtons = elementPropsByType(editorSidebar, 'button')
   .filter((button) => button['data-dashboard-view'] !== undefined);
-assert.equal(editorNavButtons.length, 5, 'An editor must receive the additional map and configuration destinations');
+assert.equal(editorNavButtons.length, 7, 'An editor must receive research analyses, private map, configuration and public features');
 assert.equal(editorNavButtons[3]['data-dashboard-view'], 'map');
 assert.equal(editorNavButtons[3]['aria-current'], undefined);
-assert.equal(editorNavButtons[4]['data-dashboard-view'], 'configuration');
-assert.equal(editorNavButtons[4]['aria-current'], 'page');
+assert.equal(editorNavButtons[5]['data-dashboard-view'], 'configuration');
+assert.equal(editorNavButtons[5]['aria-current'], 'page');
+assert.equal(editorNavButtons[6]['data-dashboard-view'], 'public-features');
 const activeMapSidebar = DashboardSidebar({
   activeView: 'map',
   canEdit: true,
@@ -1239,6 +1243,7 @@ for (const specialty of SPECIALTIES) {
 }
 
 const specialist: SpecialistResponseRow = {
+  scoring_context: null,
   id: '00000000-0000-4000-8000-000000000001',
   created_at: '2026-08-28T12:00:00.000Z',
   actual_specialty: SPECIALTIES[0].name,
@@ -1270,6 +1275,7 @@ const specialist: SpecialistResponseRow = {
 };
 
 const student: StudentResponseRow = {
+  scoring_context: null,
   id: '00000000-0000-4000-8000-000000000002',
   created_at: specialist.created_at,
   participant_role: 'student',
@@ -1385,9 +1391,9 @@ assert.deepEqual({
   engineRevision: SCORING_ENGINE_REVISION,
   modelChecksum: DASHBOARD_MODEL_CHECKSUM,
 }, {
-  analysisVersion: 'dashboard-canonical-default-v2',
+  analysisVersion: 'dashboard-canonical-default-v3',
   engineRevision: 'scoring-engine-v2',
-  modelChecksum: 'fnv1a64-abdce4ee5b50c668',
+  modelChecksum: 'fnv1a64-baadc8f1c40d0e07',
 });
 
 assert.equal(isSpecialistCalibrationComplete(specialist), true);
@@ -1515,7 +1521,8 @@ assert.deepEqual(assignTieAwareRanks([...tieInput].reverse()), ties);
 assert.deepEqual(
   assignTieAwareRanks([{ name: 'A', score: 90 }, { name: 'B', score: 90 - 5e-10 }])
     .map(({ rankMin, rankMax }) => [rankMin, rankMax]),
-  [[1, 2], [1, 2]],
+  [[1, 1], [2, 2]],
+  'Even a tiny full-precision difference is not an exact tie',
 );
 
 const legacy: SpecialistResponseRow = {
@@ -1538,6 +1545,29 @@ const legacy: SpecialistResponseRow = {
   consent_version: 'legacy-unrecorded',
 };
 const summary = buildCalibrationSummary([specialist, legacy], null);
+const extended = buildResearchEvaluation([specialist, legacy, otherSpecialty]);
+assert.equal(extended.total, 3);
+assert.equal(extended.eligible, 2);
+assert.equal(extended.participantWeighted.n, 2);
+assert.equal(extended.specialtyBalanced.nSpecialties, 2);
+assert.equal(extended.personalizedSettingsRecorded, 0);
+assert.equal(extended.participantWeighted.uncertaintyIntervals, null);
+assert.ok(extended.specialtyProfiles.every(profile => profile.traits.every(trait => trait.adjusted.n <= profile.n)));
+const rankStats = summarizeRanks([{ rankMin: 1, rankMax: 3 }, { rankMin: 4, rankMax: 4 }, { rankMin: 10, rankMax: 12 }]);
+assert.equal(rankStats.recall[0].inclusive, 1 / 3);
+assert.equal(rankStats.recall[0].conservative, 0);
+assert.equal(rankStats.recall[3].inclusive, 1);
+assert.equal(rankStats.recall[3].conservative, 2 / 3);
+assert.equal(rankStats.meanReciprocalRank.inclusive, (1 + 1 / 4 + 1 / 10) / 3);
+assert.equal(rankStats.meanReciprocalRank.conservative, (1 / 3 + 1 / 4 + 1 / 12) / 3);
+assert.equal(rankStats.medianActualRank.inclusive, 4);
+assert.equal(summarizeRanks([]).recall[0].inclusive, null);
+const recordedContext = createScoringContext(DEFAULT_PRIORITY_WEIGHTS, SPECIALTIES);
+assert.equal(isValidScoringContext(recordedContext), true);
+assert.equal(isValidScoringContext({ ...recordedContext, priorities: { ...recordedContext.priorities, technical: 101 } }), false);
+assert.equal(isValidScoringContext(null), false);
+assert.equal(buildResearchEvaluation([{ ...specialist, scoring_context: JSON.parse(JSON.stringify(recordedContext)) }]).personalizedSettingsRecorded, 1);
+assert.match(studentRawCsv([{ ...student, scoring_context: JSON.parse(JSON.stringify(recordedContext)) }]), /question-traits-q81-v1/);
 assert.equal(summary.total, 2);
 assert.equal(summary.eligibleCount, 1);
 assert.equal(summary.excludedCount, 1);

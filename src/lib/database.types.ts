@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       specialist_responses: {
         Row: {
+          scoring_context: Json | null
           actual_specialty: string
           calibration_version: string
           career_satisfaction: number | null
@@ -49,6 +50,7 @@ export type Database = {
           years_of_experience: number | null
         }
         Insert: {
+          scoring_context?: Json | null
           actual_specialty: string
           calibration_version?: string
           career_satisfaction?: number | null
@@ -82,6 +84,7 @@ export type Database = {
           years_of_experience?: number | null
         }
         Update: {
+          scoring_context?: Json | null
           actual_specialty?: string
           calibration_version?: string
           career_satisfaction?: number | null
@@ -118,6 +121,7 @@ export type Database = {
       }
       student_responses: {
         Row: {
+          scoring_context: Json | null
           client_scores: Json
           consent_version: string
           created_at: string
@@ -142,6 +146,7 @@ export type Database = {
           value_catalog_version: string
         }
         Insert: {
+          scoring_context?: Json | null
           client_scores: Json
           consent_version: string
           created_at?: string
@@ -166,6 +171,7 @@ export type Database = {
           value_catalog_version?: string
         }
         Update: {
+          scoring_context?: Json | null
           client_scores?: Json
           consent_version?: string
           created_at?: string
@@ -196,6 +202,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      submit_student_response_v7: {
+        Args: Database['public']['Functions']['submit_student_response_v6']['Args'] & { p_scoring_context: Json }
+        Returns: string
+      }
+      submit_specialist_response_v6: {
+        Args: Database['public']['Functions']['submit_specialist_response_v5']['Args'] & { p_scoring_context: Json }
+        Returns: string
+      }
       get_public_features: { Args: never; Returns: Json }
       set_public_map_enabled: { Args: { p_enabled: boolean }; Returns: Json }
       get_private_participation_map_stats: {

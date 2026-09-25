@@ -67,13 +67,15 @@ export function PublicFeaturesProvider({ children }: { children: ReactNode }) {
     document.addEventListener('visibilitychange', onVisibility);
     // Notice cross-device administrator changes even while this tab stays open.
     const interval = window.setInterval(check, 30_000);
+    let disposed = false;
     let stopMobile: (() => void) | undefined;
     void installMobileLifecycle({ onResume: check, onPause: invalidate })
-      .then(stop => { if (active.current) stopMobile = stop; else stop(); })
-      .catch(invalidate);
+      .then(stop => { if (!disposed) stopMobile = stop; else stop(); })
+      .catch(() => { if (!disposed) invalidate(); });
     check();
     return () => {
       active.current = false;
+      disposed = true;
       invalidate();
       clearInterval(interval);
       stopMobile?.();

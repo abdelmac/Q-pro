@@ -23,4 +23,6 @@ export const DATA_VERSIONS = {
 // Identifies calculations produced inside the privileged research dashboard.
 // They use the current engine with neutral/default priority weights because
 // historical submissions do not store the participant's priority sliders.
-export const DASHBOARD_ANALYSIS_VERSION = 'dashboard-canonical-default-v2';
+// v3 uses exact full-precision ties, not the v2 1e-9 tolerance. Participant
+// equations are unchanged; historical analyses retain their own recorded version.
+export const DASHBOARD_ANALYSIS_VERSION = 'dashboard-canonical-default-v3';

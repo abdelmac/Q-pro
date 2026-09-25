@@ -9,6 +9,7 @@ export async function verifyBrowserPortalTestData({ context, page, catalog, mapC
   let tableReads = 0;
   let datasetReads = 0;
   let datasetFailure = false;
+  let analyticsRequests = 0;
   const recipeFixture = () => ({
     id: creates > 1 ? '77222222-1111-4111-8111-111111111111' : '77111111-1111-4111-8111-111111111111',
     seed: creates > 1 ? 91523 : 45678,
@@ -16,6 +17,8 @@ export async function verifyBrowserPortalTestData({ context, page, catalog, mapC
   });
   const rpcPattern = '**/rest/v1/rpc/*portal_test_dataset';
   const tablePattern = /\/rest\/v1\/(?:student|specialist)_responses(?:\?|$)/;
+  const analyticsPattern = /\/rest\/v1\/rpc\/(?:(?:list|save|delete|create|get)_research_[a-z_]+|research_cohort_summary)$/;
+  const analyticsHandler = route => { analyticsRequests++; return route.fulfill({ status: 403, json: { message: 'No live analysis in synthetic mode' } }); };
   const datasetHandler = route => {
     const name = new URL(route.request().url()).pathname.split('/').at(-1);
     if (name === 'get_portal_test_dataset') {
@@ -45,6 +48,7 @@ export async function verifyBrowserPortalTestData({ context, page, catalog, mapC
   };
   await context.route(rpcPattern, datasetHandler);
   await context.route(tablePattern, tableHandler);
+  await context.route(analyticsPattern, analyticsHandler);
   const panel = page.locator('[data-portal-test-panel]');
   const map = page.locator('[data-participation-map="admin"]');
   const chooseView = async view => {
@@ -90,6 +94,12 @@ export async function verifyBrowserPortalTestData({ context, page, catalog, mapC
 
     await chooseView('students');
     await page.waitForFunction(() => document.querySelectorAll('table tbody tr').length === 10);
+    await chooseView('analytics');
+    await page.locator('[data-analytics-test-blocked]').waitFor();
+    assert.equal(analyticsRequests, 0, 'Synthetic mode must not send any real research analytics request');
+    await chooseView('public-features');
+    await page.locator('[data-public-features-settings]').waitFor();
+    assert.equal(await page.getByRole('switch', { name: 'Show participation map to public users', exact: true }).isDisabled(), true, 'Synthetic mode must not change real public settings');
     await chooseView('configuration');
     await page.getByText(/Configuration editing and publication are disabled in test mode/).waitFor();
     assert.equal(await page.getByRole('button', { name: /Publish draft/ }).count(), 0);
@@ -184,5 +194,6 @@ export async function verifyBrowserPortalTestData({ context, page, catalog, mapC
   } finally {
     await context.unroute(rpcPattern, datasetHandler);
     await context.unroute(tablePattern, tableHandler);
+    await context.unroute(analyticsPattern, analyticsHandler);
   }
 }

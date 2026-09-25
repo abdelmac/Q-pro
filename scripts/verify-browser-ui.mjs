@@ -44,7 +44,7 @@ try {
     return { total: groups.reduce((sum, group) => sum + group.count, 0), countries: groups.length, students: groups.reduce((sum, group) => sum + group.students, 0), specialists: groups.reduce((sum, group) => sum + group.specialists, 0), nonMedical: groups.reduce((sum, group) => sum + group.nonMedical, 0), groups, privacyThreshold: 10, rounding: 5, granularity: 'month', publishedThrough: '2026-08-31' };
   }
 
-  server = await createServer({ server: { host: '127.0.0.1', port: 4179, strictPort: true, watch: { ignored: ['**/dist/**', '**/dist-mobile/**', '**/apps/mobile/**', '**/android/**', '**/ios/**', '**/browser-qa.local/**', '**/.local/**'] } }, clearScreen: false });
+  server = await createServer({ server: { hmr: false, host: '127.0.0.1', port: 4179, strictPort: true, watch: { ignored: ['**/dist/**', '**/dist-mobile/**', '**/apps/mobile/**', '**/android/**', '**/ios/**', '**/browser-qa.local/**', '**/.local/**'] } }, clearScreen: false });
   await server.listen();
   const edgeExecutable = 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe';
   const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE || (existsSync(edgeExecutable) ? edgeExecutable : undefined);
@@ -80,6 +80,7 @@ try {
     const rpc = url.pathname.split('/').at(-1);
     const args = route.request().postDataJSON() ?? {};
     requests.push({ rpc, args });
+    if (rpc === 'get_public_features') return route.fulfill({ json: { public_map_enabled: true }, headers: { 'Cache-Control': 'no-store' } });
     if (rpc === 'get_participation_map_stats') return route.fulfill({ json: mapFixture(args) });
     if (rpc === 'get_active_specialty_catalog') return route.fulfill({ json: catalog });
     if (rpc === 'get_portal_test_dataset') return route.fulfill({ json: null });

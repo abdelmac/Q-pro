@@ -9,6 +9,7 @@ import { getLocalResearchStorage, notifyQueueChange } from '@/lib/localResearchS
 import { classifySubmissionFailure, type PendingSubmission, type SubmissionSendResult } from '@/lib/submissionQueue';
 import { getAppStorage, isNativeApp } from '@/lib/mobileRuntime';
 import type { Database, Json } from '@/lib/database.types';
+import { isValidScoringContext, type ScoringContext } from '@/lib/scoringProvenance';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.trim();
 const supabasePublishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY?.trim();
@@ -123,9 +124,11 @@ export function formatSupabaseError(
     || message.includes('submit_student_response_v4')
     || message.includes('submit_student_response_v5')
     || message.includes('submit_student_response_v6')
+    || message.includes('submit_student_response_v7')
     || message.includes('submit_specialist_response_v3')
     || message.includes('submit_specialist_response_v4')
     || message.includes('submit_specialist_response_v5')
+    || message.includes('submit_specialist_response_v6')
   ) {
     return localized(language, {
       en: 'The Supabase database is not up to date. Deploy every migration in supabase/migrations.',
@@ -158,6 +161,7 @@ export function formatSupabaseError(
 }
 
 export interface SpecialistResponse {
+  scoring_context: ScoringContext | null;
   submission_id: string;
   country_code?: string | null;
   region?: string | null;
@@ -176,6 +180,7 @@ export interface SpecialistResponse {
 }
 
 export interface StudentResponse {
+  scoring_context: ScoringContext;
   submission_id: string;
   country_code?: string | null;
   region?: string | null;
@@ -253,6 +258,9 @@ function validateSharedResponse(
 }
 
 function validateSpecialistResponse(data: SpecialistResponse): string | null {
+  if (data.questionnaire_completed ? !isValidScoringContext(data.scoring_context) : data.scoring_context !== null) {
+    return 'Invalid scoring context. No contribution has been saved.';
+  }
   const geographyError = validateGeography(data);
   if (geographyError) return geographyError;
   if (!supportedLanguages.has(data.language)) return localized(data.language, {
@@ -327,6 +335,7 @@ function validateSpecialistResponse(data: SpecialistResponse): string | null {
 }
 
 function validateStudentResponse(data: StudentResponse): string | null {
+  if (!isValidScoringContext(data.scoring_context)) return 'Invalid scoring context. No contribution has been saved.';
   const geographyError = validateGeography(data);
   if (geographyError) return geographyError;
   const sharedError = validateSharedResponse(data.ratings, data.selected_values, data.language);
@@ -440,7 +449,8 @@ export async function submitSpecialistResponse(data: SpecialistResponse): Promis
   return saveConsentedSubmission('specialist', {
     ...rpcArguments,
     p_specialty_config_version_id: data.specialty_config_version_id,
-    rpc_name: 'submit_specialist_response_v5',
+    p_scoring_context: data.scoring_context,
+    rpc_name: 'submit_specialist_response_v6',
   }, data.language);
 }
 
@@ -477,7 +487,8 @@ export async function submitStudentResponse(data: StudentResponse): Promise<Subm
   return saveConsentedSubmission('student', {
     ...rpcArguments,
     p_specialty_config_version_id: data.specialty_config_version_id,
-    rpc_name: 'submit_student_response_v6',
+    p_scoring_context: data.scoring_context,
+    rpc_name: 'submit_student_response_v7',
   }, data.language);
 }
 
@@ -493,6 +504,13 @@ async function sendPendingSubmission(item: PendingSubmission): Promise<Submissio
   const timeout = setTimeout(() => controller.abort(), 20_000);
   const response = await (async () => {
     try {
+      // Preserve already-consented legacy queue entries without adding invented settings.
+      if (rpcName === 'submit_student_response_v7' && item.kind === 'student') {
+        return await supabase.rpc(rpcName, asPostgresRoutineArgs<Database['public']['Functions']['submit_student_response_v7']['Args']>(args)).abortSignal(controller.signal);
+      }
+      if (rpcName === 'submit_specialist_response_v6' && item.kind === 'specialist') {
+        return await supabase.rpc(rpcName, asPostgresRoutineArgs<Database['public']['Functions']['submit_specialist_response_v6']['Args']>(args)).abortSignal(controller.signal);
+      }
       return rpcName === 'submit_student_response_v6' && item.kind === 'student'
         ? await supabase.rpc(rpcName, asPostgresRoutineArgs<Database['public']['Functions']['submit_student_response_v6']['Args']>(args)).abortSignal(controller.signal)
         : rpcName === 'submit_specialist_response_v5' && item.kind === 'specialist'

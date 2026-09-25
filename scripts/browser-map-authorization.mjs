@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { verifyBrowserDashboardMap } from './browser-dashboard-map.mjs';
 import { verifyBrowserPortalTestData } from './browser-portal-test-data.mjs';
 import { verifyBrowserPublicFeatures } from './browser-public-features.mjs';
+import { verifyBrowserResearchAnalytics } from './browser-research-analytics.mjs';
 
 /** Synthetic sessions only: all Auth/profile/map calls are intercepted. */
 export async function verifyBrowserMapAuthorization({ context, fixtureDefinitions, mapFixture, catalog }) {
@@ -26,6 +27,7 @@ export async function verifyBrowserMapAuthorization({ context, fixtureDefinition
   const authorized = () => profile.authorized === true && ['researcher', 'doctor', 'professor'].includes(profile.role);
   const authPattern = '**/auth/v1/**';
   const profilePattern = '**/rest/v1/rpc/current_user_portal_profile';
+  const featuresPattern = '**/rest/v1/rpc/get_public_features';
   const mapPattern = /\/rest\/v1\/rpc\/get_(?:private_)?participation_map_stats$/;
   const authHandler = route => {
     const url = new URL(route.request().url());
@@ -34,6 +36,7 @@ export async function verifyBrowserMapAuthorization({ context, fixtureDefinition
     return route.fulfill({ status: 403, json: { message: 'Unexpected Auth endpoint blocked by browser fixture' } });
   };
   const profileHandler = route => { profileCalls++; return route.fulfill({ json: profile }); };
+  const featuresHandler = route => route.fulfill({ headers: { 'cache-control': 'no-store, private' }, json: { public_map_enabled: publicEnabled } });
   const mapHandler = route => {
     const args = route.request().postDataJSON() ?? {};
     const isPrivate = route.request().url().includes('/get_private_');
@@ -45,6 +48,7 @@ export async function verifyBrowserMapAuthorization({ context, fixtureDefinition
   };
   await context.route(authPattern, authHandler);
   await context.route(profilePattern, profileHandler);
+  await context.route(featuresPattern, featuresHandler);
   await context.route(mapPattern, mapHandler);
   const page = await context.newPage();
   page.setDefaultTimeout(15_000);
@@ -68,6 +72,12 @@ export async function verifyBrowserMapAuthorization({ context, fixtureDefinition
   });
   try {
     await page.goto('http://127.0.0.1:4179/', { waitUntil: 'networkidle' });
+    if (process.argv.includes('--analytics-only')) {
+      await page.locator('[data-participant-role="curious"]').click();
+      await verifyBrowserResearchAnalytics({ context, page, fixtureDefinitions, signIn, setProfile: value => { profile = value; }, getProfile: () => profile });
+      assert.deepEqual(errors, []);
+      return;
+    }
     await page.getByRole('button', { name: TRANSLATIONS.en.navWorldMap, exact: true }).click();
     await page.getByRole('button', { name: /^Romania ≈ 35$/ }).waitFor();
     await noFilters('Anonymous public map visitors have no filter controls');
@@ -82,6 +92,7 @@ export async function verifyBrowserMapAuthorization({ context, fixtureDefinition
       setProfile: value => { profile = value; }, getProfile: () => profile,
       setPublicEnabled: value => { publicEnabled = value; } });
     await verifyBrowserDashboardMap({ context, page, fixtureDefinitions, defaultArgs, mapCalls, signIn, setProfile: value => { profile = value; } });
+    await verifyBrowserResearchAnalytics({ context, page, fixtureDefinitions, signIn, setProfile: value => { profile = value; }, getProfile: () => profile });
     await verifyBrowserPortalTestData({ context, page, catalog, mapCalls, signIn, setProfile: value => { profile = value; } });
     assert.ok(profileCalls >= 6, 'Dashboard and private-map access is verified by the server profile');
     assert.ok(mapCalls.some(args => args.p_respondent_type === 'specialist'));
@@ -91,6 +102,7 @@ export async function verifyBrowserMapAuthorization({ context, fixtureDefinition
     await page.close();
     await context.unroute(authPattern, authHandler);
     await context.unroute(profilePattern, profileHandler);
+    await context.unroute(featuresPattern, featuresHandler);
     await context.unroute(mapPattern, mapHandler);
   }
 }

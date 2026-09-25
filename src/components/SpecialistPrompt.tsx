@@ -11,6 +11,8 @@ import { Check, Search, Loader2, AlertCircle, PartyPopper, Pencil } from 'lucide
 import { useSpecialtyCatalog } from '@/lib/SpecialtyCatalogContext';
 import GeographyFields from './GeographyFields';
 import { LOCAL_PROGRESS_COPY } from '@/data/localProgressI18n';
+import type { PriorityWeights } from '@/lib/scoring';
+import { createScoringContext, SCORING_CONTEXT_DISCLOSURE } from '@/lib/scoringProvenance';
 import {
   getSpecialistPromptNavigationScrollKey,
   useScrollToPageTop,
@@ -33,6 +35,7 @@ interface SpecialistPromptProps {
   onDraftChange: (draft: SpecialistDraft) => void;
   ratings: Record<string, number>;
   selectedValues: string[];
+  priorities: PriorityWeights;
   questionnaireCompleted: boolean;
   language: SupportedLanguage;
   onDone: () => void;
@@ -44,6 +47,7 @@ export default function SpecialistPrompt({
   onDraftChange,
   ratings,
   selectedValues,
+  priorities,
   questionnaireCompleted,
   language,
   onDone,
@@ -103,6 +107,7 @@ export default function SpecialistPrompt({
         actual_specialty: actualSpecialty,
         ratings,
         selected_values: selectedValues,
+        scoring_context: questionnaireCompleted ? createScoringContext(priorities, specialties) : null,
         questionnaire_completed: questionnaireCompleted,
         country_code: geography.countryCode || null,
         region: geography.region.trim() || null,
@@ -168,6 +173,7 @@ export default function SpecialistPrompt({
         <p className="text-ink-500 leading-relaxed text-balance">
           {questionnaireCompleted ? t.specialistPromptDescCompleted : t.specialistPromptDescSkipped}
         </p>
+        {questionnaireCompleted && <p className="mt-3 text-xs leading-relaxed text-ink-500">{SCORING_CONTEXT_DISCLOSURE[language]}</p>}
         <p className={`mx-auto mt-4 inline-flex rounded-full border px-3 py-1.5 text-xs font-semibold ${
           questionnaireCompleted
             ? 'border-brand-100 bg-brand-50 text-brand-800'

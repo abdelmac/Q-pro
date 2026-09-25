@@ -353,6 +353,9 @@ export default function ResearchResponseDetail({ response, lang, onClose, catalo
               <Version label="dashboard_analysis" value={analysis.analysisVersion} />
               <Version label="scoring_engine" value={analysis.engineRevision} />
               <Version label="model_checksum" value={analysis.modelChecksum} />
+              <Version label="recorded_scoring_context" value={row.scoring_context == null
+                ? (french ? 'Indisponible — jamais reconstruit' : lang === 'ro' ? 'Indisponibil — niciodată reconstruit' : 'Unavailable — never reconstructed')
+                : JSON.stringify(row.scoring_context)} />
             </dl>
           </section>
 
@@ -531,7 +534,9 @@ function StoredStudentScores({ response, lang }: { response: StudentResponseRow;
         {french ? 'Classement navigateur enregistré (non vérifié)' : 'Stored browser ranking (unverified)'}
       </summary>
       <p className="border-t border-amber-200 px-5 py-3 text-xs leading-relaxed text-amber-900">
-        {french
+        {response.scoring_context != null
+          ? (french ? 'Les réglages personnalisés sont enregistrés dans le contexte de calcul. Ce classement reste fourni par le navigateur ; le classement canonique utilise les priorités par défaut.' : lang === 'ro' ? 'Setările personalizate sunt înregistrate în contextul de calcul. Clasamentul provine din browser; cel canonic utilizează prioritățile implicite.' : 'Personalized settings are recorded in scoring context. This is still a browser-reported ranking; the canonical ranking uses default priorities.')
+          : french
           ? 'Les poids de priorité personnalisés n’ont pas été enregistrés. Ce classement historique ne doit donc pas être comparé directement au classement canonique recalculé.'
           : 'Personalized priority weights were not stored. This historical ranking must therefore not be compared directly with the recomputed canonical ranking.'}
       </p>

@@ -187,6 +187,7 @@ export function generatePortalTestDataset(recipe: PortalTestDatasetRecipe): Port
       computed_traits: calculateTraits(ratings, selectedValues),
     };
     const shared = {
+      scoring_context: null,
       ...metadata, id: rowId(recipe.id, index), ratings, selected_values: selectedValues,
       language, created_at: createdAt, country_code: countryCode,
       country_name: getCountryName(countryCode, 'en'), region: null,
