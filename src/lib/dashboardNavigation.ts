@@ -7,9 +7,10 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import type { Language } from '@/data/i18n';
+import { PUBLIC_FEATURES_TRANSLATIONS } from '@/data/publicFeaturesI18n';
 
 export type CohortView = 'specialists' | 'students';
-export type DashboardView = CohortView | 'algorithm' | 'map' | 'configuration';
+export type DashboardView = CohortView | 'algorithm' | 'map' | 'configuration' | 'public-features';
 
 export interface DashboardNavItem {
   id: DashboardView;
@@ -77,16 +78,22 @@ export function getDashboardNavItems(canEdit: boolean, lang: Language): Dashboar
     },
   ];
 
-  if (canEdit) {
-    items.push({
+  items.push({
       id: 'map',
       label: lang === 'fr' ? 'Carte de participation' : lang === 'ro' ? 'Harta participării' : 'Participation map',
-      section: 'administration',
+      section: 'data',
       icon: Globe2,
-    });
+  });
+  if (canEdit) {
     items.push({
       id: 'configuration',
       label: lang === 'ro' ? 'Configurare' : 'Configuration',
+      section: 'administration',
+      icon: Settings2,
+    });
+    items.push({
+      id: 'public-features',
+      label: PUBLIC_FEATURES_TRANSLATIONS[lang].title,
       section: 'administration',
       icon: Settings2,
     });

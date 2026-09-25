@@ -124,12 +124,15 @@ export function mapRpcArguments(filters: ParticipationMapFilters) {
 }
 
 export class MapFilterAccessError extends Error {
-  constructor() { super('Map filters require administrator access'); }
+  constructor() { super('Geographic data access denied'); }
 }
 
-export async function fetchParticipationMapStats(filters: ParticipationMapFilters, signal?: AbortSignal): Promise<ParticipationMapStats> {
+export async function fetchParticipationMapStats(filters: ParticipationMapFilters, signal?: AbortSignal, access: 'public' | 'private' = 'public'): Promise<ParticipationMapStats> {
   if (!supabase) throw new Error('Map service unavailable');
-  const query = supabase.rpc('get_participation_map_stats', mapRpcArguments(filters));
+  if (access === 'public' && Object.keys(DEFAULT_MAP_FILTERS).some(key => filters[key as keyof ParticipationMapFilters] !== DEFAULT_MAP_FILTERS[key as keyof ParticipationMapFilters])) {
+    throw new MapFilterAccessError();
+  }
+  const query = supabase.rpc(access === 'private' ? 'get_private_participation_map_stats' : 'get_participation_map_stats', mapRpcArguments(filters));
   const { data, error, status } = await (signal ? query.abortSignal(signal) : query);
   if (error && (error.code === '42501' || status === 401 || status === 403)) throw new MapFilterAccessError();
   if (error) throw new Error('Map service unavailable');

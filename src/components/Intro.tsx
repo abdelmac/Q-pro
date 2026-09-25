@@ -16,7 +16,7 @@ interface IntroProps {
   onOpenMethodology: () => void;
   onOpenDashboard: () => void;
   onOpenCredits: () => void;
-  onOpenWorldMap: () => void;
+  onOpenWorldMap?: () => void;
 }
 
 export default function Intro({ onStart, totalQuestions, participantRole, onBack, onChangeRole, onOpenExplorer, onOpenMethodology, onOpenDashboard, onOpenCredits, onOpenWorldMap }: IntroProps) {
@@ -128,9 +128,9 @@ export default function Intro({ onStart, totalQuestions, participantRole, onBack
           <button onClick={onOpenDashboard} className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold text-ink-500 hover:text-ink-900 hover:bg-ink-100 transition-colors">
             <BarChart3 className="w-3.5 h-3.5" /> Dashboard
           </button>
-          <button type="button" onClick={onOpenWorldMap} className="inline-flex min-h-11 items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-semibold text-ink-500 transition-colors hover:bg-ink-100 hover:text-ink-900">
+          {onOpenWorldMap && <button type="button" onClick={onOpenWorldMap} className="inline-flex min-h-11 items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-semibold text-ink-500 transition-colors hover:bg-ink-100 hover:text-ink-900">
             <Globe2 className="h-3.5 w-3.5" aria-hidden="true" />{t.navWorldMap}
-          </button>
+          </button>}
           <button type="button" onClick={onOpenCredits} className="inline-flex min-h-11 items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-semibold text-ink-500 transition-colors hover:bg-ink-100 hover:text-ink-900">
             <Heart className="h-3.5 w-3.5" aria-hidden="true" />{t.navCredits}
           </button>

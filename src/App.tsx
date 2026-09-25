@@ -9,6 +9,8 @@ import {
 } from '@/lib/scoring';
 import { DEFAULT_PRIORITY_WEIGHTS } from '@/data/dimensions';
 import { LanguageProvider, useLanguage } from '@/lib/LanguageContext';
+import { PublicFeaturesProvider, usePublicFeatures } from '@/lib/PublicFeaturesContext';
+import { PUBLIC_FEATURES_TRANSLATIONS } from '@/data/publicFeaturesI18n';
 import { SpecialtyCatalogProvider, useSpecialtyCatalog } from '@/lib/SpecialtyCatalogContext';
 import { getAppNavigationScrollKey, useScrollToPageTop } from '@/lib/scrollToTop';
 import Intro from '@/components/Intro';
@@ -82,6 +84,7 @@ function createSpecialistDraft(): SpecialistDraft {
 
 function AppContent() {
   const { t, lang } = useLanguage();
+  const { publicMapEnabled, refresh: refreshPublicFeatures } = usePublicFeatures();
   const { specialties, lock: lockCatalog, unlock: unlockCatalog,
     source: catalogSource, isLoading: catalogLoading, error: catalogError, refresh: refreshCatalog } = useSpecialtyCatalog();
   const [navigation, dispatchNavigation] = useReducer(
@@ -302,6 +305,17 @@ function AppContent() {
   }
 
   if (phase === 'participation-map') {
+    if (!publicMapEnabled) {
+      const copy = PUBLIC_FEATURES_TRANSLATIONS[lang];
+      return <main data-public-map-unavailable className="min-h-screen bg-accent-50 px-6 py-5 sm:px-10 sm:py-7">
+        <PageBackButton onClick={goBack} label={t.back} />
+        <div className="mx-auto mt-14 max-w-xl rounded-2xl border border-ink-200 bg-white p-6">
+          <h1 className="text-xl font-semibold text-ink-900">{copy.mapUnavailable}</h1>
+          <p className="mt-3 text-sm leading-relaxed text-ink-600">{copy.mapUnavailableHelp}</p>
+          <button type="button" onClick={() => void refreshPublicFeatures()} className="mt-5 min-h-11 rounded-full bg-brand-800 px-5 text-sm font-semibold text-white">{copy.retry}</button>
+        </div>
+      </main>;
+    }
     return (
       <Suspense fallback={<main className="min-h-screen bg-accent-50 p-6"><PageBackButton onClick={goBack} label={t.back} /></main>}>
         <ParticipationMap onBack={goBack} />
@@ -310,13 +324,13 @@ function AppContent() {
   }
 
   if (phase === 'role' || participantRole === null) {
-    return <RoleSelection onSelectRole={selectParticipantRole} onOpenCredits={() => goTo({ phase: 'credits' })} onOpenWorldMap={() => goTo({ phase: 'participation-map' })} />;
+    return <RoleSelection onSelectRole={selectParticipantRole} onOpenCredits={() => goTo({ phase: 'credits' })} onOpenWorldMap={publicMapEnabled ? () => goTo({ phase: 'participation-map' }) : undefined} />;
   }
 
   if (phase === 'intro') {
     return (
       <>
-        <Intro onStart={startQuiz} totalQuestions={totalQuestions} participantRole={participantRole} onBack={goBack} onChangeRole={changeParticipantRole} onOpenExplorer={() => goTo({ phase: 'explorer' })} onOpenMethodology={() => goTo({ phase: 'methodology' })} onOpenDashboard={() => goTo({ phase: 'dashboard' })} onOpenCredits={() => goTo({ phase: 'credits' })} onOpenWorldMap={() => goTo({ phase: 'participation-map' })} />
+        <Intro onStart={startQuiz} totalQuestions={totalQuestions} participantRole={participantRole} onBack={goBack} onChangeRole={changeParticipantRole} onOpenExplorer={() => goTo({ phase: 'explorer' })} onOpenMethodology={() => goTo({ phase: 'methodology' })} onOpenDashboard={() => goTo({ phase: 'dashboard' })} onOpenCredits={() => goTo({ phase: 'credits' })} onOpenWorldMap={publicMapEnabled ? () => goTo({ phase: 'participation-map' }) : undefined} />
         {(catalogGateMessage || (catalogError && catalogSource !== 'remote')) && (
           <div role="alert" className="fixed bottom-5 left-1/2 z-50 w-[min(92vw,680px)] -translate-x-1/2 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 shadow-lift">
             <p className="font-semibold">{catalogGateMessage ?? (lang === 'fr' ? 'Catalogue publié indisponible.' : 'Published catalog unavailable.')}</p>
@@ -589,9 +603,11 @@ function AppContent() {
 export default function App() {
   return (
     <LanguageProvider>
-      <SpecialtyCatalogProvider>
-        <AppContent />
-      </SpecialtyCatalogProvider>
+      <PublicFeaturesProvider>
+        <SpecialtyCatalogProvider>
+          <AppContent />
+        </SpecialtyCatalogProvider>
+      </PublicFeaturesProvider>
     </LanguageProvider>
   );
 }

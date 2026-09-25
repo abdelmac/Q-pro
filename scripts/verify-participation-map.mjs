@@ -62,27 +62,33 @@ try {
     const filters = { ...DEFAULT_MAP_FILTERS, respondentType, countryCode: 'RO', language: 'ro', monthFrom: '2025-01', monthTo: '2025-03', dataVersion: 'current' };
     const expectedArgs = { p_respondent_type: respondentType, p_country_code: 'RO', p_language: 'ro', p_month_from: '2025-01-01', p_month_to: '2025-03-01', p_data_version: 'current' };
     assert.deepEqual(mapRpcArguments(filters), expectedArgs);
-    assert.deepEqual(await fetchParticipationMapStats(filters, new AbortController().signal), fixture);
-    assert.deepEqual(globalThis.__mapRpcCalls.at(-1), { name: 'get_participation_map_stats', args: expectedArgs });
+    assert.deepEqual(await fetchParticipationMapStats(filters, new AbortController().signal, 'private'), fixture);
+    assert.deepEqual(globalThis.__mapRpcCalls.at(-1), { name: 'get_private_participation_map_stats', args: expectedArgs });
   }
   assert.equal(globalThis.__mapRpcCalls.length, 4, 'Only aggregate RPC calls are made');
   globalThis.__mapRpcError = { code: '42501', message: 'Administrator access required for map filters' };
-  await assert.rejects(() => fetchParticipationMapStats({ ...DEFAULT_MAP_FILTERS, countryCode: 'RO' }), MapFilterAccessError,
+  await assert.rejects(() => fetchParticipationMapStats({ ...DEFAULT_MAP_FILTERS, countryCode: 'RO' }, undefined, 'private'), MapFilterAccessError,
     'A denied filtered RPC must not return stale aggregates or silently compute a client-side subset');
   for (const status of [401, 403]) {
     globalThis.__mapRpcError = { message: 'Denied' };
     globalThis.__mapRpcStatus = status;
-    await assert.rejects(() => fetchParticipationMapStats({ ...DEFAULT_MAP_FILTERS, countryCode: 'RO' }), MapFilterAccessError);
+    await assert.rejects(() => fetchParticipationMapStats({ ...DEFAULT_MAP_FILTERS, countryCode: 'RO' }, undefined, 'private'), MapFilterAccessError);
   }
   globalThis.__mapRpcError = null;
   globalThis.__mapRpcStatus = 200;
-  assert.deepEqual(await fetchParticipationMapStats(DEFAULT_MAP_FILTERS), fixture, 'The public unfiltered aggregate remains available');
-  for (const role of ['doctor', 'professor']) {
+  assert.deepEqual(await fetchParticipationMapStats(DEFAULT_MAP_FILTERS), fixture, 'The public unfiltered aggregate uses its visibility-gated endpoint');
+  assert.equal(globalThis.__mapRpcCalls.at(-1).name, 'get_participation_map_stats');
+  const publicCalls = globalThis.__mapRpcCalls.length;
+  await assert.rejects(() => fetchParticipationMapStats({ ...DEFAULT_MAP_FILTERS, countryCode: 'RO' }), MapFilterAccessError);
+  assert.equal(globalThis.__mapRpcCalls.length, publicCalls, 'Public routes must not even request filtered geographic data');
+  globalThis.__mapRpcError = { code: '42501', message: 'Public map disabled' };
+  await assert.rejects(() => fetchParticipationMapStats(DEFAULT_MAP_FILTERS), MapFilterAccessError, 'Disabled public maps never return stale data');
+  globalThis.__mapRpcError = null;
+  for (const role of ['researcher', 'doctor', 'professor']) {
     assert.equal(canUseMapFilters({ authorized: true, role }), true, 'Canonical server profile role grants access');
     assert.equal(canUseMapFilters({ authorized: true, portal_role: role }), true, 'Supported server profile alias grants access');
   }
   for (const profile of [null, undefined, false, [], 'professor', {},
-    { authorized: true, portal_role: 'researcher', can_edit_catalog: true },
     { authorized: false, portal_role: 'doctor' },
     { authorized: 'true', portal_role: 'professor' },
     { is_researcher: true, portal_role: 'doctor' },

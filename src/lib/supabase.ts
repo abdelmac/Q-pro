@@ -55,6 +55,8 @@ const supabaseConfigurationError = validateSupabaseConfiguration();
 
 export const supabase = !supabaseConfigurationError && supabaseUrl && supabaseBrowserKey
   ? createClient<Database>(supabaseUrl, supabaseBrowserKey, {
+      // Research, auth and visibility responses must never enter the HTTP cache.
+      global: { fetch: (input, init) => fetch(input, { ...init, cache: 'no-store' }) },
       auth: {
         autoRefreshToken: true,
         detectSessionInUrl: true,
@@ -70,6 +72,28 @@ export const supabase = !supabaseConfigurationError && supabaseUrl && supabaseBr
 
 export function getSupabaseConfigurationError(): string | null {
   return supabaseConfigurationError;
+}
+
+export interface PublicFeatures { public_map_enabled: boolean }
+
+/** Return only the explicit public allowlist; malformed/missing settings fail closed. */
+export async function fetchPublicFeatures(signal?: AbortSignal): Promise<PublicFeatures> {
+  if (!supabase) return { public_map_enabled: false };
+  let request = supabase.rpc('get_public_features');
+  if (signal) request = request.abortSignal(signal);
+  const { data, error } = await request;
+  if (error) throw error;
+  return { public_map_enabled: data !== null && !Array.isArray(data) && typeof data === 'object' && data.public_map_enabled === true };
+}
+
+export async function setPublicMapEnabled(enabled: boolean): Promise<PublicFeatures> {
+  if (!supabase) throw new Error(getSupabaseConfigurationError() ?? 'Backend unavailable');
+  const { data, error } = await supabase.rpc('set_public_map_enabled', { p_enabled: enabled });
+  if (error) throw error;
+  if (data === null || Array.isArray(data) || typeof data !== 'object' || typeof data.public_map_enabled !== 'boolean') {
+    throw new Error('The server did not confirm the public feature setting.');
+  }
+  return { public_map_enabled: data.public_map_enabled };
 }
 
 type SupabaseErrorLike = string | { code?: string; message: string };

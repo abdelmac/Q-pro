@@ -7,10 +7,10 @@ export function canUseMapFilters(value: unknown): boolean {
   const profile = value as Record<string, unknown>;
   const role = profile.portal_role ?? profile.role;
   return profile.authorized === true
-    && (role === 'doctor' || role === 'professor');
+    && (role === 'researcher' || role === 'doctor' || role === 'professor');
 }
 
-export function useMapFilterAccess() {
+export function useMapFilterAccess(enabled = true) {
   const [accessKey, setAccessKey] = useState<string | null>(null);
   const [revision, setRevision] = useState(0);
   const generation = useRef(0);
@@ -22,7 +22,7 @@ export function useMapFilterAccess() {
 
   useEffect(() => {
     const client = supabase;
-    if (!client) return;
+    if (!client || !enabled) return;
     let active = true;
     let timer: ReturnType<typeof setTimeout> | undefined;
     let controller: AbortController | undefined;
@@ -47,7 +47,7 @@ export function useMapFilterAccess() {
           setAccessKey(`${data.session.user.id}:${request}`);
         }
       } catch {
-        // Fail closed: the public, unfiltered map remains usable.
+        // Fail closed: private aggregates must never fall back to a public route.
       } finally {
         clearTimeout(timeout);
       }
@@ -77,7 +77,7 @@ export function useMapFilterAccess() {
       listener.subscription.unsubscribe();
       window.removeEventListener('focus', scheduleVerification);
     };
-  }, [revision]);
+  }, [revision, enabled]);
 
   return { accessKey, recheckAccess };
 }

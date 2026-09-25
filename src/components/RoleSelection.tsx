@@ -29,7 +29,7 @@ interface RoleSelectionViewProps {
   copy: RoleSelectionCopy;
   onSelectRole: (role: ParticipantRole) => void;
   onOpenCredits: () => void;
-  onOpenWorldMap: () => void;
+  onOpenWorldMap?: () => void;
 }
 
 export function RoleSelectionView({ copy, onSelectRole, onOpenCredits, onOpenWorldMap }: RoleSelectionViewProps) {
@@ -111,9 +111,9 @@ export function RoleSelectionView({ copy, onSelectRole, onOpenCredits, onOpenWor
 
       <footer className="px-6 py-6 text-center text-xs text-ink-500">
         <nav className="mb-3 flex flex-wrap justify-center gap-2">
-          <button type="button" onClick={onOpenWorldMap} className="inline-flex min-h-11 items-center gap-2 rounded-full px-4 font-semibold hover:bg-white hover:text-brand-800 focus-visible:ring-2 focus-visible:ring-brand-500">
+          {onOpenWorldMap && <button type="button" onClick={onOpenWorldMap} className="inline-flex min-h-11 items-center gap-2 rounded-full px-4 font-semibold hover:bg-white hover:text-brand-800 focus-visible:ring-2 focus-visible:ring-brand-500">
             <Globe2 className="h-4 w-4" aria-hidden="true" />{copy.worldMapLabel}
-          </button>
+          </button>}
           <button type="button" onClick={onOpenCredits} className="inline-flex min-h-11 items-center gap-2 rounded-full px-4 font-semibold hover:bg-white hover:text-brand-800 focus-visible:ring-2 focus-visible:ring-brand-500">
             <Heart className="h-4 w-4" aria-hidden="true" />{copy.creditsLabel}
           </button>

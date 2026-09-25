@@ -5,6 +5,7 @@ import { countryOptions, getCountryName } from '@/data/geography';
 import { MAP_TRANSLATIONS, TEST_MAP_TRANSLATIONS, type MapStrings } from '@/data/mapI18n';
 import world from '@/data/worldMapPaths.json';
 import { useMapFilterAccess } from '@/lib/useMapFilterAccess';
+import { usePublicFeatures } from '@/lib/PublicFeaturesContext';
 import { buildTestParticipationMapStats, type PortalTestDataset } from '@/lib/portalTestData';
 import BrandLogo from './BrandLogo';
 import {
@@ -78,14 +79,16 @@ export default function ParticipationMap({ onBack, embedded = false, refreshKey 
   const isTestView = embedded && testDataset !== undefined;
   const sourceId = isTestView ? testDataset.id : null;
   const copy = isTestView ? { ...MAP_TRANSLATIONS[lang], ...TEST_MAP_TRANSLATIONS[lang] } : MAP_TRANSLATIONS[lang];
-  const { accessKey, recheckAccess } = useMapFilterAccess();
-  const canFilter = accessKey !== null;
+  const { publicMapEnabled, invalidate: invalidatePublicFeatures } = usePublicFeatures();
+  const { accessKey, recheckAccess } = useMapFilterAccess(embedded);
+  const canFilter = embedded && accessKey !== null;
+  const canLoad = embedded ? canFilter : publicMapEnabled;
   const [selection, setSelection] = useState<{ accessKey: string | null; filters: ParticipationMapFilters }>({ accessKey: null, filters: DEFAULT_MAP_FILTERS });
   const filters = canFilter && selection.accessKey === accessKey ? selection.filters : DEFAULT_MAP_FILTERS;
   const [draft, setDraft] = useState<ParticipationMapFilters>({ ...DEFAULT_MAP_FILTERS });
   const [response, setResponse] = useState<{ accessKey: string | null; sourceId: string | null; filters: ParticipationMapFilters; stats: MapDisplayStats } | null>(null);
   // Never render data from a previous account, authorization check or filter set.
-  const stats = response?.accessKey === accessKey && response.sourceId === sourceId && response.filters === filters ? response.stats : null;
+  const stats = canLoad && response?.accessKey === accessKey && response.sourceId === sourceId && response.filters === filters ? response.stats : null;
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
   const [retry, setRetry] = useState(0);
@@ -102,25 +105,26 @@ export default function ParticipationMap({ onBack, embedded = false, refreshKey 
     const controller = new AbortController();
     setLoading(true); setResponse(null); setError(false); setSelectedCode(null);
     // Demo records are never combined with real aggregates or sent to the public API.
-    if (isTestView && !canFilter) {
+    if (!canLoad) {
       setLoading(false);
       return () => controller.abort();
     }
     const request: Promise<MapDisplayStats> = isTestView
       ? Promise.resolve().then(() => buildTestParticipationMapStats(testDataset, filters))
-      : fetchParticipationMapStats(filters, controller.signal);
+      : fetchParticipationMapStats(filters, controller.signal, embedded ? 'private' : 'public');
     request.then(result => {
       if (!controller.signal.aborted) setResponse({ accessKey, sourceId, filters, stats: result });
     }).catch(cause => {
       if (!controller.signal.aborted) {
         setError(true);
         if (accessKey !== null && cause instanceof MapFilterAccessError) recheckAccess();
+        if (!embedded) invalidatePublicFeatures();
       }
     }).finally(() => {
       if (!controller.signal.aborted) setLoading(false);
     });
     return () => controller.abort();
-  }, [accessKey, canFilter, filters, isTestView, sourceId, testDataset, retry, refreshKey, recheckAccess]);
+  }, [accessKey, canLoad, filters, embedded, isTestView, sourceId, testDataset, retry, refreshKey, recheckAccess, invalidatePublicFeatures]);
 
   useEffect(() => {
     setDraft({ ...DEFAULT_MAP_FILTERS });
@@ -185,6 +189,9 @@ export default function ParticipationMap({ onBack, embedded = false, refreshKey 
     [copy.total, stats?.total], [copy.countries, stats?.countries], [copy.students, stats?.students], [copy.specialists, stats?.specialists], [copy.nonMedical, stats?.nonMedical],
   ] as const;
   const Content = embedded ? 'div' : 'main';
+
+  // Defense in depth if this component is mounted outside App's public route gate.
+  if (!embedded && !publicMapEnabled) return null;
 
   return <div className={embedded ? 'min-w-0' : 'min-h-screen bg-[#f6f8fb]'} data-participation-map={embedded ? 'admin' : 'public'}>
     {!embedded && <header className="border-b border-ink-100 bg-white px-4 py-4 sm:px-8">

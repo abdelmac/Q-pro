@@ -328,38 +328,39 @@ assert.equal(
 const readOnlyDashboardItems = getDashboardNavItems(false, 'en');
 assert.deepEqual(
   readOnlyDashboardItems.map(({ id }) => id),
-  ['specialists', 'students', 'algorithm'],
+  ['specialists', 'students', 'algorithm', 'map'],
   'Every authorized portal account must see both cohorts followed by the algorithm guide',
 );
 assert.deepEqual(
   readOnlyDashboardItems.map(({ section }) => section),
-  ['data', 'data', 'method'],
+  ['data', 'data', 'method', 'data'],
   'The sidebar must separate research cohorts from the algorithm method guide',
 );
 assert.deepEqual(
   getDashboardNavItems(true, 'en').map(({ id }) => id),
-  ['specialists', 'students', 'algorithm', 'map', 'configuration'],
-  'The participation map and catalog configuration belong only to accounts with edit permission',
+  ['specialists', 'students', 'algorithm', 'map', 'configuration', 'public-features'],
+  'Public feature settings and catalog configuration belong only to accounts with edit permission',
 );
-assert.equal(readOnlyDashboardItems.some(({ id }) => id === 'map'), false, 'Read-only researchers must not receive the administration map destination');
+assert.equal(readOnlyDashboardItems.some(({ id }) => id === 'map'), true, 'Authorized read-only researchers can use the private research map');
+assert.equal(readOnlyDashboardItems.some(({ id }) => id === 'public-features'), false, 'Researchers cannot administer public feature visibility');
 for (const [language, label] of [['en', 'Participation map'], ['fr', 'Carte de participation'], ['ro', 'Harta participării']] as const) {
   const mapItem = getDashboardNavItems(true, language).find(({ id }) => id === 'map');
   assert.equal(mapItem?.label, label, 'The administration map needs a localized sidebar label');
-  assert.equal(mapItem?.section, 'administration', 'The map must be grouped with administrative tools');
+  assert.equal(mapItem?.section, 'data', 'The private map must be grouped with authorized research data');
 }
 assert.deepEqual(
   readOnlyDashboardItems.map(({ label }) => label),
-  ['Specialists', 'Students & explorers', 'How the algorithm works'],
+  ['Specialists', 'Students & explorers', 'How the algorithm works', 'Participation map'],
   'The dashboard must name both participant audiences instead of silently grouping explorers as students',
 );
 assert.deepEqual(
   getDashboardNavItems(false, 'fr').map(({ label }) => label),
-  ['Spécialistes', 'Étudiants & explorateurs', 'Comprendre l’algorithme'],
+  ['Spécialistes', 'Étudiants & explorateurs', 'Comprendre l’algorithme', 'Carte de participation'],
   'The dashboard sidebar must expose French labels for every generally available view',
 );
 assert.deepEqual(
   getDashboardNavItems(false, 'ro').map(({ label }) => label),
-  ['Specialiști', 'Studenți și exploratori', 'Cum funcționează algoritmul'],
+  ['Specialiști', 'Studenți și exploratori', 'Cum funcționează algoritmul', 'Harta participării'],
   'The dashboard sidebar must expose Romanian labels for every generally available view',
 );
 assert.deepEqual(

@@ -13,7 +13,7 @@ export async function verifyBrowserDashboardMap({ context, page, fixtureDefiniti
     return route.fulfill({ status: 200, headers: { 'content-range': '*/0' }, ...(method === 'HEAD' ? { body: '' } : { json: [] }) });
   };
   await context.route(tablePattern, tableHandler);
-  const waitMap = expected => page.waitForResponse(response => response.url().includes('/rpc/get_participation_map_stats') && JSON.stringify(response.request().postDataJSON()) === JSON.stringify(expected));
+  const waitMap = expected => page.waitForResponse(response => response.url().includes('/rpc/get_private_participation_map_stats') && JSON.stringify(response.request().postDataJSON()) === JSON.stringify(expected));
   const map = page.locator('[data-participation-map]');
   const openSidebar = async mobile => {
     if (mobile) await page.getByRole('button', { name: 'Open dashboard menu', exact: true }).click();
@@ -54,7 +54,7 @@ export async function verifyBrowserDashboardMap({ context, page, fixtureDefiniti
       await page.waitForLoadState('networkidle');
       await noOverflow(`${role} initial cohort before opening the map`);
       const sidebar = await openSidebar(mobile);
-      assert.deepEqual(await sidebar.locator('[data-dashboard-view]').evaluateAll(buttons => buttons.map(button => button.dataset.dashboardView)), ['specialists', 'students', 'algorithm', 'map', 'configuration']);
+      assert.deepEqual(await sidebar.locator('[data-dashboard-view]').evaluateAll(buttons => buttons.map(button => button.dataset.dashboardView)), ['specialists', 'students', 'map', 'algorithm', 'configuration', 'public-features']);
       await sidebar.getByRole('button', { name: 'Participation map', exact: true }).click();
       await page.getByRole('heading', { level: 1, name: 'Participation map', exact: true }).waitFor();
       await map.getByRole('button', { name: copy.all, exact: true }).waitFor();
@@ -134,7 +134,7 @@ export async function verifyBrowserDashboardMap({ context, page, fixtureDefiniti
       await page.getByRole('button', { name: 'Back', exact: true }).click();
     }
 
-    // A legitimate read-only portal account cannot reach the administration map.
+    // A legitimate researcher can inspect the private map, but cannot edit public features.
     for (const mobile of [true, false]) {
       await page.setViewportSize({ width: mobile ? 375 : 1440, height: 900 });
       setProfile({ authorized: true, role: 'researcher', can_edit: false, can_publish: false });
@@ -144,15 +144,18 @@ export async function verifyBrowserDashboardMap({ context, page, fixtureDefiniti
       await page.waitForLoadState('networkidle');
       await noOverflow(`Researcher ${mobile ? 'mobile' : 'desktop'} cohort`);
       const sidebar = await openSidebar(mobile);
-      assert.deepEqual(await sidebar.locator('[data-dashboard-view]').evaluateAll(buttons => buttons.map(button => button.dataset.dashboardView)), ['specialists', 'students', 'algorithm']);
-      assert.equal(await page.locator('[data-dashboard-view="map"]').count(), 0, 'A researcher has no map tab, including hidden desktop navigation');
-      assert.equal(await map.count(), 0);
-      await sidebar.getByRole('button', { name: 'Sign out', exact: true }).click();
+      assert.deepEqual(await sidebar.locator('[data-dashboard-view]').evaluateAll(buttons => buttons.map(button => button.dataset.dashboardView)), ['specialists', 'students', 'map', 'algorithm']);
+      assert.equal(await page.locator('[data-dashboard-view="public-features"]').count(), 0, 'Researchers cannot change public visibility');
+      await sidebar.locator('[data-dashboard-view="map"]').click();
+      await map.getByRole('button', { name: copy.all, exact: true }).waitFor();
+      await map.getByRole('button', { name: /^Romania ≈ 35$/ }).waitFor();
+      const researcherSidebar = await openSidebar(mobile);
+      await researcherSidebar.getByRole('button', { name: 'Sign out', exact: true }).click();
       await page.getByRole('heading', { level: 1, name: 'Specialist & admin portal', exact: true }).waitFor();
       await page.getByRole('button', { name: 'Back', exact: true }).click();
     }
     setProfile({ authorized: false });
-    console.log('Dashboard map browser checks passed: doctor/mobile and professor/desktop sidebar, six filters, invalid dates/reset, applied-filter Refresh, tab history, sign-out and read-only researcher exclusion.');
+    console.log('Dashboard map browser checks passed: authorized private routes, six filters, invalid dates/reset, applied-filter Refresh, tab history, sign-out, researcher access and settings exclusion.');
   } catch (error) {
     console.error('Dashboard map failure layout:', { viewport: page.viewportSize(), ...await page.evaluate(() => ({ innerWidth, innerHeight, scrollY, documentWidth: document.documentElement.scrollWidth })) });
     await page.screenshot({ path: 'browser-qa.local/dashboard-map-failure.png' });

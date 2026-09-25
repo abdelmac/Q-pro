@@ -3,6 +3,7 @@ import { MapPin } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 import { countryOptions, GEOGRAPHY_REGION_MAX_LENGTH, type GeographyDraft } from '@/data/geography';
 import { MAP_TRANSLATIONS } from '@/data/mapI18n';
+import { usePublicFeatures } from '@/lib/PublicFeaturesContext';
 
 interface GeographyFieldsProps {
   value: GeographyDraft;
@@ -13,10 +14,13 @@ interface GeographyFieldsProps {
 
 export default function GeographyFields({ value, onChange, disabled = false, idPrefix = 'geography' }: GeographyFieldsProps) {
   const { lang } = useLanguage();
+  const { publicMapEnabled } = usePublicFeatures();
   const copy = MAP_TRANSLATIONS[lang];
   const options = useMemo(() => countryOptions(lang), [lang]);
   const fieldClass = 'min-h-12 w-full rounded-xl border border-ink-200 bg-white px-3 py-3 text-sm text-ink-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100 disabled:opacity-50';
 
+  // Hiding a widget never mutates its parent's existing geography draft.
+  if (!publicMapEnabled) return null;
   return (
     <fieldset disabled={disabled} className="my-7 rounded-2xl border border-brand-100 bg-brand-50/40 p-5">
       <legend className="px-1 text-sm font-semibold text-ink-800">
