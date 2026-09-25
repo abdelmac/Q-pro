@@ -196,6 +196,23 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_public_features: { Args: never; Returns: Json }
+      set_public_map_enabled: { Args: { p_enabled: boolean }; Returns: Json }
+      get_private_participation_map_stats: {
+        Args: { p_respondent_type?: string; p_country_code?: string | null; p_language?: string; p_month_from?: string | null; p_month_to?: string | null; p_data_version?: string }
+        Returns: Json
+      }
+      research_cohort_summary: { Args: { p_filters?: Json }; Returns: Json }
+      research_response_page: { Args: { p_filters?: Json; p_limit?: number; p_cursor?: Json | null; p_sort?: string }; Returns: Json }
+      research_question_summary: { Args: { p_filters: Json; p_question_id: string }; Returns: Json }
+      research_item_correlation: { Args: { p_filters: Json; p_question_a: string; p_question_b: string }; Returns: Json }
+      list_research_cohorts: { Args: never; Returns: Json }
+      save_research_cohort: { Args: { p_name: string; p_filters: Json; p_id?: string | null }; Returns: Json }
+      delete_research_cohort: { Args: { p_id: string }; Returns: boolean }
+      create_research_analysis_run: { Args: { p_filters?: Json; p_parameters?: Json }; Returns: Json }
+      list_research_analysis_runs: { Args: never; Returns: Json }
+      get_research_analysis_run: { Args: { p_id: string }; Returns: Json }
+      delete_research_analysis_run: { Args: { p_id: string }; Returns: boolean }
       get_portal_test_dataset: { Args: never; Returns: Json }
       create_portal_test_dataset: { Args: never; Returns: Json }
       delete_portal_test_dataset: { Args: { p_dataset_id: string }; Returns: boolean }

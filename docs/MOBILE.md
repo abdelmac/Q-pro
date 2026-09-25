@@ -1,5 +1,7 @@
 # Specialty Match on iOS and Android
 
+Release guidance and official requirements checked **25 September 2026**. Account creation, payment, signing and store publication remain explicit owner actions.
+
 The native projects in `android/` and `ios/` run the existing React/TypeScript application through Capacitor 8. The questionnaire, specialist interview, results, explorer, comparison, map, methodology, credits, dashboard, translations and scoring engine are the same source files as the website. No second algorithm or copied specialty database is maintained. The generated app identifier is `ro.qpro.specialtymatch`; choose the final owned identifier before creating store records.
 
 This is a Capacitor implementation, not an Expo/React Native rewrite. It preserves the existing interface and all shared calculations inside a native web view, with native lifecycle and encrypted storage integration.
@@ -39,6 +41,8 @@ Select the App project, configure the signing team and bundle identifier, resolv
 
 ## Questionnaire progress stays in memory
 
+This is an explicit owner decision reconfirmed for the September 2026 expansion. It overrides the attached specification's request to restore questionnaire drafts across restarts. Installing a PWA or a native wrapper must not silently re-enable draft saving.
+
 Questionnaire answers and written reflections are kept only in React state while the page is open. Back/forward navigation within the app retains them; reloading, closing the page, or terminating the native app starts a new questionnaire. There is no local auto-save, saved-draft prompt, or resume control. The browser's leave-page warning remains available for unfinished answers.
 
 On startup, `clearLegacyQuestionnaireProgress` removes only the retired `qpro.questionnaire.v1` draft and `qpro.autosave-enabled.v1` preference when storage is accessible. It does not read or restore the old draft, and it does not remove consented contributions, language preferences, or authentication data. The historical draft codec remains covered by unit tests but is no longer wired into the application.
@@ -60,3 +64,37 @@ The native app uses foreground/reconnect retries. It does not schedule backgroun
 `npm run test:mobile` checks targeted legacy-draft cleanup, the historical draft codec, explicit consent, immutable submission IDs/payloads, retries, permanent validation errors, expiry, queue limits, concurrent flushes, two independent queue instances sharing storage under Web Locks, and fail-safe behavior without those locks. `npm run test:browser` exercises the responsive web interface, in-memory answers without auto-save, and offline submission/retry flows with Playwright; set `PLAYWRIGHT_CHROMIUM_EXECUTABLE` to an existing Chrome/Edge executable if needed.
 
 The native projects can be scaffolded and synchronized on Windows. This environment has no Android Studio/JDK or macOS/Xcode, so a compiled APK/AAB/IPA, native-device keychain round-trip, simulator/device interaction, signing, store screenshots/privacy declarations and store publication remain release tasks. Before release, test airplane-mode continuation in the open app, questionnaire reset after force-close, reconnect submission, the Android back button, device text scaling, keyboard/safe-area behavior, and clearing pending contributions on both platforms. Use test submissions in a non-production backend for native end-to-end research tests.
+
+## Installable web app and offline boundary
+
+The production web build generates `sw.js` with an exact allowlist and content-derived version of public HTML, compiled JS/CSS, icons and manifest. The browser registers it only on secure production web origins, at the configured root or `/Q-pro/` scope. Development and Capacitor builds do not register it. This is optional enhancement: a storage failure must not block the online app.
+
+After the first successful online installation, the root shell can open offline. This caches **public application code, not research responses**. Supabase requests, authentication, public-feature settings, public/private map responses, dashboard APIs, exports, unknown paths and query-string requests are network-only with no cache fallback. Compiled dashboard UI code is public; authorized research data is not. A new assessment still needs the current published catalog from the backend; an already-open assessment retains its locked model in memory during a temporary outage. No public geography is available offline. Previously downloaded information cannot be remotely erased.
+
+The worker does not force-refresh tabs or upload in the background. A new version waits until old windows close, avoiding loss of an in-progress questionnaire. Close all app tabs/windows and reopen online after a release when ready to discard or after finishing open answers. Existing consented submissions continue using the separate foreground retry queue, never the service-worker cache. Browser storage can be evicted; this is not a backup or delivery guarantee. [Service-worker lifecycle and scope](https://web.dev/learn/pwa/service-workers).
+
+The homepage includes EN/FR/RO installation guidance:
+
+- iPhone/iPad: open in Safari, use Share → Add to Home Screen, and enable “Open as Web App” if offered. [Apple home-screen guidance](https://support.apple.com/en-euro/guide/iphone/iph42ab2f3a7/ios).
+- Android: in Chrome, use its menu → Install app/Add to Home screen; wording and availability vary.
+- Desktop Chrome/Edge: use the install affordance/menu if available. Do not assume every browser exposes a programmable install prompt. Installation is optional; the normal website remains usable. [Chrome web-app installation](https://support.google.com/chrome/answer/9658361).
+
+`node scripts/verify-pwa.mjs` builds isolated synthetic sites at both `/Q-pro/` and `/`, checks offline shell loading, and confirms private/map/auth/settings/export requests cannot fall back to injected stale cache entries. It does not use a production backend or prove physical iOS/Android behavior.
+
+## Native release checklist
+
+1. Choose the institution/person owning `ro.qpro.specialtymatch` before making store records. Keep signing/upload keys and recovery codes in owner-controlled secure storage; never in `.env`, Git or frontend bundles. Increase Android `versionCode` and iOS build number for releases. Preserve a manifest of Git SHA, backend environment, questionnaire/scoring versions and signed-artifact checksum.
+2. Build `dist-mobile` and sync on a clean lockfile install. The same TypeScript engine is bundled on web and native; do not implement a second Java/Kotlin/Swift scoring algorithm. Run common scoring fixtures and compare full-precision results on both devices before publication. A successful web test is not a native-device equivalence test.
+3. Android: configure SDK 36/JDK 21, run debug build and instrumented/manual tests, then generate a signed Android App Bundle with owner-controlled upload signing. Repository minSdk is 24 and target/compile SDK is 36. Google Play has required API 36 for ordinary new apps/updates since 31 August 2026; recheck before uploading. [Target API policy](https://support.google.com/googleplay/android-developer/answer/11926878).
+4. iPhone/iPad: build on macOS with Xcode 26+ and the command-line tools, select the signing team and resolve the existing Swift Package Manager dependencies. Test on simulator and physical hardware, archive, validate and distribute to TestFlight before review. The app deployment minimum (iOS 15) differs from the build SDK: Apple requires iOS/iPadOS 26 SDK or later for uploads from 28 April 2026. [Apple SDK requirement](https://developer.apple.com/news/?id=ueeok6yw).
+5. Verify keyboard avoidance, safe areas, large text, screen readers, rotation, Android back, suspend/resume, no-draft force-close behavior, session expiry/revocation, secure-store round-trips, airplane mode and same-ID retries. Test both map-switch states against an isolated backend, including direct API attempts. Never use screenshots containing real responses for store material.
+6. Current authentication is password-based. Native session storage uses Keychain/Keystore through `getAppStorage`; do not add a plaintext fallback. **Universal/App Links and OAuth/password-recovery callback deep links are not configured in the native manifests.** Before adding them, choose an owned HTTPS domain, configure verified Android asset links/iOS associated domains and an allowlisted callback handler with PKCE/state validation. No unvalidated URL may select a research route or inject a token. The map's backend guard must remain authoritative regardless of route.
+7. Inventory app and plugin data access and required-reason APIs; verify the final archive's privacy manifest rather than guessing declarations from the web source. Complete Apple's App Privacy details, Google Play Data safety, a public privacy/support URL and any applicable health-app declarations. Report research answers, manually entered coarse geography, staff authentication and backend diagnostic processing accurately; “no names requested” is not automatically “no data collected.” [Apple privacy details](https://developer.apple.com/app-store/app-privacy-details/), [Google Play Data safety](https://support.google.com/googleplay/android-developer/answer/10787469).
+
+### Accounts and unavoidable distribution costs
+
+Google Play developer registration is **US$25 one time**, with identity and applicable device verification; the owner chooses personal or organization registration. [Google registration](https://support.google.com/googleplay/android-developer/answer/6112435). For affected new personal accounts, production access requires a closed test with **at least 12 testers continuously opted in for 14 days**, then an application for production access; review is not guaranteed. [Testing requirements](https://support.google.com/googleplay/android-developer/answer/14151465).
+
+Apple Developer Program membership is normally **US$99/year** or regional equivalent; eligible accredited educational/nonprofit/government institutions may request a waiver. Organization enrollment has legal-entity/authority and identity requirements. A free Apple account is not a substitute for App Store distribution membership. [Apple enrollment](https://developer.apple.com/programs/enroll/).
+
+No account purchase or app publication is authorized by these instructions. Domain, email, test devices and access to a Mac may add costs. The PWA can be distributed as a website before store release without either store membership.

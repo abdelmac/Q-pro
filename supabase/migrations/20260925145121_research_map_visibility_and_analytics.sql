@@ -82,12 +82,11 @@ BEGIN
       MESSAGE = '{"code":"42501","message":"The public participation map is disabled"}',
       DETAIL = '{"status":403,"headers":{"Cache-Control":"no-store, private, max-age=0","Pragma":"no-cache","Expires":"0"}}';
   END IF;
-  -- Preserve compatibility for existing authorized editor clients while public
-  -- visitors still receive only the single, immutable unfiltered release.
+  -- Public release has one permitted query shape, independent of caller role.
   IF p_respondent_type IS DISTINCT FROM 'all' OR p_country_code IS NOT NULL
      OR p_language IS DISTINCT FROM 'all' OR p_month_from IS NOT NULL
      OR p_month_to IS NOT NULL OR p_data_version IS DISTINCT FROM 'all' THEN
-    PERFORM private.require_portal_role(ARRAY['doctor', 'professor']);
+    RAISE EXCEPTION USING ERRCODE='42501',MESSAGE='Public map filters are not available';
   END IF;
   RETURN private.get_participation_map_stats(p_respondent_type, p_country_code,
     p_language, p_month_from, p_month_to, p_data_version);

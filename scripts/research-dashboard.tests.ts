@@ -328,17 +328,17 @@ assert.equal(
 const readOnlyDashboardItems = getDashboardNavItems(false, 'en');
 assert.deepEqual(
   readOnlyDashboardItems.map(({ id }) => id),
-  ['specialists', 'students', 'algorithm', 'map'],
+  ['specialists', 'students', 'analytics', 'algorithm', 'map'],
   'Every authorized portal account must see both cohorts followed by the algorithm guide',
 );
 assert.deepEqual(
   readOnlyDashboardItems.map(({ section }) => section),
-  ['data', 'data', 'method', 'data'],
+  ['data', 'data', 'data', 'method', 'data'],
   'The sidebar must separate research cohorts from the algorithm method guide',
 );
 assert.deepEqual(
   getDashboardNavItems(true, 'en').map(({ id }) => id),
-  ['specialists', 'students', 'algorithm', 'map', 'configuration', 'public-features'],
+  ['specialists', 'students', 'analytics', 'algorithm', 'map', 'configuration', 'public-features'],
   'Public feature settings and catalog configuration belong only to accounts with edit permission',
 );
 assert.equal(readOnlyDashboardItems.some(({ id }) => id === 'map'), true, 'Authorized read-only researchers can use the private research map');
@@ -350,17 +350,17 @@ for (const [language, label] of [['en', 'Participation map'], ['fr', 'Carte de p
 }
 assert.deepEqual(
   readOnlyDashboardItems.map(({ label }) => label),
-  ['Specialists', 'Students & explorers', 'How the algorithm works', 'Participation map'],
+  ['Specialists', 'Students & explorers', 'Research analyses', 'How the algorithm works', 'Participation map'],
   'The dashboard must name both participant audiences instead of silently grouping explorers as students',
 );
 assert.deepEqual(
   getDashboardNavItems(false, 'fr').map(({ label }) => label),
-  ['Spécialistes', 'Étudiants & explorateurs', 'Comprendre l’algorithme', 'Carte de participation'],
+  ['Spécialistes', 'Étudiants & explorateurs', 'Analyses de recherche', 'Comprendre l’algorithme', 'Carte de participation'],
   'The dashboard sidebar must expose French labels for every generally available view',
 );
 assert.deepEqual(
   getDashboardNavItems(false, 'ro').map(({ label }) => label),
-  ['Specialiști', 'Studenți și exploratori', 'Cum funcționează algoritmul', 'Harta participării'],
+  ['Specialiști', 'Studenți și exploratori', 'Analize de cercetare', 'Cum funcționează algoritmul', 'Harta participării'],
   'The dashboard sidebar must expose Romanian labels for every generally available view',
 );
 assert.deepEqual(

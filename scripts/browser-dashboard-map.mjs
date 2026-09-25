@@ -54,7 +54,7 @@ export async function verifyBrowserDashboardMap({ context, page, fixtureDefiniti
       await page.waitForLoadState('networkidle');
       await noOverflow(`${role} initial cohort before opening the map`);
       const sidebar = await openSidebar(mobile);
-      assert.deepEqual(await sidebar.locator('[data-dashboard-view]').evaluateAll(buttons => buttons.map(button => button.dataset.dashboardView)), ['specialists', 'students', 'map', 'algorithm', 'configuration', 'public-features']);
+      assert.deepEqual(await sidebar.locator('[data-dashboard-view]').evaluateAll(buttons => buttons.map(button => button.dataset.dashboardView)), ['specialists', 'students', 'analytics', 'map', 'algorithm', 'configuration', 'public-features']);
       await sidebar.getByRole('button', { name: 'Participation map', exact: true }).click();
       await page.getByRole('heading', { level: 1, name: 'Participation map', exact: true }).waitFor();
       await map.getByRole('button', { name: copy.all, exact: true }).waitFor();
@@ -144,7 +144,7 @@ export async function verifyBrowserDashboardMap({ context, page, fixtureDefiniti
       await page.waitForLoadState('networkidle');
       await noOverflow(`Researcher ${mobile ? 'mobile' : 'desktop'} cohort`);
       const sidebar = await openSidebar(mobile);
-      assert.deepEqual(await sidebar.locator('[data-dashboard-view]').evaluateAll(buttons => buttons.map(button => button.dataset.dashboardView)), ['specialists', 'students', 'map', 'algorithm']);
+      assert.deepEqual(await sidebar.locator('[data-dashboard-view]').evaluateAll(buttons => buttons.map(button => button.dataset.dashboardView)), ['specialists', 'students', 'analytics', 'map', 'algorithm']);
       assert.equal(await page.locator('[data-dashboard-view="public-features"]').count(), 0, 'Researchers cannot change public visibility');
       await sidebar.locator('[data-dashboard-view="map"]').click();
       await map.getByRole('button', { name: copy.all, exact: true }).waitFor();

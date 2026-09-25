@@ -37,6 +37,8 @@ import PortalTestDataPanel, { PORTAL_TEST_COPY } from '@/components/PortalTestDa
 import { usePortalTestDataset } from '@/lib/usePortalTestDataset';
 import { filterTestSpecialists, filterTestStudents, hasCompleteTestInterview, markPortalTestCsv } from '@/lib/portalTestDashboard';
 import BrandLogo from './BrandLogo';
+import PublicFeaturesSettings from './PublicFeaturesSettings';
+import ResearchAnalytics from './ResearchAnalytics';
 import {
   ArrowLeft,
   BarChart3,
@@ -964,7 +966,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
   };
 
   const selectDashboardView = (nextView: DashboardView) => {
-    if (nextView === 'map' && !portalProfile?.can_edit) return;
+    if ((nextView === 'public-features' || nextView === 'configuration') && !portalProfile?.can_edit) return;
     if (sidebarOpen) closeMobileSidebar();
     if (view === nextView) return;
     setError(null);
@@ -989,6 +991,14 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
   };
 
   const viewCopy: Record<DashboardView, { title: string; description: string }> = {
+    'public-features': {
+      title: french ? 'Paramètres · Fonctions publiques' : romanian ? 'Setări · Funcții publice' : 'Settings · Public features',
+      description: french ? 'Contrôles administratifs audités.' : romanian ? 'Controale administrative auditate.' : 'Audited administrative controls.',
+    },
+    analytics: {
+      title: french ? 'Analyses de recherche' : romanian ? 'Analize de cercetare' : 'Research analyses',
+      description: french ? 'Cohortes, réponses aux items et analyses reproductibles.' : romanian ? 'Cohorte, răspunsuri la itemi și analize reproductibile.' : 'Cohorts, item responses and reproducible analyses.',
+    },
     specialists: {
       title: french ? 'Cohorte des spécialistes' : romanian ? 'Cohorta specialiștilor' : 'Specialist cohort',
       description: french
@@ -1185,12 +1195,15 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
           />
         )}
 
+        {view === 'public-features' && portalProfile?.can_edit && <PublicFeaturesSettings testMode={testMode} />}
+        {view === 'analytics' && <ResearchAnalytics testMode={testMode} />}
+
         {view === 'configuration' && testMode && <p data-test-configuration-locked className="rounded-xl border border-amber-300 bg-amber-50 p-5 text-sm text-amber-950">{testCopy.locked}</p>}
         {view === 'configuration' && portalProfile && !testMode && (
           <SpecialtyConfigurationEditor french={french} portalProfile={portalProfile} onPublished={() => void refreshCatalog()} />
         )}
 
-        {view === 'map' && portalProfile?.can_edit && (
+        {view === 'map' && portalProfile && (
           <Suspense fallback={<div role="status" className="flex items-center gap-2 rounded-2xl bg-white p-6 text-sm text-brand-800"><Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />{MAP_TRANSLATIONS[lang].loading}</div>}>
             <ParticipationMap embedded onBack={goToPreviousDashboardPage} refreshKey={mapRefreshKey} testDataset={testMode ? testDataset ?? undefined : undefined} />
           </Suspense>

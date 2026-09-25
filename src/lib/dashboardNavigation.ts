@@ -1,5 +1,6 @@
 import {
   GitCompare,
+  BarChart3,
   Globe2,
   GraduationCap,
   Settings2,
@@ -10,7 +11,7 @@ import type { Language } from '@/data/i18n';
 import { PUBLIC_FEATURES_TRANSLATIONS } from '@/data/publicFeaturesI18n';
 
 export type CohortView = 'specialists' | 'students';
-export type DashboardView = CohortView | 'algorithm' | 'map' | 'configuration' | 'public-features';
+export type DashboardView = CohortView | 'analytics' | 'algorithm' | 'map' | 'configuration' | 'public-features';
 
 export interface DashboardNavItem {
   id: DashboardView;
@@ -69,6 +70,12 @@ export function getDashboardNavItems(canEdit: boolean, lang: Language): Dashboar
       label: lang === 'fr' ? 'Étudiants & explorateurs' : lang === 'ro' ? 'Studenți și exploratori' : 'Students & explorers',
       section: 'data',
       icon: GraduationCap,
+    },
+    {
+      id: 'analytics',
+      label: lang === 'fr' ? 'Analyses de recherche' : lang === 'ro' ? 'Analize de cercetare' : 'Research analyses',
+      section: 'data',
+      icon: BarChart3,
     },
     {
       id: 'algorithm',
