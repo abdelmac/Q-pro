@@ -1,0 +1,419 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Specialty Match — Technical Handover &amp; One-Year Return Guide</title>
+<style>
+@page { size: A4; margin: 14mm 14mm 16mm; }
+* { box-sizing: border-box; }
+html { background: #fff; color: #243c4b; font-family: Arial, Helvetica, sans-serif; font-size: 10.4pt; line-height: 1.46; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body { margin: 0; width: 182mm; }
+.sheet { width: 182mm; height: 264mm; position: relative; break-after: page; padding-top: 2mm; }
+.sheet:last-child { break-after: auto; }
+.kicker { color: #008d94; font-size: 8pt; font-weight: 700; letter-spacing: 1.7px; text-transform: uppercase; margin: 0 0 6mm; }
+h1 { color: #073f76; font-size: 35pt; line-height: 1.07; letter-spacing: -1.3px; margin: 8mm 0 6mm; }
+h2 { color: #073f76; font-size: 23pt; line-height: 1.16; letter-spacing: -.6px; margin: 0 0 6mm; }
+h3 { color: #075e79; font-size: 12pt; margin: 5mm 0 2mm; }
+p { margin: 0 0 3mm; }
+ul, ol { padding-left: 5mm; margin: 2mm 0 4mm; }
+li { margin-bottom: 2mm; }
+strong { color: #173d59; }
+a { color: #086c99; text-decoration: none; }
+code { font-family: Consolas, 'Courier New', monospace; font-size: 8.8pt; overflow-wrap: anywhere; }
+pre { font: 8.8pt/1.5 Consolas, 'Courier New', monospace; white-space: pre-wrap; overflow-wrap: anywhere; background: #edf4f7; border: 1px solid #d8e5eb; border-radius: 7px; padding: 3mm 4mm; margin: 3mm 0; }
+table { width: 100%; border-collapse: collapse; margin: 3mm 0 4mm; font-size: 9.3pt; line-height: 1.38; table-layout: fixed; }
+th { text-align: left; background: #eaf3f8; color: #073f76; font-size: 8.7pt; padding: 2.4mm; border-bottom: 1px solid #bdd4e3; }
+td { padding: 2.3mm 2.4mm; border-bottom: 1px solid #dce7eb; vertical-align: top; overflow-wrap: anywhere; }
+tr { break-inside: avoid; }
+.small { font-size: 8.8pt; line-height: 1.42; }
+.muted { color: #617482; }
+.lead { font-size: 13pt; line-height: 1.5; color: #526978; }
+.callout { border-left: 3px solid #08a5a8; background: #eaf8f6; padding: 3.2mm 4mm; border-radius: 0 6px 6px 0; margin: 4mm 0; }
+.warning { border-left-color: #c68a25; background: #fff5df; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4mm; }
+.card { border: 1px solid #d8e5eb; border-radius: 9px; padding: 4mm; }
+.card h3 { margin-top: 0; }
+.cover { padding-top: 2mm; }
+.logo { width: 29mm; height: 29mm; }
+.coverline { height: 2mm; width: 42mm; background: linear-gradient(90deg,#0875d1,#00b9ac); margin: 7mm 0; }
+.cover .facts { display: grid; grid-template-columns: repeat(3,1fr); gap: 3mm; margin: 9mm 0; }
+.fact { background: #edf5fa; padding: 5mm 3mm; border-radius: 8px; }
+.fact b { display: block; font-size: 19pt; color: #07457e; }
+.toc { columns: 2; column-gap: 10mm; font-size: 9.4pt; }
+.toc div { display:flex; gap: 3mm; margin-bottom: 3mm; break-inside: avoid; }
+.toc b { color: #0a9395; }
+.flow { display: flex; align-items: stretch; gap: 2mm; margin: 5mm 0; }
+.flow .node { flex: 1; background: #edf5fa; border: 1px solid #bfd8e5; border-radius: 7px; padding: 4mm 3mm; font-size: 9pt; }
+.flow .arrow { display:flex; align-items:center; color:#059ca4; font-size:19pt; }
+.tag { font-size: 8pt; background: #e8f6f1; color: #146a57; border-radius: 4px; padding: 1mm 2mm; white-space: nowrap; }
+.rule { border-top: 1px solid #cfdee6; padding-top: 3mm; margin-top: 5mm; }
+.tight li { margin-bottom: 1.5mm; }
+.links a { overflow-wrap: anywhere; }
+</style></head><body>
+
+<section class="sheet cover" id="cover">
+<img class="logo" src="@@LOGO@@" alt="Specialty Match compass logo">
+<p class="kicker" style="margin-top:6mm">Owner &amp; maintainer handbook · Edition 01</p>
+<h1>Specialty Match<br>Technical handover</h1>
+<p class="lead">The technology, the research rules, and the practical knowledge you need to return confidently after a year.</p>
+<div class="coverline"></div>
+<div class="facts"><div class="fact"><b>81</b>self-assessment items</div><div class="fact"><b>58</b>specialty narratives</div><div class="fact"><b>3</b>languages &amp; audiences</div></div>
+<div class="callout"><strong>The project in one sentence</strong><br>A multilingual medical-exploration application built with React and TypeScript, with a versioned matching engine, Supabase research storage and staff authentication, an administrative portal, and shared web/mobile code.</div>
+<h3>Read this first</h3>
+<p>This is a <strong>repository snapshot dated 25 September 2026</strong>, based on Git revision <code>@@GIT_COMMIT@@</code> and the accompanying source, migrations and test reports. A file existing in the repository does not prove that it has been deployed.</p>
+<p>The live database, provider accounts and app stores were not contacted to verify release status while preparing this PDF. The guide contains <strong>no passwords, API-key values, access tokens, patient information or research responses</strong>.</p>
+<div class="callout warning"><strong>Most important rule:</strong> verify and update the database before publishing a frontend that needs new RPCs. Back up first. Never reset production to make local tests pass.</div>
+<p class="small muted rule">Project names used in files: Specialty Match / Q Project / Q-pro. The npm package still has its original starter name; that is not the product’s research or release version.</p>
+</section>
+
+<section class="sheet" id="return">
+<p class="kicker">01 · Return after one year</p><h2>Your first hour back</h2>
+<ol class="tight">
+<li><strong>Recover ownership.</strong> Locate GitHub, Supabase, hosting/DNS, backup, SMTP and signing-key access through your password manager. Check who can recover each account and its MFA.</li>
+<li><strong>Identify what is actually live.</strong> Compare the deployed Git SHA, hosting release and database migration history. Do not assume <code>main</code>, this PDF or the latest local folder matches production.</li>
+<li><strong>Protect the current data.</strong> Confirm the latest encrypted backup and successful restore drill. Do not upgrade, migrate, clean up or delete data before this check.</li>
+<li><strong>Reproduce the recorded environment.</strong> Start from the lockfile and Node 24 baseline, in a branch. Use synthetic staging data, not the real research database.</li>
+<li><strong>Run the checks.</strong> Frontend tests are not substitutes for real Supabase database/security tests. Check access, submission receipts, map visibility and exports.</li>
+<li><strong>Review the changes since this date.</strong> Runtime support, security advisories, provider prices, consent rules and native-store requirements will have moved. Plan upgrades separately from recovery.</li>
+</ol>
+<div class="callout"><strong>Do not “fix everything” with a bulk dependency update.</strong> First reproduce the baseline; then upgrade one component at a time, with tests and a rollback plan.</div>
+<h3>Where to look in this guide</h3>
+<div class="toc">
+<div><b>03</b><a href="#architecture">Architecture and data flow</a></div>
+<div><b>04</b><a href="#stack">Technology and version inventory</a></div>
+<div><b>05</b><a href="#repository">Repository and local setup</a></div>
+<div><b>06</b><a href="#product">Product rules and content</a></div>
+<div><b>07</b><a href="#algorithm">Matching engine and provenance</a></div>
+<div><b>08</b><a href="#database">Database and API structure</a></div>
+<div><b>09</b><a href="#security">Access, privacy and secrets</a></div>
+<div><b>10</b><a href="#dashboard">Dashboard and map operation</a></div>
+<div><b>11</b><a href="#research">Evaluation and private exports</a></div>
+<div><b>12</b><a href="#deployment">Deployment and environments</a></div>
+<div><b>13</b><a href="#mobile">PWA and native applications</a></div>
+<div><b>14</b><a href="#tests">Verification and release gates</a></div>
+<div><b>15</b><a href="#operations">Backups, maintenance and costs</a></div>
+<div><b>16</b><a href="#incidents">Incidents and owner checklist</a></div>
+<div><b>17</b><a href="#references">Reference map and glossary</a></div>
+</div>
+<h3>Source-of-truth order</h3>
+<p>For a live incident: actual deployed revision and database state → matching source/migrations → latest dated test and operations reports → older documents. This PDF is a map, not a replacement for those records.</p>
+<p class="small muted">Do not treat an old chat, saved login code or copied project URL as authoritative configuration. Backend URLs can change, and native bundles may still point to an earlier project.</p>
+</section>
+
+<section class="sheet" id="architecture">
+<p class="kicker">02 · Architecture</p><h2>One application, clear boundaries</h2>
+<div class="flow"><div class="node"><strong>GitHub</strong><br>Source, lockfile, migrations, automated checks</div><div class="arrow">→</div><div class="node"><strong>Static hosting</strong><br>Built HTML, CSS, JavaScript, icons</div><div class="arrow">→</div><div class="node"><strong>Browser / mobile</strong><br>React UI and shared scoring engine</div></div>
+<div class="flow"><div class="node"><strong>Explicit Save / staff action</strong><br>HTTPS request through Supabase JS</div><div class="arrow">→</div><div class="node"><strong>Supabase API + Auth</strong><br>JWT identity, validated RPCs, PostgREST</div><div class="arrow">→</div><div class="node"><strong>PostgreSQL</strong><br>Responses, published models, roles, audits, aggregates</div></div>
+<h3>What runs where?</h3>
+<table><thead><tr><th style="width:26%">Layer</th><th>Responsibility</th></tr></thead><tbody>
+<tr><td>Public client</td><td>Questionnaire state, translations, specialty explorer, compatibility scoring and results. No privileged server key.</td></tr>
+<tr><td>Research client</td><td>Authorized staff controls and paginated data. Core cohort statistics are database-computed, not a whole-database browser calculation.</td></tr>
+<tr><td>Database</td><td>Durable writes, idempotency, validation, access control, catalog publication, map release, bounded analysis records.</td></tr>
+<tr><td>Operator workstation</td><td>Explicitly authorized, bounded advanced analysis/export with the same TypeScript scoring code; private output files.</td></tr>
+<tr><td>Native shell</td><td>Capacitor wraps the built web app and connects secure storage/lifecycle. It does not introduce a second matching algorithm.</td></tr>
+</tbody></table>
+<h3>A submission’s lifecycle</h3>
+<p>Select an audience → answer in memory → obtain the ranking with a published catalog → choose whether to save with consent → freeze the submission UUID, answers, catalog and scoring context → send or queue it → call it saved only when the server returns that same UUID.</p>
+<p>Retrying the same accepted payload returns the original receipt. Reusing its ID with different content must fail, not silently update the research row.</p>
+<div class="callout"><strong>Not part of this architecture:</strong> no required AI API, trained-model service, dedicated Express/Next.js server, Redis, Kubernetes or public response-file bucket. A static frontend host does not provide database backups.</div>
+<p class="small muted">Primary code: <code>src/App.tsx</code>, <code>src/lib/supabase.ts</code>, <code>src/lib/scoring.ts</code>, <code>supabase/migrations/</code>.</p>
+</section>
+
+<section class="sheet" id="stack">
+<p class="kicker">03 · Technology inventory</p><h2>The stack you are maintaining</h2>
+<p>Versions below are the repository’s locked baseline, not a claim that they are the latest or still supported when you return. Several manifest entries use ranges; <code>package-lock.json</code> fixes the resolved dependency tree.</p>
+<table><thead><tr><th style="width:31%">Technology</th><th style="width:19%">Baseline</th><th>Why it is here</th></tr></thead><tbody>
+<tr><td>React + React DOM</td><td>18.3.1</td><td>Components, state and the web interface.</td></tr>
+<tr><td>TypeScript</td><td>5.6.3</td><td>Typed application, scoring, API contracts and tests.</td></tr>
+<tr><td>Vite</td><td>5.4.8</td><td>Development server and static production builds.</td></tr>
+<tr><td>Tailwind CSS</td><td>3.4.17</td><td>Utility styling; PostCSS 8.4.47 and Autoprefixer 10.4.20 process CSS.</td></tr>
+<tr><td>Lucide React</td><td>0.446.0</td><td>Interface icons; the product logo is a separate vector asset.</td></tr>
+<tr><td>Supabase JS</td><td>2.57.4</td><td>Auth sessions, database reads and RPC calls.</td></tr>
+<tr><td>PostgreSQL / PostgREST</td><td>Local PG 17</td><td>Relational data and SQL-backed HTTPS API. Verify the live database version independently.</td></tr>
+<tr><td>Capacitor core / CLI / platforms</td><td>8.5.2</td><td>Android/iOS wrappers; App plugin 8.0.1 adds lifecycle integration.</td></tr>
+<tr><td>Capacitor secure storage</td><td>8.0.0</td><td><code>@aparajita/capacitor-secure-storage</code> for native protected storage.</td></tr>
+<tr><td>Playwright</td><td>1.63.0</td><td>Browser workflows, responsive checks and PWA tests.</td></tr>
+<tr><td>ESLint / esbuild</td><td>9.12.0 / 0.21.5</td><td>Linting and bundling isolated tests/operator worker code.</td></tr>
+<tr><td>Node.js + npm</td><td>Node 24 CI</td><td>Build/test/operator tools. Node is not the deployed static website server.</td></tr>
+<tr><td>Supabase CLI + Docker</td><td>CLI 2.115.0 in CI</td><td>Disposable local backend, migrations and real database tests.</td></tr>
+<tr><td>pgTAP / pg_cron</td><td>DB extensions</td><td>Database assertions and monthly map publication.</td></tr>
+</tbody></table>
+<p><strong>Map:</strong> custom SVG with bundled Natural Earth geometry; no Leaflet, tile-server API key, GPS request or commercial map SDK in this checkout.</p>
+<p><strong>Other formats/tools:</strong> SQL/PLpgSQL migrations, Git/GitHub Actions YAML, JSON/CSV research exports, HTML/Markdown documentation, SVG/PNG/ICO assets. Python is used by an existing Word-document generator, not the production scoring engine.</p>
+</section>
+
+<section class="sheet" id="repository">
+<p class="kicker">04 · Repository and local development</p><h2>Find things quickly</h2>
+<table><thead><tr><th style="width:42%">Path</th><th>What to change or inspect there</th></tr></thead><tbody>
+<tr><td><code>src/main.tsx · src/App.tsx</code></td><td>Bootstrapping, providers, audience and page/quiz orchestration.</td></tr>
+<tr><td><code>src/components/</code></td><td>Questionnaire, results, explorer, dashboard, map and editors.</td></tr>
+<tr><td><code>src/data/</code></td><td>81 items, traits, values, specialties, translations, narratives, geography.</td></tr>
+<tr><td><code>src/lib/scoring.ts</code></td><td>Shared deterministic matching calculations.</td></tr>
+<tr><td><code>src/lib/researchDashboard.ts</code><br><code>researchEvaluation.ts</code></td><td>Eligibility, canonical analysis, export serializers and extended evaluation.</td></tr>
+<tr><td><code>src/lib/supabase.ts</code><br><code>database.types.ts</code></td><td>Client configuration, validated submissions, queue transport and database types.</td></tr>
+<tr><td><code>supabase/migrations/ · tests/</code></td><td>Ordered database history and SQL security/regression tests.</td></tr>
+<tr><td><code>public/ · scripts/</code></td><td>Static assets/service worker; generators, verification and operator tools.</td></tr>
+<tr><td><code>android/ · ios/</code></td><td>Actual native projects, platform manifests and signing-related configuration.</td></tr>
+<tr><td><code>docs/ · .github/workflows/</code></td><td>Handover/operations evidence; separate frontend and database CI.</td></tr>
+</tbody></table>
+<h3>Recreate a safe development session</h3>
+<pre>git status --short
+node --version
+npm --version
+npm ci
+# Create .env from .env.example using a SYNTHETIC development project.
+npm run dev</pre>
+<p>Use Node 24 to reproduce the recorded baseline. On Windows PowerShell, <code>npm.cmd</code> can be used if script execution policy blocks <code>npm</code>. Open the URL Vite prints; the default base is <code>/Q-pro/</code>.</p>
+<p><code>.env</code> is ignored by Git. Only a public backend URL and publishable key belong in <code>VITE_*</code> variables. Without a separate development backend, leave remote write configuration unset and use mocked tests instead of production.</p>
+<div class="callout warning">Preserve <code>package-lock.json</code> and existing user changes. Do not rename historical migrations—including the old <code>.sql.sql</code> filenames—or replay migrations on a restored schema without reconciling its history.</div>
+</section>
+
+<section class="sheet" id="product">
+<p class="kicker">05 · Product rules and content</p><h2>Behavior to preserve</h2>
+<div class="grid"><div class="card"><h3>Three audiences</h3><p><strong>Before medicine:</strong> curious explorers.<br><strong>During medicine:</strong> medical students.<br><strong>After medicine:</strong> specialists.</p><p class="small">Audience selection is a questionnaire category, never an administrative permission.</p></div><div class="card"><h3>Three languages</h3><p>English, Romanian and French use repository translation dictionaries. Change every relevant language together; retain stable question IDs and canonical specialty names.</p></div></div>
+<h3>Questionnaire and results</h3>
+<ul>
+<li>The main questionnaire contains <strong>81 ratings on the 1–10 scale</strong>; career values and five dimension priorities are separate inputs. Mobile controls must not change the underlying numeric scale.</li>
+<li>Students and explorers may add an <strong>optional</strong> written perspective on medicine. Saving remains a choice. A student’s optional study year is <strong>1–6</strong>; explorers have no study year.</li>
+<li>Specialists can answer the main questionnaire or skip directly to the qualitative interview. Skipping is explicit and produces no invented quantitative ranking.</li>
+<li>The specialist interview asks about the specialty now, changes over time, its most important quality, choosing it again, and a question a student should ask. A “no” rechoice requires an explanation.</li>
+<li>Results show the top 10 specialties with narratives and bibliography where supplied. Do not reinstate removed calculated-analysis or empty-reference sections by accident.</li>
+<li>Back navigation and scroll-to-top are shared behaviors. Unfinished answers remain in memory across in-app navigation but are not restored after reload or closing.</li>
+</ul>
+<h3>Editorial ownership</h3>
+<p>The Romanian source is at <code>docs/sources/specialist-specialty-narratives-ro.txt</code>. It has 58 numbered sections but <strong>57 unique specialties</strong>: two Pulmonology sections merge; Pathology is absent. Do not label every catalog narrative specialist-authored. <code>src/data/specialtyNarratives.ts</code> and its JSON parts preserve provenance and translations.</p>
+<p>The staff editor can change versioned descriptions, clinical summaries and target profiles without editing the code. Only authorized publication makes a draft active.</p>
+<p>Branding uses <code>BrandLogo.tsx</code>, <code>public/branding/compass.svg</code> and generated web/native icons. <code>npm run generate:icons</code> regenerates assets; <code>test:icons</code> checks them. The supplied raster artwork is retained, not the only UI logo format.</p>
+<p class="small muted">Check <code>src/config/features.ts</code>: public research CTA, specialty comparison, methodology and opposite-fit controls are currently off. A component existing in the code does not mean its public entry control is enabled. Navigation uses <code>appNavigation.ts</code>, not React Router.</p>
+</section>
+
+<section class="sheet" id="algorithm">
+<p class="kicker">06 · Scoring and reproducibility</p><h2>Understand what the score means</h2>
+<p>This is a <strong>deterministic compatibility engine</strong>, not an AI diagnosis, a probability of career success or an objectively tested measure of competence. Changing a specialty profile changes a model configuration, not proof of validity.</p>
+<ol class="tight">
+<li><strong>Normalize ratings:</strong> <code>((answer − 1) / 9) × 100</code>. Trait mappings define weights and forward/reverse alignment.</li>
+<li><strong>Build measured traits:</strong> weighted combinations of mapped answers. Selected career values do not inflate an already measured trait’s score; they adjust matching importance.</li>
+<li><strong>Handle value-only evidence:</strong> a selected value can introduce a trait absent from item measurement. The current selected value-only level is 90. Unmeasured traits are not silently replaced with 50.</li>
+<li><strong>Compare with each specialty:</strong> combine trait similarity with profile importance, dimension-priority multiplier and career-value multiplier. Divide by contributing weights. Missing dimensions can be unavailable rather than a false zero-fit.</li>
+<li><strong>Rank at full precision:</strong> display rounding must not create research ties. A preferred or actual specialty is not an input to the score.</li>
+</ol>
+<table><thead><tr><th style="width:40%">Identifier / concept</th><th>Recorded baseline</th></tr></thead><tbody>
+<tr><td>Questionnaire / values / specialties</td><td><code>q81-v1</code> / <code>career-values-v1</code> / <code>medical-specialties-v1</code></td></tr>
+<tr><td>Engine / trait mapping</td><td><code>scoring-engine-v2</code> / <code>question-traits-q81-v1</code></td></tr>
+<tr><td>Participant scoring / calibration</td><td><code>client-scoring-v2</code> / <code>calibration-v2-qualitative</code></td></tr>
+<tr><td>Canonical research analysis</td><td><code>dashboard-canonical-default-v3</code>: exact full-precision ties.</td></tr>
+<tr><td>SQL item analysis</td><td><code>research-sql-q81-v1</code>: original answer statistics, not a second matching engine.</td></tr>
+<tr><td>Runtime catalog</td><td>Immutable published UUID + revision; checksum identifies the profile/mapping configuration.</td></tr>
+</tbody></table>
+<div class="callout warning"><strong>Structural limits remain:</strong> <code>manual_orientation</code> and <code>prevention_orientation</code> are not uniformly measured across the cohort. Top-k fit alone cannot justify changing those targets or claiming validation.</div>
+<p class="small">New <code>scoring_context</code> records actual five-slider settings and engine/mapping/model identifiers at Save. Historical missing settings stay null. Canonical evaluation explicitly uses default priorities; it does not reconstruct what an older participant saw. Client-reported context is provenance, not server attestation.</p>
+</section>
+
+<section class="sheet" id="database">
+<p class="kicker">07 · Database and API</p><h2>Three schemas, distinct responsibilities</h2>
+<table><thead><tr><th style="width:44%">Main objects</th><th>Purpose and relationships</th></tr></thead><tbody>
+<tr><td><code>public.student_responses</code></td><td>Students and explorers share this table; <code>participant_role</code> distinguishes them. Ratings, values, optional reflection/year/geography, stored scores and provenance.</td></tr>
+<tr><td><code>public.specialist_responses</code></td><td>Actual specialty, optional quantitative participation, qualitative interview, original metadata and scoring context.</td></tr>
+<tr><td><code>auth.users</code><br><code>private.researchers</code></td><td>Managed staff identity plus enabled application allowlist/role. They are not public participant profiles.</td></tr>
+<tr><td><code>private.trait_catalog</code><br><code>specialty_catalog_versions</code><br><code>specialty_catalog_entries</code><br><code>specialty_catalog_audit</code></td><td>Versioned editorial models and audit trail. A version has entries; responses retain the published version UUID/revision they used.</td></tr>
+<tr><td><code>private.participation_map_months</code><br><code>participation_map_cells</code></td><td>Sealed monthly public releases and suppressed/rounded cells; no live public query of raw locations.</td></tr>
+<tr><td><code>private.public_features</code><br><code>public_features_audit</code></td><td>Central public-map switch and actor/time/previous/new-value history.</td></tr>
+<tr><td><code>private.research_cohorts</code><br><code>research_analysis_runs</code><br><code>research_request_windows</code></td><td>Owner-specific live filters, frozen aggregate results/member digests, per-account throttle counters.</td></tr>
+<tr><td><code>private.portal_test_dataset</code></td><td>Removable synthetic generation recipe. Not 15 inserted research responses and not real consent.</td></tr>
+</tbody></table>
+<h3>Important API boundaries</h3>
+<p><code>get_active_specialty_catalog</code> reads published content; <code>current_user_portal_profile</code> checks staff access. New client submissions use <strong>participant v7</strong> and <strong>specialist v6</strong>. They retain collection schema <strong>5</strong> and <strong>3</strong> respectively: an RPC version and a row schema version are different things.</p>
+<p>The public and private map endpoints are now separate. Research functions provide bounded pages, aggregates, saved filters and recorded runs. Keep old submission RPCs for compatible historical/queued clients unless a reviewed deprecation plan says otherwise.</p>
+<div class="callout warning">An exposed schema is not unrestricted access. Raw research tables rely on explicit grants and RLS; private tables are accessed through narrow authorized RPCs. Never make them public to work around a permission error.</div>
+<p class="small muted">Primary references: <code>src/lib/database.types.ts</code>, <code>docs/BACKEND_AUDIT.md</code>, all 18 migration files in this snapshot. The generated/manual client types must remain aligned with SQL.</p>
+</section>
+
+<section class="sheet" id="security">
+<p class="kicker">08 · Security and privacy</p><h2>Identity is not authorization</h2>
+<table><thead><tr><th style="width:23%">Actor</th><th>Allowed scope</th></tr></thead><tbody>
+<tr><td>Public participant</td><td>Published catalog, validated consented submission, approved public aggregates only when enabled. No raw research reads.</td></tr>
+<tr><td>Ordinary signed-in user</td><td>Authentication alone grants no research permission. Being a specialist respondent grants no staff access.</td></tr>
+<tr><td>Researcher</td><td>Authorized research reads, analyses/exports and private map; owner-specific saved filters/runs.</td></tr>
+<tr><td>Doctor</td><td>Research access plus catalog draft editing and public-map settings; synthetic recipe controls.</td></tr>
+<tr><td>Professor</td><td>Doctor capabilities plus governed catalog publication and restoration.</td></tr>
+</tbody></table>
+<h3>Rules that must survive future refactoring</h3>
+<ul class="tight">
+<li>Authorize on the server using enabled <code>private.researchers</code> membership. Do not trust audience selection or user-editable JWT metadata.</li>
+<li>Use explicit grants, RLS and a restricted function search path. Privileged SQL functions need role checks and revoked default public execution.</li>
+<li>Never put secret/service-role keys, database passwords or operator tokens in <code>VITE_*</code>, the mobile bundle, Git, screenshots or this handbook.</li>
+<li>On expiry or revocation, clear private UI state and deny subsequent API calls. Hiding controls is not access control; previously downloaded files cannot be remotely erased.</li>
+<li>Do not log answers, narratives or tokens. Free text can identify someone even when names/emails are not requested. “No name field” is not a blanket anonymity claim.</li>
+</ul>
+<h3>Local storage is deliberately split</h3>
+<p><strong>Unsubmitted questionnaire drafts:</strong> memory only; no save/resume panel. <strong>Explicitly consented pending submissions:</strong> a separate frozen retry queue persists until sent, rejected, expired or removed. Browser storage is not encrypted; native storage uses the secure-storage adapter. A queued contribution is not yet saved on the server.</p>
+<p class="small">The current queue is bounded (10 entries and approximately one million serialized characters); automatic retry ends after seven days. Do not clear all browser data casually if an unsent consented contribution may still be present.</p>
+<div class="callout warning"><strong>Outstanding:</strong> approve consent/provenance disclosures, retention/deletion and research governance; implement approved anonymous-submission anti-abuse before broad recruitment. The staff analytics rate limit is not CAPTCHA or an Internet firewall.</div>
+</section>
+
+<section class="sheet" id="dashboard">
+<p class="kicker">09 · Administrative portal</p><h2>What each workspace is for</h2>
+<table><thead><tr><th style="width:28%">Area</th><th>Purpose / caution</th></tr></thead><tbody>
+<tr><td>Specialists</td><td>Paginated qualitative/quantitative records, eligibility and response details. Skipped questionnaires remain useful interviews, not quantitative training examples.</td></tr>
+<tr><td>Students &amp; explorers</td><td>Separate audience filters, optional study year/reflection, preferences and stored browser rankings. Preferences are not professional ground truth.</td></tr>
+<tr><td>Research analyses</td><td>Server-side recruitment counts, monthly/category/language/country/version groups, item distributions, Pearson correlation, saved cohorts and recorded runs.</td></tr>
+<tr><td>Participation map</td><td>Authorized private aggregate map with respondent, country, language, month range and data-version filters.</td></tr>
+<tr><td>How the algorithm works</td><td>Visual explanation of mappings, priorities, scoring and limits.</td></tr>
+<tr><td>Versioned configuration</td><td>Edit descriptions, summaries and target-profile drafts; publish/restore through separate role-governed actions.</td></tr>
+<tr><td>Settings · Public features</td><td>Audited public-map visibility switch, available only to authorized editors.</td></tr>
+</tbody></table>
+<h3>The map may correctly be empty</h3>
+<p>The public switch defaults to disabled and fails closed when it cannot be checked. Disabled means no public links, previews, geography widgets or public data endpoint access. Authorized private research access remains separate.</p>
+<p>When enabled, the map shows <strong>published submissions, not live totals or unique people</strong>. Only eligible closed-month cells with at least 10 submissions are released, rounded down to multiples of 5. Missing geography, the current month, suppressed cells and skipped specialist questionnaires do not become public counts.</p>
+<p>The monthly release is sealed and cannot be casually rewritten. <code>pg_cron</code> schedules publication at 01:15 on the first day of each month; check its history and UTC month boundaries. A newly submitted record need not appear immediately.</p>
+<h3>Testing without polluting research</h3>
+<p>Authorized editors can create/remove a recipe generating 5 specialists, 5 students and 5 explorers. Test mode stays separate, marks exports synthetic, and blocks live server analyses/settings changes. Remove the exact recipe through the UI; never delete real response tables to “clean up test data.”</p>
+<p class="small muted">A visibility check is refreshed on lifecycle events and every 30 seconds. Offline/failed checks hide the public map. Approved data previously seen by someone cannot be clawed back.</p>
+</section>
+
+<section class="sheet" id="research">
+<p class="kicker">10 · Research interpretation and exports</p><h2>Reproducible does not mean validated</h2>
+<div class="grid"><div class="card"><h3>Live cohort</h3><p>A saved named filter. New submissions can change its membership and counts.</p></div><div class="card"><h3>Frozen result</h3><p>A recorded analysis with filters, parameters, digest, model versions, time and derived results. Not a full raw-data backup.</p></div></div>
+<p>Always report the denominator: global submissions, filtered submissions, eligible questionnaires and exclusions are different totals. Missing optional metadata does not automatically exclude a valid questionnaire. Cohort comparisons may overlap and are not automatically independent samples.</p>
+<h3>What the analyses calculate</h3>
+<ul class="tight">
+<li><strong>Items:</strong> original 1–10 bins, n, missingness, mean, median, sample SD, floor/ceiling counts. Pearson correlations use eligible complete questionnaires; constant items give no coefficient.</li>
+<li><strong>Specialist evaluation:</strong> Top-1/3/5/10 recall, median rank and mean reciprocal rank. Inclusive ties use best rank, conservative ties worst rank. No rounded-score ties.</li>
+<li><strong>Groupings:</strong> submission-weighted and equally weighted observed-specialty summaries; language/metadata strata and trait profiles/distributions. Review flags never automatically remove people or questions.</li>
+<li><strong>Not claimed:</strong> population confidence intervals without a sampling basis, validated latent traits, factor analysis, language invariance or reliable unique-person counts.</li>
+</ul>
+<h3>Choose the right export path</h3>
+<table><thead><tr><th style="width:28%">Path</th><th>Bounds and interpretation</th></tr></thead><tbody>
+<tr><td>Browser export</td><td>Up to 1,000 filtered submissions; raw-wide, long, analytical CSV or JSON; metadata and SHA-256. Created-at cutoff/keyset pagination is not an atomic database snapshot.</td></tr>
+<tr><td>Server analysis</td><td>Up to 5,000 submissions, 20 retained results per owner, 10-second SQL timeout; 50 named cohorts. 30 successful expensive operations per five minutes per account.</td></tr>
+<tr><td>Operator worker</td><td>5,000 rows / 32 MiB input / 128 MiB output; progress, cancellation and three-minute default overall deadline. Before/after cohort checksum comparison; private files outside Git.</td></tr>
+</tbody></table>
+<p>The operator uses an authorized staff access token, not a service key, and evaluates the explicitly frozen <strong>repository-source catalog</strong> unless a separate candidate is supplied. It does not silently use the live published model. Candidate comparison fits no parameters and promotes nothing.</p>
+<p class="small">Use <code>npm run research:export -- --help</code> and <code>docs/RESEARCH_OPERATOR.md</code>. Distribute CSVs only with their manifest/model provenance. Digests are integrity labels, not encryption or anonymization. Training a future model requires fitting inside training splits and independent evaluation.</p>
+</section>
+
+<section class="sheet" id="deployment">
+<p class="kicker">11 · Deployment and environment configuration</p><h2>Database first, then the frontend</h2>
+<table><thead><tr><th style="width:30%">Build target</th><th style="width:43%">Command / output</th><th>Asset base</th></tr></thead><tbody>
+<tr><td>GitHub Pages</td><td><code>npm run build</code> → <code>dist/</code></td><td><code>/Q-pro/</code></td></tr>
+<tr><td>Root-hosted website</td><td><code>npm run build:hosted</code> → <code>dist/</code></td><td><code>/</code></td></tr>
+<tr><td>Native bundle</td><td><code>npm run build:mobile</code> → <code>dist-mobile/</code></td><td><code>./</code></td></tr>
+</tbody></table>
+<p>GitHub remains source control and CI. A Pages workflow is configured on <code>main</code>; Cloudflare Pages is the documented recommended alternative, <strong>not a confirmed active account/deployment</strong>. Hosting changes do not migrate or fix the database.</p>
+<h3>Environment variables: names, never secrets</h3>
+<table><thead><tr><th style="width:51%">Variable</th><th>Where / meaning</th></tr></thead><tbody>
+<tr><td><code>VITE_SUPABASE_URL</code></td><td>Public frontend build-time project URL.</td></tr>
+<tr><td><code>VITE_SUPABASE_PUBLISHABLE_KEY</code></td><td>Public client key; authorization still belongs to SQL/Auth.</td></tr>
+<tr><td><code>VITE_SUPABASE_ANON_KEY</code></td><td>Legacy fallback only, not a secret key.</td></tr>
+<tr><td><code>RESEARCH_SUPABASE_URL</code><br><code>RESEARCH_SUPABASE_PUBLISHABLE_KEY</code><br><code>RESEARCH_ACCESS_TOKEN</code></td><td>Operator-only environment. The access token is secret, short-lived and never a frontend variable.</td></tr>
+</tbody></table>
+<h3>Controlled release sequence</h3>
+<ol class="tight"><li>Confirm project identity, backup/restore readiness, role owners and an isolated synthetic staging environment.</li><li>Run frontend and real database tests; review applied versus pending migrations. Approve the production change.</li><li>Apply reviewed database changes; verify new RPCs, grants, denial cases and durable receipts.</li><li>Build with the correct host base and public backend settings. Test a preview, then promote it.</li><li>Record Git SHA, migration list, catalog revision, deployment ID, test evidence and rollback decision.</li></ol>
+<div class="callout warning"><strong>CI coordination gap:</strong> database tests and Pages deployment are separate workflows. Pages does not wait for the database workflow or apply migrations. A push to <code>main</code> can publish a frontend too early; use a branch and explicit release gating.</div>
+<p class="small">Changing build-time environment values requires a rebuild. New domains need reviewed Auth origins/redirects. Preview writes must use a synthetic backend. Do not copy a production service key into CI or mobile assets.</p>
+</section>
+
+<section class="sheet" id="mobile">
+<p class="kicker">12 · PWA and native applications</p><h2>Shared code, separate releases</h2>
+<h3>Installable web application</h3>
+<p>The manifest and generated icons provide an installable identity. <code>scripts/pwaBuildPlugin.ts</code> inserts a content-versioned allowlist into <code>public/sw.js</code>. Production web builds register it; development and Capacitor builds do not.</p>
+<p>Only exact public application assets enter this cache. API, settings, map, staff responses, auth and exports remain network-only. Offline map access is not an entitlement. New workers wait rather than force-reload an unfinished memory-only questionnaire.</p>
+<p><strong>Do not confuse public catalog caching with answer persistence.</strong> The current client can reuse a validated published catalog for up to 30 days. A failed refresh can still leave a usable cached catalog for a new assessment. Saving needs server acceptance of the referenced published version. This is not permission to restore old answers with a changed model.</p>
+<h3>Native projects in the repository</h3>
+<table><thead><tr><th style="width:30%">Configuration</th><th>Recorded baseline</th></tr></thead><tbody>
+<tr><td>Identity</td><td><code>ro.qpro.specialtymatch</code> · Specialty Match.</td></tr>
+<tr><td>Web bundle</td><td><code>capacitor.config.ts</code> points to <code>dist-mobile</code>; do not replace it with an arbitrary remote <code>server.url</code>.</td></tr>
+<tr><td>Android</td><td><code>android/</code>; recorded min SDK 24 and target/compile SDK 36; documented JDK 21 toolchain. Recheck future requirements.</td></tr>
+<tr><td>iOS</td><td><code>ios/</code>; minimum deployment baseline 15; macOS/Xcode and signing are required for actual archive/device release.</td></tr>
+<tr><td>Protected storage</td><td>Native secure-storage adapter for sessions and consented queue; browser localStorage is not equivalent protection.</td></tr>
+</tbody></table>
+<pre>npm run build:mobile
+npm run mobile:sync
+npm run mobile:android   # opens Android Studio
+npm run mobile:ios       # requires macOS/Xcode</pre>
+<div class="callout warning"><strong>Build status is layered:</strong> web assets built ≠ native compile passed ≠ device tests passed ≠ signed artifact created ≠ store published. The recorded handover does not prove signed Android/iOS releases.</div>
+<p>App/universal links and OAuth/password-recovery callbacks are not configured. Adding them needs an owned domain, verified platform associations and safe allowlisted handlers. Review keyboard, back navigation, safe areas, lifecycle, secure storage, offline behavior and privacy declarations on real devices.</p>
+</section>
+
+<section class="sheet" id="tests">
+<p class="kicker">13 · Verification and known gaps</p><h2>What to rerun before trusting a release</h2>
+<pre>npm run typecheck
+npm run lint
+npm run test:dashboard
+npm run test:map
+npm run test:portal-data
+npm run test:mobile
+npm run test:icons
+npm run test:specialty-content
+npm run test:research-operator
+npm run test:browser
+npm run test:pwa
+npm run build
+npm run build:mobile</pre>
+<p>Read each script before running it against any configured backend. The named browser/operator regression suites use synthetic fixtures; similarly named runtime scripts may contact a configured project. A production smoke test needs deliberate scope and authorization.</p>
+<h3>Recorded evidence—not new verification for this PDF</h3>
+<p>The 25 September implementation report records passing frontend, browser, PWA and web/mobile-asset builds. Local PostgreSQL/WASM checks passed 82 map assertions, 50 synthetic-data assertions, 72 research checks, 29 provenance checks and 18 throttle checks, plus 10 benchmark checks.</p>
+<p>The original <code>001_research_security.sql</code> could not run in that limited harness because full pgTAP helpers were missing. Docker was unavailable during the recorded work. Real Supabase HTTP/Auth behavior, response headers, independent-session races and advisors therefore remain release checks.</p>
+<h3>Database verification</h3>
+<p><code>.github/workflows/database-tests.yml</code> starts a disposable Supabase stack and runs pgTAP plus database lint. Locally, start Docker and use the compatible CLI; inspect <code>--help</code> before discovering start/test/lint/advisor commands. Never run a reset against the linked production project.</p>
+<h3>Priority backlog</h3>
+<ul class="tight"><li>Real integration tests and backed-up migration rollout; privacy/consent sign-off and anonymous anti-abuse.</li><li>Hosting/account/domain setup and actual release verification; monitoring ownership and tested recovery.</li><li>Native compile/device/signing/store checks; safe deep links if required.</li><li>Reduce the large public bundle only after measurement: recorded ~897 KB minified / 265 KB gzip. Advanced analysis is operator-run, not a durable dashboard job queue.</li></ul>
+<p class="small muted">Synthetic benchmarks show feasibility, not production capacity: ~1,000 rows were tested locally. See the dated report for timings, bounds and untested areas.</p>
+</section>
+
+<section class="sheet" id="operations">
+<p class="kicker">14 · Operations and budget</p><h2>Protect the data before optimizing costs</h2>
+<h3>A backup is only useful if it restores</h3>
+<p>Assign an owner. Keep encrypted off-site backups outside Git and public storage. Preserve schema, data, relevant roles/configuration, migration history, Auth/SMTP settings, recovery material and storage objects if any. A CSV research export is not a database backup.</p>
+<p>Rehearse restoration into an isolated compatible environment with outgoing email/hooks disabled. Check integrity, row counts, roles/RLS, published versions, consent, idempotency and the deletion ledger. Do not replay every migration over an already current restored schema.</p>
+<p>Documented pilot targets—not guarantees—are at most 24 hours of recoverable data loss during recruitment and recovery within one business day. The proposed rotation is seven daily/four weekly encrypted copies, with monthly restore drills, subject to approved retention obligations.</p>
+<h3>Maintenance rhythm</h3>
+<table><thead><tr><th style="width:23%">When</th><th>Review</th></tr></thead><tbody>
+<tr><td>During recruitment</td><td>Backend availability, save failures, queue reports, fresh backups and anonymous abuse.</td></tr>
+<tr><td>Weekly</td><td>Database/egress growth, quota forecasts, slow queries, account changes, security/dependency notices and invoices.</td></tr>
+<tr><td>Monthly</td><td>Restore drill, staff access review, retention/deletion, map publication history and deployment inventory.</td></tr>
+<tr><td>Before every release</td><td>Backup, tests, migration order, preview checks, consent/content changes and rollback compatibility.</td></tr>
+</tbody></table>
+<h3>Cost snapshot: verify again when you return</h3>
+<p>Official pages checked 25 September 2026: Supabase Free lists a 500 MB database, 1 GB file storage, 5 GB egress plus 5 GB cached egress, 50,000 Auth MAU, inactivity pausing after one week, and no automatic backups. Pro starts at $25/month; extras and taxes are separate. Public visitors are not automatically Auth MAU. <a href="https://supabase.com/pricing">[S1]</a></p>
+<p>Cloudflare Pages Free documents 500 builds/month, 20,000 files and 25 MiB per file. Static hosting is not unlimited backend capacity. Spending controls do not cover every explicitly provisioned Supabase add-on. <a href="https://developers.cloudflare.com/pages/platform/limits/">[S2]</a> <a href="https://supabase.com/docs/guides/platform/cost-control">[S3]</a></p>
+<div class="callout">Planning warnings: review growth at 300 MB database / 3 GB forecast monthly egress, before approaching free limits. These are internal warning thresholds, not provider promises. Domains, SMTP, app-store accounts and operational time need separate ownership/budget.</div>
+</section>
+
+<section class="sheet" id="incidents">
+<p class="kicker">15 · Incident playbook and ownership</p><h2>When something stops working</h2>
+<table><thead><tr><th style="width:30%">Symptom</th><th>First safe checks—not a blind fix</th></tr></thead><tbody>
+<tr><td>Blank site / missing assets</td><td>Inspect deployment logs, loaded asset paths and correct base (<code>/Q-pro/</code>, <code>/</code>, <code>./</code>). Confirm build-time backend settings without exposing keys.</td></tr>
+<tr><td>Login works, portal denied</td><td>Check enabled staff allowlist/role and expiry. Ordinary authentication is insufficient. Do not weaken RLS.</td></tr>
+<tr><td>Save fails / RPC missing</td><td>Compare frontend RPC versions with applied migrations, project health and quota. Preserve the immutable queued payload; never show success without a receipt.</td></tr>
+<tr><td>Public map hidden / empty</td><td>Check visibility, fresh online authorization, sealed months, small-cell suppression, geography and cron history. Do not expose raw rows to fill the map.</td></tr>
+<tr><td>Results look different</td><td>Compare engine, mappings, catalog UUID/revision, priorities and analysis mode. Default-priority research output may differ from personalized results.</td></tr>
+<tr><td>Analysis refused or slow</td><td>Check role, 429 retry delay, cohort/run caps and timeout. Narrow filters; use the bounded operator workflow when appropriate.</td></tr>
+<tr><td>Old UI after release</td><td>Check deployed SHA and service-worker lifecycle. Ask users to finish or knowingly discard open answers before closing all app windows and reopening online.</td></tr>
+<tr><td>Suspected leaked access</td><td>Use the incident process: revoke affected access/sessions, rotate exposed privileged secrets, preserve restricted evidence and verify direct API denial.</td></tr>
+</tbody></table>
+<h3>Record privately before you leave</h3>
+<p>Use a password manager or approved private operations register—not this PDF—for these locations and recovery details:</p>
+<ul class="tight"><li>Repository owner, production URL, active hosting project and deployed SHA.</li><li>Supabase project reference/region, actual migration list, billing owner and staff approvers.</li><li>DNS/domain and SMTP owners; MFA/recovery contacts; authorized token/secret custody.</li><li>Backup destination, encryption-key custodian, last successful restore and deletion ledger.</li><li>Android signing-key custody; Apple team/certificates; store listings and latest signed build IDs.</li><li>Research owner, consent/retention approval, incident contact and budget approval limit.</li></ul>
+<div class="callout warning">Frontend rollback does not roll back the database or installed native apps. Prefer reviewed forward database fixes that preserve raw responses and audit history. Restoring an old backup requires reconciling later accepted submissions and deletions.</div>
+</section>
+
+<section class="sheet" id="references">
+<p class="kicker">16 · Reference shelf</p><h2>Where the detailed answers live</h2>
+<table><thead><tr><th style="width:49%">Repository document</th><th>Use it for</th></tr></thead><tbody>
+<tr><td><code>docs/BACKEND_AUDIT.md</code></td><td>Current RPCs, schema additions, eligibility, security, rate limits and SQL benchmarks.</td></tr>
+<tr><td><code>docs/ANALYTICS_METHODS.md</code></td><td>Denominators, ties, quality flags, provenance and scientific limits.</td></tr>
+<tr><td><code>docs/RESEARCH_OPERATOR.md</code></td><td>Private bounded exports, token handling, manifests and candidate comparisons.</td></tr>
+<tr><td><code>docs/ARCHITECTURE_AND_BUDGET.md</code></td><td>Two hosting options, workload assumptions, provider limits and upgrade triggers.</td></tr>
+<tr><td><code>docs/OPERATIONS.md</code></td><td>Deployment, monitoring, encrypted backups, restore and rollback.</td></tr>
+<tr><td><code>docs/MOBILE.md</code></td><td>Native/PWA toolchains, signing, privacy and release checklist; verify cache behavior against current code.</td></tr>
+<tr><td><code>docs/IMPLEMENTATION_TEST_REPORT_2026-09-25.md</code></td><td>Dated test evidence, remaining work and manual release gates.</td></tr>
+</tbody></table>
+<div class="callout warning"><strong>Known documentation drift:</strong> older <code>SUPABASE.md</code>, database Word/Markdown guides and <code>PARTICIPATION_MAP.md</code> describe earlier RPCs or map permissions. Current code uses participant v7 / specialist v6 and a separate private-map RPC. An older claim that every new quiz needs an online catalog is too absolute because validated public catalog caching now exists.</div>
+<h3>Official references to revisit</h3>
+<p class="small links"><a href="https://supabase.com/pricing">S1 · Supabase pricing</a> · <a href="https://developers.cloudflare.com/pages/platform/limits/">S2 · Cloudflare Pages limits</a> · <a href="https://supabase.com/docs/guides/platform/cost-control">S3 · Supabase cost controls</a><br>
+<a href="https://supabase.com/docs/guides/platform/backups">Supabase backups</a> · <a href="https://supabase.com/docs/guides/platform/migrating-within-supabase/backup-restore">Backup/restore procedure</a> · <a href="https://supabase.com/changelog">Supabase changelog</a><br>
+<a href="https://nodejs.org/en/about/previous-releases">Node release lifecycle</a> · <a href="https://vite.dev/guide/">Vite</a> · <a href="https://react.dev/">React</a> · <a href="https://capacitorjs.com/docs">Capacitor</a> · <a href="https://playwright.dev/docs/intro">Playwright</a><br>
+<a href="https://developer.apple.com/app-store/review/guidelines/">Apple review guidelines</a> · <a href="https://support.google.com/googleplay/android-developer/answer/11926878">Google Play target API policy</a></p>
+<h3>Small glossary</h3>
+<p class="small"><strong>RPC:</strong> a database function exposed through an API. <strong>RLS:</strong> row-level security. <strong>JWT:</strong> signed identity/session token, not automatic permission. <strong>Migration:</strong> ordered database change. <strong>PWA:</strong> installable web app. <strong>Catalog:</strong> versioned specialty content and target profiles. <strong>Cohort:</strong> selected submissions. <strong>Idempotency:</strong> repeat the same write safely without duplicating it. <strong>Checksum:</strong> integrity/version identifier, not encryption. <strong>CI:</strong> automated checks/builds. <strong>RPO/RTO:</strong> acceptable data-loss window / recovery-time objective.</p>
+<p class="small muted rule">Editable source: this handbook’s matching HTML file in <code>docs/</code>. Regenerate with <code>node scripts/generate-handover-pdf.mjs</code> after reviewing the dated content. Update the edition/date and reverify facts before treating a regenerated PDF as a new handover.</p>
+</section>
+</body></html>

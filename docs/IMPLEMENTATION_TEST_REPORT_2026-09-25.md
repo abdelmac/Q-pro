@@ -2,6 +2,8 @@
 
 This report concerns repository changes and synthetic local checks, **not a production deployment or native-store release**. No production questionnaire records, credentials or private exports were used. No paid resource was provisioned and no app was published. Existing user changes/commits were preserved.
 
+**Docker follow-up, later on 25 September:** the real isolated Supabase stack now passes all 421 pgTAP assertions, 10 benchmark checks, the existing runtime probe and 67 real Auth/PostgREST/concurrency assertions. Lint/advisors report no errors but retain documented warnings. See [the local database verification report](LOCAL_DATABASE_VERIFICATION_2026-09-25.md) for exact scope, cleanup and remaining release gates. The earlier WASM-only limitations below describe the initial run, not the latest local verification.
+
 ## Delivered
 
 | Area | Repository implementation |
@@ -65,7 +67,7 @@ With 1,000 valid synthetic database rows, representative local measurements were
 ## Release gates / manual steps
 
 1. Review the two additive migrations (`20260925145121_research_map_visibility_and_analytics.sql`, `20260925150142_research_scoring_context.sql`). Rehearse an encrypted backup/restore, run real Supabase tests/advisors in CI or Docker staging, and **apply the migrations before publishing the new frontend**. The new submission RPCs otherwise do not exist. Map visibility remains disabled when unavailable; submission failures must not be treated as saved.
-2. Docker's local daemon was unavailable; the attempted local database-advisor connection failed. Real Auth/PostgREST response-header propagation, independent-session races and production permissions/performance remain unverified. No production migration or remote publication was performed.
+2. The initial Docker-daemon blocker is resolved by the [later isolated Docker verification](LOCAL_DATABASE_VERIFICATION_2026-09-25.md): real Auth, selected PostgREST cache/error headers, submission retry races and concurrent account quotas passed. Three SQL lint warnings and one documented search-path advisor warning remain for review. Broader races and production permissions/performance remain unverified. No production migration or remote publication was performed.
 3. Configure an approved Cloudflare account/project and build-time public environment variables, isolated synthetic previews, auth origins and any chosen domain. Keep GitHub for source/CI; do not point preview write tests at production. No provider/account was purchased or activated here.
 4. Approve participant-information/consent changes for recording matching-priority provenance, retention/deletion responsibilities, region/processing agreements and any applicable research review. No regulatory compliance is claimed.
 5. Add an approved verified CAPTCHA/gateway or equivalent anonymous-submission abuse protection before high-traffic recruitment. The new account-based analytics throttle is not a public Internet abuse firewall. Monitoring currently uses provider dashboards and application errors; no new always-on client error collector is claimed.

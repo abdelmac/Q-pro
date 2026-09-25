@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Specialty Match — Project Accounts Checklist</title>
+<style>
+@page { size: A4; margin: 12mm 14mm 16mm; }
+* { box-sizing: border-box; }
+html { color: #243c4b; font: 9.4pt/1.36 Arial, Helvetica, sans-serif; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+body { margin: 0; width: 182mm; }
+.sheet { width: 182mm; height: 267mm; position: relative; }
+header { display: flex; align-items: center; gap: 4mm; padding-bottom: 3mm; border-bottom: 2px solid #05a5aa; }
+header img { width: 13mm; height: 13mm; }
+.kicker { color: #00898f; font-size: 8pt; font-weight: bold; letter-spacing: 1.3px; text-transform: uppercase; }
+h1 { color: #073f76; font-size: 23pt; line-height: 1.1; margin: 1mm 0; }
+h2 { color: #075e79; font-size: 11pt; margin: 2.5mm 0 1.5mm; }
+p { margin: 2mm 0; }
+strong { color: #153f5d; }
+a { color: #086b97; text-decoration: none; }
+table { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 9pt; line-height: 1.32; }
+th { text-align: left; background: #eaf3f8; color: #073f76; padding: 1.8mm 2mm; font-size: 8pt; }
+td { vertical-align: top; padding: 1.5mm 2mm; border-bottom: 1px solid #dce7eb; overflow-wrap: anywhere; }
+tr { break-inside: avoid; }
+.check { display: inline-block; width: 2.8mm; height: 2.8mm; border: 1px solid #7191a3; margin-right: 1.5mm; vertical-align: -0.2mm; }
+.small { font-size: 8.1pt; line-height: 1.34; }
+.muted { color: #607583; }
+.callout { background: #eaf8f6; border-left: 3px solid #09a4a9; padding: 2mm 3mm; margin: 2mm 0; }
+.warning { background: #fff5e2; border-left-color: #c08b2f; }
+.fields { display: grid; grid-template-columns: 1fr 1fr; gap: 2mm 5mm; margin: 2mm 0; font-size: 8.8pt; }
+.line { display: inline-block; min-width: 34mm; border-bottom: 1px solid #8aa0ac; height: 3.5mm; }
+.sources { border-top: 1px solid #dce7eb; padding-top: 2mm; margin-top: 3mm; font-size: 7.4pt; line-height: 1.4; }
+</style>
+</head>
+<body>
+<main class="sheet">
+<header><img src="@@LOGO@@" alt="Specialty Match compass"><div><div class="kicker">Specialty Match · Owner reference</div><h1>Your project accounts</h1></div></header>
+<p>Tick each box after checking access. <strong>Reuse accounts you already control; do not create duplicates.</strong><br><span class="small muted">Repository snapshot: 25 September 2026 · Live sign-in, ownership and billing are not verified.</span></p>
+
+<h2>1. Essential access for this web project</h2>
+<table aria-label="Essential project accounts">
+<colgroup><col style="width:27%"><col style="width:43%"><col style="width:30%"></colgroup>
+<thead><tr><th>Account / where to go</th><th>What you need it for</th><th>What to confirm</th></tr></thead>
+<tbody>
+<tr><td><span class="check"></span><strong>Owner email inbox</strong><br>Your email provider</td><td>Receive account recovery, security notices and invoices. An existing personal or institutional inbox can be used.</td><td>You can access it and recover it without this computer.</td></tr>
+<tr><td><span class="check"></span><strong>GitHub</strong><br><a href="https://github.com/abdelmac/Q-pro">abdelmac/Q-pro</a></td><td>Source code, history, Actions and configured GitHub Pages hosting. Pages uses the same GitHub account. <a href="https://docs.github.com/en/pages/getting-started-with-github-pages/what-is-github-pages">[1]</a></td><td>Your account has repository administration access; <strong>abdelmac</strong> is the configured owner.</td></tr>
+<tr><td><span class="check"></span><strong>Supabase owner/team</strong><br><a href="https://supabase.com/dashboard/project/txrvbkdcfyhatauovngh">Open configured project</a></td><td>Database, staff authentication, backups, settings and billing. CI project reference:<br><strong>txrvbkdcfyhatauovngh</strong></td><td>Confirm the correct organization and project. This is not the app's admin login.</td></tr>
+<tr><td><span class="check"></span><strong>Website admin</strong><br><a href="https://abdelmac.github.io/Q-pro/">Open site → Admin portal</a></td><td>Read research and manage specialty content/weights. Requires a Supabase Auth user <strong>and enabled portal access</strong>.</td><td>Previously requested email:<br><strong>sasaola59@gmail.com</strong><br>Current access/role unverified.</td></tr>
+</tbody></table>
+<p class="small"><strong>Portal roles:</strong> researcher = read research; doctor = also edit drafts; professor = also publish/restore. Give each staff member their own authorized login. Quiz participants do not need accounts.</p>
+
+<h2>2. Additional accounts — only when needed</h2>
+<table aria-label="Conditional project accounts">
+<colgroup><col style="width:27%"><col style="width:73%"></colgroup>
+<tbody>
+<tr><td><span class="check"></span><strong><a href="https://dash.cloudflare.com/">Cloudflare</a></strong></td><td>Only if choosing Cloudflare Pages hosting or its DNS. Documented hosting alternative; no active deployment/account confirmed. Not needed just to keep GitHub Pages. <a href="https://developers.cloudflare.com/pages/get-started/git-integration/">[2]</a></td></tr>
+<tr><td><span class="check"></span><strong>Domain registrar / DNS</strong></td><td>Only for your own domain. Record the registrar, DNS provider and renewal owner. A custom domain is not required for the configured GitHub Pages URL.</td></tr>
+<tr><td><span class="check"></span><strong>Email delivery / SMTP</strong></td><td>For production staff invitations and password-reset emails: an approved SMTP service, possibly your institution's. Supabase's default sender is limited and not for production. Provider not confirmed. <a href="https://supabase.com/docs/guides/auth/auth-smtp">[3]</a></td></tr>
+<tr><td><span class="check"></span><strong><a href="https://play.google.com/console/">Google Play Console</a></strong></td><td>Only to publish Android on Google Play: Google account plus developer registration. Not required for the website/PWA or local Android testing. <a href="https://support.google.com/googleplay/android-developer/answer/6112435">[4]</a></td></tr>
+<tr><td><span class="check"></span><strong><a href="https://developer.apple.com/account/">Apple Developer</a></strong></td><td>Only for App Store/TestFlight distribution: Apple Account plus Developer Program membership. Not required for the website/PWA. iOS builds also need a Mac/Xcode. <a href="https://developer.apple.com/programs/enroll/">[5]</a></td></tr>
+</tbody></table>
+
+<h2>3. Keep access recoverable</h2>
+<div class="callout small"><strong>Record privately, in a password manager:</strong> each login email, sign-in method (password or linked account), account/organization ID, permissions, billing owner, MFA recovery codes and renewal dates. Use MFA on provider accounts where available. Keep an approved <strong>encrypted off-site backup destination</strong> and its recovery key separately; these may use existing institutional services.</div>
+<div class="fields"><div>Project owner: <span class="line"></span></div><div>Recovery contact: <span class="line"></span></div><div>Supabase login email: <span class="line"></span></div><div>Last access check: <span class="line"></span></div></div>
+<div class="callout warning small"><strong>No passwords or keys belong on this sheet or in Git.</strong> Replace any password previously shared in chat if it is still in use. Supabase public frontend keys are not account logins. Never put database passwords or privileged keys in <strong>VITE_*</strong> variables.</div>
+<p class="small"><strong>No separate service account needed:</strong> React, TypeScript, Vite, Tailwind, Capacitor or the custom map. No OpenAI, Google Maps or Mapbox API account is used by the current app.</p>
+<div class="sources muted">Evidence: Git remote; .github/workflows/deploy-pages.yml; SUPABASE.md (roles); docs/OPERATIONS.md and MOBILE.md; user-supplied admin email. Numbered links point to official provider guidance checked 25 September 2026. Keep any privately completed copy outside the repository.</div>
+</main>
+</body>
+</html>
