@@ -3,7 +3,7 @@ import type { AsyncKeyValueStorage } from '@/lib/questionnairePersistence';
 
 export const isNativeApp = (): boolean => Capacitor.isNativePlatform();
 
-/** Browser storage is local, not encrypted. Call only after offering local-save controls. */
+/** Browser storage is local, not encrypted; disclose this before saving a research contribution. */
 export function createBrowserStorage(storage: Storage): AsyncKeyValueStorage {
   return {
     requiresCrossTabLock: true,

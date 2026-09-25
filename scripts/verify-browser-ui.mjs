@@ -19,11 +19,11 @@ let browser;
 try {
   const fixtureModule = join(testDirectory, 'fixtures.mjs');
   await build({
-    stdin: { contents: `export { SPECIALTIES } from './src/data/specialties'; export { TRANSLATIONS, LANGUAGES } from './src/data/i18n'; export { MAP_TRANSLATIONS } from './src/data/mapI18n'; export { LOCAL_PROGRESS_COPY } from './src/data/localProgressI18n'; export { ALL_QUESTION_IDS } from './src/data/questions'; export { VALUE_OPTIONS } from './src/data/traits'; export { DEFAULT_PRIORITY_WEIGHTS } from './src/data/dimensions'; export { createQuestionnairePersistence } from './src/lib/questionnairePersistence';`, resolveDir: process.cwd(), loader: 'ts' },
+    stdin: { contents: `export { SPECIALTIES } from './src/data/specialties'; export { TRANSLATIONS, LANGUAGES } from './src/data/i18n'; export { MAP_TRANSLATIONS } from './src/data/mapI18n'; export { LOCAL_PROGRESS_COPY } from './src/data/localProgressI18n'; export { ALL_QUESTION_IDS, RATING_SECTIONS } from './src/data/questions';`, resolveDir: process.cwd(), loader: 'ts' },
     outfile: fixtureModule, bundle: true, platform: 'node', format: 'esm', tsconfig: 'tsconfig.app.json', logLevel: 'silent',
   });
   const fixtureDefinitions = await import(pathToFileURL(fixtureModule).href);
-  const { SPECIALTIES, TRANSLATIONS, LANGUAGES, MAP_TRANSLATIONS, LOCAL_PROGRESS_COPY } = fixtureDefinitions;
+  const { SPECIALTIES, TRANSLATIONS, LANGUAGES, MAP_TRANSLATIONS } = fixtureDefinitions;
   const catalog = {
     version: { id: '8b297aed-b47a-4b58-baa9-848091db8637', revision: 1, label: 'Browser test fixture', content_hash: 'md5:00000000000000000000000000000000', published_at: '2026-01-01T00:00:00Z' },
     specialties: SPECIALTIES.map(specialty => ({ ...specialty, descriptions: { en: specialty.blurb, fr: specialty.blurb, ro: specialty.blurb }, clinical_summaries: { en: '', fr: '', ro: '' } })),
@@ -57,10 +57,24 @@ try {
     if (!sessionStorage.getItem('q-pro-browser-fixture-initialized')) {
       localStorage.clear(); sessionStorage.setItem('q-pro-browser-fixture-initialized', 'yes');
     }
+    window.__questionnaireStorageWrites = [];
+    const originalSetItem = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (key, value) {
+      if (this === localStorage && (key === 'qpro.questionnaire.v1' || key === 'qpro.autosave-enabled.v1')) {
+        window.__questionnaireStorageWrites.push(key);
+      }
+      return originalSetItem.call(this, key, value);
+    };
   });
   const page = await context.newPage();
   page.setDefaultTimeout(15_000);
   page.on('pageerror', error => pageErrors.push(error.message));
+  let unloadWarnings = 0;
+  page.on('dialog', async dialog => {
+    assert.equal(dialog.type(), 'beforeunload', 'Starting over no longer asks to replace a saved draft');
+    unloadWarnings += 1;
+    await dialog.accept();
+  });
   await context.route('**/*.supabase.co/**', async route => {
     const url = new URL(route.request().url());
     const rpc = url.pathname.split('/').at(-1);
@@ -96,6 +110,8 @@ try {
     const mapCopy = MAP_TRANSLATIONS[language.code];
     if (language.code !== 'en') await chooseLanguage(language);
     await page.getByRole('heading', { name: copy.roleIntrospection, exact: true }).waitFor();
+    assert.equal(await page.locator('aside details summary').count(), 0, 'No local-save panel is shown without pending contributions');
+    assert.equal(await page.locator('[data-pending-submissions]').count(), 0, 'An empty queue has no contribution notice');
     assert.deepEqual(await page.locator('[data-participant-role]').evaluateAll(elements => elements.map(element => element.dataset.participantRole)), ['curious', 'student', 'specialist']);
     await noOverflow(`roles ${language.code}`);
     await page.getByRole('button', { name: copy.navCredits, exact: true }).click();
@@ -152,18 +168,14 @@ try {
   assert.equal(await region.isDisabled(), true);
   await noOverflow('specialist geography');
   await page.getByRole('button', { name: SPECIALTIES[0].name, exact: true }).click();
-  await page.getByPlaceholder(TRANSLATIONS.en.specialistCurrentViewPlaceholder, { exact: true }).fill('Synthetic test of specialist draft persistence.');
+  await page.getByPlaceholder(TRANSLATIONS.en.specialistCurrentViewPlaceholder, { exact: true }).fill('Synthetic test of in-memory specialist answers.');
   await page.getByLabel(MAP_TRANSLATIONS.en.country, { exact: true }).selectOption('RO');
   await region.fill('Cluj');
   await page.locator('[data-navigation-back]').click();
   await page.locator('[data-specialist-path="skip"]').click();
-  assert.equal(await page.getByPlaceholder(TRANSLATIONS.en.specialistCurrentViewPlaceholder, { exact: true }).inputValue(), 'Synthetic test of specialist draft persistence.');
+  assert.equal(await page.getByPlaceholder(TRANSLATIONS.en.specialistCurrentViewPlaceholder, { exact: true }).inputValue(), 'Synthetic test of in-memory specialist answers.');
   assert.equal(await region.inputValue(), 'Cluj');
-  await page.waitForFunction(() => JSON.parse(localStorage.getItem('qpro.questionnaire.v1') ?? '{}').draft?.specialistDraft?.geography?.region === 'Cluj');
-  await page.reload({ waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: LOCAL_PROGRESS_COPY.en.resumeButton, exact: true }).click();
-  assert.equal(await page.getByPlaceholder(TRANSLATIONS.en.specialistCurrentViewPlaceholder, { exact: true }).inputValue(), 'Synthetic test of specialist draft persistence.');
-  assert.equal(await page.getByLabel(MAP_TRANSLATIONS.en.region, { exact: true }).inputValue(), 'Cluj');
+  assert.equal(await page.evaluate(() => localStorage.getItem('qpro.questionnaire.v1')), null);
   await page.locator('[data-navigation-back]').click();
   await page.locator('[data-specialist-path="answer"]').click();
   await page.locator('main button').first().click();
@@ -172,11 +184,17 @@ try {
   await rating.focus();
   await page.keyboard.press('End');
   assert.equal(await rating.inputValue(), '10');
-  await page.waitForFunction(() => Object.values(JSON.parse(localStorage.getItem('qpro.questionnaire.v1') ?? '{}').draft?.ratings ?? {}).includes(10));
+  await page.locator('[data-navigation-back]').click();
+  await page.getByRole('button', { name: TRANSLATIONS.en.continue, exact: true }).click();
+  assert.equal(await page.locator('input[type="range"]').first().inputValue(), '10', 'Back navigation keeps ratings in memory');
+  await noOverflow('in-memory partial questionnaire');
+  assert.deepEqual(await page.evaluate(() => window.__questionnaireStorageWrites), []);
   await page.reload({ waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: LOCAL_PROGRESS_COPY.en.resumeButton, exact: true }).click();
-  assert.equal(await page.locator('input[type="range"]').first().inputValue(), '10');
-  await noOverflow('resumed partial questionnaire');
+  await page.getByRole('heading', { name: TRANSLATIONS.en.roleIntrospection, exact: true }).waitFor();
+  assert.ok(unloadWarnings > 0, 'Leaving an unfinished questionnaire still warns before losing answers');
+  assert.equal(await page.getByRole('button', { name: 'Resume questionnaire', exact: true }).count(), 0);
+  assert.equal(await page.locator('input[type="range"]').count(), 0, 'Reload does not resume the previous question');
+  assert.equal(await page.evaluate(() => localStorage.getItem('qpro.questionnaire.v1')), null);
 
   // Public desktop uses the full map width without an administrator sidebar.
   const desktop = await context.newPage();
@@ -198,7 +216,7 @@ try {
   await verifyBrowserResearchFlows({ page, context, catalog, fixtureDefinitions, submissionMocks, requests });
   await verifyBrowserMapAuthorization({ context, fixtureDefinitions, mapFixture, catalog });
   assert.deepEqual(pageErrors, []);
-  console.log('Browser checks passed: responsive three-language public map, administrator-only filters, optional geography, reload/resume, offline consent synchronization, payload-specific receipts and persistent opt-out. All research endpoints were mocked; no production submissions.');
+  console.log('Browser checks passed: responsive three-language public map, administrator-only filters, optional geography, memory-only questionnaire progress, targeted legacy cleanup, offline consent synchronization and payload-specific receipts. All research endpoints were mocked; no production submissions.');
   }
 } finally {
   await browser?.close();

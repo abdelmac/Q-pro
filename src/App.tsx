@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState, useMemo, useCallback, useEffect, useReducer, useRef } from 'react';
+import { lazy, Suspense, useState, useMemo, useCallback, useEffect, useReducer } from 'react';
 import { RATING_SECTIONS, ALL_QUESTION_IDS } from '@/data/questions';
 import { translateSection } from '@/data/i18n';
 import {
@@ -28,12 +28,10 @@ import SpecialtyDetail from '@/components/SpecialtyDetail';
 import SpecialtyComparison from '@/components/SpecialtyComparison';
 import MethodologyPage from '@/components/MethodologyPage';
 import ProjectCredits from '@/components/ProjectCredits';
-import LocalProgressPanel from '@/components/LocalProgressPanel';
-import { getLocalResearchStorage } from '@/lib/localResearchStorage';
+import PendingSubmissionsNotice from '@/components/PendingSubmissionsNotice';
+import { clearLegacyQuestionnaireProgress } from '@/lib/localResearchStorage';
 import { getAppStorage, installMobileLifecycle } from '@/lib/mobileRuntime';
-import { LOCAL_PROGRESS_COPY } from '@/data/localProgressI18n';
 import { flushPendingResearchSubmissions } from '@/lib/supabase';
-import type { QuestionnaireDraft } from '@/lib/questionnairePersistence';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import PageBackButton from '@/components/PageBackButton';
 import BrandLogo from '@/components/BrandLogo';
@@ -55,7 +53,6 @@ import {
 
 const Dashboard = lazy(() => import('@/components/Dashboard'));
 const ParticipationMap = lazy(() => import('@/components/ParticipationMap'));
-const AUTOSAVE_PREFERENCE_KEY = 'qpro.autosave-enabled.v1';
 
 type SpecialistQuestionnaireMode = 'completed' | 'skipped' | null;
 
@@ -84,8 +81,8 @@ function createSpecialistDraft(): SpecialistDraft {
 }
 
 function AppContent() {
-  const { t, lang, setLang } = useLanguage();
-  const { specialties, snapshot: catalogSnapshot, restoreSnapshot, lock: lockCatalog, unlock: unlockCatalog,
+  const { t, lang } = useLanguage();
+  const { specialties, lock: lockCatalog, unlock: unlockCatalog,
     source: catalogSource, isLoading: catalogLoading, error: catalogError, refresh: refreshCatalog } = useSpecialtyCatalog();
   const [navigation, dispatchNavigation] = useReducer(
     appNavigationReducer,
@@ -108,11 +105,6 @@ function AppContent() {
   const [specialistDraft, setSpecialistDraft] = useState<SpecialistDraft>(createSpecialistDraft);
   const [priorities, setPriorities] = useState<PriorityWeights>(DEFAULT_PRIORITY_WEIGHTS);
   const [catalogGateMessage, setCatalogGateMessage] = useState<string | null>(null);
-  const [localSaveEnabled, setLocalSaveEnabled] = useState(true);
-  const [storageStatus, setStorageStatus] = useState<'loading' | 'ready' | 'saving' | 'saved' | 'unavailable' | 'invalid'>('loading');
-  const [resumeDraft, setResumeDraft] = useState<QuestionnaireDraft | null>(null);
-  const loadedStorage = useRef(false);
-  const saveGeneration = useRef(0);
   const isSpecialist = participantRole === 'specialist';
 
   // Specialists who opt into the quantitative profile identify their actual
@@ -206,7 +198,6 @@ function AppContent() {
   };
 
   const clearAssessment = () => {
-    saveGeneration.current += 1;
     unlockCatalog();
     setPreferredSpecialty(null);
     setActualSpecialty(null);
@@ -219,9 +210,6 @@ function AppContent() {
     setSpecialistDraft(createSpecialistDraft());
     setContributionSubmitting(false);
     setCatalogGateMessage(null);
-    setResumeDraft(null);
-    void getLocalResearchStorage().then(({ drafts }) => drafts.clear())
-      .then(() => setStorageStatus('ready')).catch(() => setStorageStatus('unavailable'));
   };
 
   const restart = () => {
@@ -237,7 +225,6 @@ function AppContent() {
   };
 
   const selectParticipantRole = (role: ParticipantRole) => {
-    if ((resumeDraft || storageStatus === 'invalid') && !window.confirm(LOCAL_PROGRESS_COPY[lang].discardConfirm)) return;
     clearAssessment();
     setParticipantRole(role);
     dispatchNavigation(resetNavigation());
@@ -274,11 +261,11 @@ function AppContent() {
       || selectedValues.length > 0
       || participantReflectionDraft.medicineView.trim().length > 0
       || specialistDraft.currentSpecialtyView.trim().length > 0;
-    if (hasDraft && storageStatus !== 'saved' && phase !== 'results' && phase !== 'intro' && phase !== 'role') {
+    if (hasDraft && phase !== 'results' && phase !== 'intro' && phase !== 'role') {
       e.preventDefault();
       e.returnValue = '';
     }
-  }, [participantReflectionDraft.medicineView, specialistDraft.currentSpecialtyView, phase, ratings, selectedValues.length, storageStatus]);
+  }, [participantReflectionDraft.medicineView, specialistDraft.currentSpecialtyView, phase, ratings, selectedValues.length]);
 
   useEffect(() => {
     window.addEventListener('beforeunload', handleBeforeUnload);
@@ -286,75 +273,10 @@ function AppContent() {
   }, [handleBeforeUnload]);
 
   useEffect(() => {
-    let active = true;
-    void getLocalResearchStorage().then(async ({ drafts }) => {
-      const [result, preference] = await Promise.all([
-        drafts.load(), getAppStorage().then(storage => storage.getItem(AUTOSAVE_PREFERENCE_KEY)),
-      ]);
-      if (!active) return;
-      setLocalSaveEnabled(preference !== 'false');
-      if (result.status === 'restored') {
-        setResumeDraft(result.draft);
-        setLang(result.draft.language);
-      }
-      setStorageStatus(result.status === 'unavailable' ? 'unavailable'
-        : result.status === 'invalid' || result.status === 'stale' ? 'invalid' : 'ready');
-      loadedStorage.current = true;
-    }).catch(() => { if (active) { setStorageStatus('unavailable'); loadedStorage.current = true; } });
-    return () => { active = false; };
-  }, [setLang]);
-
-  useEffect(() => {
-    if (!loadedStorage.current || !localSaveEnabled || resumeDraft || storageStatus === 'invalid'
-      || !participantRole || catalogSource !== 'remote' || phase === 'dashboard') return;
-    const draft: QuestionnaireDraft = {
-      participantRole, language: lang, location,
-      navigationStack: navigation.stack.filter(item => item.phase !== 'dashboard').slice(-256),
-      ratings, selectedValues, preferredSpecialty, actualSpecialty, priorities,
-      specialistQuestionnaireMode, participantReflectionDraft, specialistDraft, catalog: catalogSnapshot,
-    };
-    const generation = ++saveGeneration.current;
-    setStorageStatus('saving');
-    void getLocalResearchStorage().then(({ drafts }) => drafts.save(draft))
-      .then(() => { if (saveGeneration.current === generation) setStorageStatus('saved'); })
-      .catch(() => { if (saveGeneration.current === generation) setStorageStatus('unavailable'); });
-    // storageStatus deliberately is not a dependency: status updates must not
-    // re-save a large snapshot or retry unavailable storage in a render loop.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [localSaveEnabled, resumeDraft, participantRole, lang, navigation, ratings, selectedValues,
-    preferredSpecialty, actualSpecialty, priorities, specialistQuestionnaireMode,
-    participantReflectionDraft, specialistDraft, catalogSnapshot, catalogSource]);
-
-  const resumeQuestionnaire = () => {
-    if (!resumeDraft) return;
-    if (!restoreSnapshot(resumeDraft.catalog)) { setStorageStatus('invalid'); return; }
-    const draft = resumeDraft;
-    setLang(draft.language); setParticipantRole(draft.participantRole);
-    setRatings(draft.ratings); setSelectedValues(draft.selectedValues);
-    setPreferredSpecialty(draft.preferredSpecialty); setActualSpecialty(draft.actualSpecialty);
-    setPriorities(draft.priorities); setSpecialistQuestionnaireMode(draft.specialistQuestionnaireMode);
-    setParticipantReflectionDraft(draft.participantReflectionDraft);
-    setSpecialistDraft(draft.specialistDraft ?? createSpecialistDraft());
-    setScores(Object.keys(draft.ratings).length === ALL_QUESTION_IDS.length ? reRankWithPriorities({
-      ratings: draft.ratings, selectedValues: draft.selectedValues,
-      preferredSpecialty: draft.participantRole === 'specialist' ? null : draft.preferredSpecialty,
-    }, draft.priorities, draft.catalog.specialties) : []);
-    dispatchNavigation(resetNavigation());
-    for (const previous of draft.navigationStack ?? [{ phase: 'intro' } as AppLocation, draft.location]) {
-      dispatchNavigation(navigateTo(previous));
-    }
-    setResumeDraft(null); setStorageStatus('saved');
-  };
-
-  const discardLocalDraft = () => {
-    saveGeneration.current += 1;
-    setResumeDraft(null);
-    setLocalSaveEnabled(false);
-    void getAppStorage().then(storage => storage.setItem(AUTOSAVE_PREFERENCE_KEY, 'false'))
-      .catch(() => setStorageStatus('unavailable'));
-    void getLocalResearchStorage().then(({ drafts }) => drafts.clear())
-      .then(() => setStorageStatus('ready')).catch(() => setStorageStatus('unavailable'));
-  };
+    // Retire old automatic drafts without touching explicitly saved submissions,
+    // authentication, language preferences, or any unrelated browser storage.
+    void getAppStorage().then(clearLegacyQuestionnaireProgress).catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     let cleanup: (() => void) | undefined;
@@ -659,17 +581,7 @@ function AppContent() {
   };
 
   return <>
-    <LocalProgressPanel
-      enabled={localSaveEnabled} status={storageStatus} hasResume={Boolean(resumeDraft)}
-      onResume={resumeQuestionnaire} onDiscard={discardLocalDraft}
-      onEnabledChange={enabled => {
-        if (enabled) {
-          setLocalSaveEnabled(true);
-          void getAppStorage().then(storage => storage.setItem(AUTOSAVE_PREFERENCE_KEY, 'true'))
-            .catch(() => setStorageStatus('unavailable'));
-        } else discardLocalDraft();
-      }}
-    />
+    <PendingSubmissionsNotice />
     {renderPage()}
   </>;
 }

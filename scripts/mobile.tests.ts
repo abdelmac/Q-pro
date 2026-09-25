@@ -4,6 +4,7 @@ import { SPECIALTIES } from '../src/data/specialties';
 import { VALUE_OPTIONS } from '../src/data/traits';
 import { DEFAULT_PRIORITY_WEIGHTS } from '../src/data/dimensions';
 import { reRankWithPriorities } from '../src/lib/scoring';
+import { clearLegacyQuestionnaireProgress } from '../src/lib/localResearchStorage';
 import {
   createQuestionnairePersistence, parseQuestionnaireDraft, QUESTIONNAIRE_STORAGE_KEY,
   QUESTIONNAIRE_MAX_AGE_MS, type AsyncKeyValueStorage, type QuestionnaireDraft,
@@ -19,6 +20,20 @@ class MemoryStorage implements AsyncKeyValueStorage {
   async setItem(key: string, value: string) { this.values.set(key, value); }
   async removeItem(key: string) { this.values.delete(key); }
 }
+
+// Retiring local progress must not remove consented submissions or other settings.
+const retiredStorage = new MemoryStorage();
+retiredStorage.values.set('qpro.questionnaire.v1', 'old questionnaire draft');
+retiredStorage.values.set('qpro.autosave-enabled.v1', 'true');
+retiredStorage.values.set(SUBMISSION_QUEUE_KEY, 'explicitly saved contribution');
+retiredStorage.values.set('language', 'fr');
+retiredStorage.values.set('auth-session', 'existing session');
+await clearLegacyQuestionnaireProgress(retiredStorage);
+await clearLegacyQuestionnaireProgress(retiredStorage);
+assert.deepEqual([...retiredStorage.values], [
+  [SUBMISSION_QUEUE_KEY, 'explicitly saved contribution'],
+  ['language', 'fr'], ['auth-session', 'existing session'],
+], 'Cleanup is idempotent and removes only retired local-progress keys');
 
 const id = '12345678-1234-4234-8234-123456789012';
 const catalogId = '87654321-4321-4321-8321-210987654321';
