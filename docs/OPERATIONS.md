@@ -53,6 +53,10 @@ The CLI's managed-schema behavior and Auth/Vault restore requirements matter; us
 
 ## Restore drill and real recovery
 
+Local evidence: the [26 September synthetic encrypted recovery rehearsal](RECOVERY_READINESS_2026-09-26.md) passed restore, Auth/HTTP, database and benchmark checks. It is not a production backup or proof of off-site/key-custody recovery.
+
+Include an explicit, encrypted inventory of scheduled jobs: name, schedule, command, database, owner, active state, and reviewed routing/extension settings. The tested CLI's ordinary dumps omitted the map-publication job even though migration history restored successfully. Recreate reviewed jobs with the pg_cron API, initially inactive; verify ownership without assuming superuser access. Never rerun the entire geography migration to recover its schedule, since it also publishes immediately. Approve activation separately after recovery checks. [Extension recovery design](https://github.com/supabase/pg-toolbelt/blob/main/docs/architecture/extension-intent.md).
+
 1. Rehearse monthly, and after major schema changes, in a newly approved **isolated** compatible Supabase target or an approved local environment. Never point a restore command at production to “test” it. A new paid project requires approval first. Keep recipient/invitation email and outbound hooks disabled during rehearsal.
 2. Verify archive integrity, decrypt only on the approved workstation, inspect schema/roles before executing them, and follow the official role/schema/data restore order with stop-on-error and a transaction where supported. Reconcile migration history separately; do not replay all migrations on top of an already restored latest schema.
 3. Restore needed Auth/Storage configuration and objects, extensions and managed-schema customizations from reviewed records. Follow the official Vault/root-key process if encryption is used. Re-establish role credentials securely; rotate tokens where required. Do not copy a production service-role key into a preview frontend.

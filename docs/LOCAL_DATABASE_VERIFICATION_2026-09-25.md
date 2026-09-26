@@ -2,6 +2,8 @@
 
 ## Outcome and scope
 
+Follow-up: [26 September recovery rehearsal and warning review](RECOVERY_READINESS_2026-09-26.md). The encrypted synthetic restore passed, and the recovery procedure now explicitly includes the scheduled map-publication job. Production remains unverified and unchanged.
+
 The Docker blocker in the original implementation report is resolved. All **421 pgTAP assertions**, **10 synthetic benchmark checks**, and **67 real Auth/PostgREST/concurrency assertions** passed. The existing public catalog/runtime probe also passed. SQL lint and database advisors exited successfully at the error threshold, **with warnings described below**.
 
 This verifies a fresh, isolated local stack built from the repository at Git revision `5be6d2f`; it does not verify the hosted database or constitute a production release. No application code, committed migration, production account, hosted setting or frontend deployment was changed. No production research data or credentials were used.
