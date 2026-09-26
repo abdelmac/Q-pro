@@ -16,7 +16,9 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    outputs:
+      artifact_name: ${{ steps.pages_artifact.outputs.name }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -76,14 +78,21 @@ jobs:
           npm run typecheck
           npm run build
 
+      # Full reruns must not upload another artifact with the same name.
+      # Pass the build's name to deploy: its run_attempt may differ on a retry.
+      - name: Choose Pages artifact name
+        id: pages_artifact
+        run: echo "name=github-pages-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v5
         with:
+          name: ${{ steps.pages_artifact.outputs.name }}
           path: ./dist
 
   deploy:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -91,6 +100,17 @@ jobs:
       pages: write
       id-token: write
     steps:
+      - name: Check build artifact reference
+        env:
+          PAGES_ARTIFACT_NAME: ${{ needs.build.outputs.artifact_name }}
+        run: |
+          if [ -z "$PAGES_ARTIFACT_NAME" ]; then
+            echo "::error::Missing build artifact name. Re-run all jobs to rebuild the Pages artifact."
+            exit 1
+          fi
+
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5
+        with:
+          artifact_name: ${{ needs.build.outputs.artifact_name }}

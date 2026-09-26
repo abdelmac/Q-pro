@@ -14,6 +14,14 @@ Reviewed **25 September 2026**. These are owner/operator procedures, not evidenc
 
 Cloudflare's Git integration supplies deployments/previews; it does not replace GitHub source protection or tests. A root-path build needs no backend rewrite or data migration. [Pages Git deployment](https://developers.cloudflare.com/pages/get-started/git-integration/).
 
+### GitHub Pages artifact retries
+
+The Pages workflow names each upload `github-pages-<run ID>-<build attempt>` and passes that exact name from the build job to deployment through a job output. Do not restore the shared `github-pages` default or calculate the name again from the deployment attempt: full reruns can leave duplicate names, and deploy-only retries may use a different attempt number from the successful build. Both Pages jobs use `ubuntu-24.04` to avoid an unreviewed operating-system migration; this does not freeze image security updates.
+
+On 26 September, run `35140506292` was confirmed to contain two `github-pages` artifacts, while its build had succeeded. The three deployment errors were repeated reporting of one ambiguous-name failure, not three separate build failures. No remote artifacts were deleted. The Ubuntu migration notice was unrelated. The deployment action requires a single matching artifact. [GitHub action implementation](https://github.com/actions/deploy-pages/blob/v5/src/internal/api-client.js).
+
+After committing and pushing a workflow correction, use the **new run** triggered on `main` (a push starts deployment automatically), or start **Actions → Deploy GitHub Pages → Run workflow** for an approved release. Do not retry the old failed run expecting it to use the updated workflow: reruns retain the original commit. With the corrected workflow, retrying only deployment reuses the successful build's name; if that artifact has expired or was deleted, rerun all jobs to produce a new one. The upload action's current default retention is one day. This workflow fix alone does not establish that a hosted deployment succeeded, and it does not waive the database-before-dependent-frontend release gate. [Rerun semantics](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/re-run-workflows-and-jobs), [artifact settings](https://github.com/actions/upload-pages-artifact/blob/v5/action.yml).
+
 Keep the old frontend accessible during a deliberate transition, but avoid splitting users across origins unnecessarily: browser pending queues and storage belong to one origin and do not automatically migrate. Explain how to finish/retry a pending contribution on the old origin before closing it.
 
 ## Everyday monitoring without a mandatory paid subscription
