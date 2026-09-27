@@ -2,7 +2,7 @@ import type { Language } from '@/data/i18n';
 
 const en = {
   settings: 'Settings',
-  title: 'Public features',
+  title: 'Map visibility',
   mapLabel: 'Show participation map to public users',
   description: 'Control the public map on the website and mobile apps. Only administrators can change this setting.',
   enabled: 'Public map enabled',
@@ -15,6 +15,7 @@ const en = {
   saveError: 'The setting could not be saved. Check your connection and administrator access, then try again.',
   retry: 'Check again',
   explanation: 'When hidden, public map links, geographic inputs, and public geographic-data access are disabled. Existing location data is kept, and the authorized research map remains available.',
+  compactExplanation: 'Choose whether visitors can see the public map, then save. The private research map and its filters remain available below.',
   privacy: 'When enabled, visitors see only approved, coarse aggregates with small-cell suppression. Information someone already downloaded cannot be erased from their device.',
   audit: 'Changes record the administrator, time, previous value, and new value. Selecting a specialist participant category does not grant administrative access.',
   testMode: 'Public settings affect the real website and cannot be changed in test-data mode.',
@@ -27,7 +28,7 @@ type PublicFeaturesStrings = { [K in keyof typeof en]: string };
 export const PUBLIC_FEATURES_TRANSLATIONS: Record<Language, PublicFeaturesStrings> = {
   en,
   fr: {
-    settings: 'Paramètres', title: 'Fonctionnalités publiques',
+    settings: 'Paramètres', title: 'Visibilité de la carte',
     mapLabel: 'Afficher la carte de participation au public',
     description: 'Contrôlez la carte publique sur le site et les applications mobiles. Seuls les administrateurs peuvent modifier ce paramètre.',
     enabled: 'Carte publique activée', disabled: 'Carte publique masquée',
@@ -38,6 +39,7 @@ export const PUBLIC_FEATURES_TRANSLATIONS: Record<Language, PublicFeaturesString
     saveError: 'Le paramètre n’a pas pu être enregistré. Vérifiez votre connexion et vos droits d’administration, puis réessayez.',
     retry: 'Vérifier à nouveau',
     explanation: 'Lorsqu’elle est masquée, les liens publics, les champs géographiques et l’accès public aux données géographiques sont désactivés. Les données de localisation existantes sont conservées et la carte de recherche reste accessible aux personnes autorisées.',
+    compactExplanation: 'Choisissez si les visiteurs peuvent voir la carte publique, puis enregistrez. La carte de recherche privée et ses filtres restent disponibles ci-dessous.',
     privacy: 'Lorsqu’elle est activée, les visiteurs ne voient que des agrégats géographiques approuvés, avec suppression des petits effectifs. Les informations déjà téléchargées ne peuvent pas être effacées à distance.',
     audit: 'Chaque modification consigne l’administrateur, la date, l’ancienne valeur et la nouvelle valeur. Choisir le profil de participant spécialiste ne donne aucun droit d’administration.',
     testMode: 'Les paramètres publics concernent le vrai site et ne peuvent pas être modifiés en mode données de test.',
@@ -45,7 +47,7 @@ export const PUBLIC_FEATURES_TRANSLATIONS: Record<Language, PublicFeaturesString
     mapUnavailableHelp: 'Elle est peut-être désactivée ou votre connexion est indisponible. Aucune information géographique n’est affichée sans nouvelle vérification.',
   },
   ro: {
-    settings: 'Setări', title: 'Funcționalități publice',
+    settings: 'Setări', title: 'Vizibilitatea hărții',
     mapLabel: 'Afișează harta participării pentru public',
     description: 'Controlează harta publică pe site și în aplicațiile mobile. Numai administratorii pot modifica această setare.',
     enabled: 'Hartă publică activată', disabled: 'Hartă publică ascunsă',
@@ -56,6 +58,7 @@ export const PUBLIC_FEATURES_TRANSLATIONS: Record<Language, PublicFeaturesString
     saveError: 'Setarea nu a putut fi salvată. Verifică conexiunea și drepturile de administrator, apoi încearcă din nou.',
     retry: 'Verifică din nou',
     explanation: 'Când harta este ascunsă, linkurile publice, câmpurile geografice și accesul public la datele geografice sunt dezactivate. Datele de localizare existente sunt păstrate, iar harta de cercetare rămâne disponibilă persoanelor autorizate.',
+    compactExplanation: 'Alege dacă vizitatorii pot vedea harta publică, apoi salvează. Harta privată de cercetare și filtrele sale rămân disponibile mai jos.',
     privacy: 'Când harta este activată, vizitatorii văd numai agregate geografice aprobate, cu suprimarea grupurilor mici. Informațiile deja descărcate nu pot fi șterse de pe dispozitivul altcuiva.',
     audit: 'Fiecare modificare înregistrează administratorul, data, valoarea anterioară și valoarea nouă. Alegerea categoriei de participant specialist nu acordă drepturi de administrator.',
     testMode: 'Setările publice afectează site-ul real și nu pot fi modificate în modul cu date de test.',

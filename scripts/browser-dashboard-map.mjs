@@ -63,6 +63,7 @@ export async function verifyBrowserDashboardMap({ context, page, fixtureDefiniti
       assert.equal(await page.getByRole('heading', { level: 1 }).count(), 1, 'Embedded map must retain the single dashboard title');
       assert.equal(await map.locator('header, main, h1, [data-navigation-back]').count(), 0, 'Embedded map must not render public page chrome or its own back control');
       assert.equal(await page.locator('[data-dashboard-back]').isVisible(), true);
+      assert.equal(await page.locator('[data-public-features-settings]').count(), 1, 'Administrators can control visibility directly from the map tab');
       assert.equal(await page.getByRole('button', { name: 'Refresh', exact: true }).isVisible(), true);
       if (!mobile) assert.equal(await page.locator('#dashboard-sidebar-desktop').isVisible(), true, 'Desktop sidebar remains alongside the map');
       await noOverflow(`${role} embedded map`);
@@ -168,6 +169,7 @@ export async function verifyBrowserDashboardMap({ context, page, fixtureDefiniti
       await map.getByRole('button', { name: copy.all, exact: true }).waitFor();
       await map.getByRole('button', { name: /^Romania ≈ 35$/ }).waitFor();
       const researcherSidebar = await openSidebar(mobile);
+      assert.equal(await page.locator('[data-public-features-settings]').count(), 0, 'Read-only researchers have no inline visibility control');
       await researcherSidebar.getByRole('button', { name: 'Sign out', exact: true }).click();
       await page.getByRole('heading', { level: 1, name: 'Specialist & admin portal', exact: true }).waitFor();
       await page.getByRole('button', { name: 'Back', exact: true }).click();

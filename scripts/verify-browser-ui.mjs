@@ -111,6 +111,7 @@ try {
     const mapCopy = MAP_TRANSLATIONS[language.code];
     if (language.code !== 'en') await chooseLanguage(language);
     await page.getByRole('heading', { name: copy.roleIntrospection, exact: true }).waitFor();
+    assert.equal(await page.getByText(/^(Install|Installer|Instalează) Specialty Match$/, { exact: true }).count(), 0, 'Installation instructions are removed in every language');
     assert.equal(await page.locator('aside details summary').count(), 0, 'No local-save panel is shown without pending contributions');
     assert.equal(await page.locator('[data-pending-submissions]').count(), 0, 'An empty queue has no contribution notice');
     assert.deepEqual(await page.locator('[data-participant-role]').evaluateAll(elements => elements.map(element => element.dataset.participantRole)), ['curious', 'student', 'specialist']);

@@ -346,6 +346,11 @@ assert.deepEqual(
 );
 assert.equal(readOnlyDashboardItems.some(({ id }) => id === 'map'), true, 'Authorized read-only researchers can use the private research map');
 assert.equal(readOnlyDashboardItems.some(({ id }) => id === 'public-features'), false, 'Researchers cannot administer public feature visibility');
+for (const [language, label] of [['en', 'Map visibility'], ['fr', 'Visibilité de la carte'], ['ro', 'Vizibilitatea hărții']] as const) {
+  const visibilityItem = getDashboardNavItems(true, language).find(({ id }) => id === 'public-features');
+  assert.equal(visibilityItem?.label, label, 'Public map controls have an explicit localized sidebar label');
+  assert.equal(visibilityItem?.section, 'administration');
+}
 for (const [language, label] of [['en', 'Participation map'], ['fr', 'Carte de participation'], ['ro', 'Harta participării']] as const) {
   const mapItem = getDashboardNavItems(true, language).find(({ id }) => id === 'map');
   assert.equal(mapItem?.label, label, 'The administration map needs a localized sidebar label');

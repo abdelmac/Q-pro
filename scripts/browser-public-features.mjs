@@ -98,6 +98,24 @@ export async function verifyBrowserPublicFeatures({ context, page, fixtureDefini
     await page.locator('#dashboard-sidebar-desktop [data-dashboard-view="map"]').click();
     await privateMap.getByRole('button', { name: /^Romania ≈ 35$/ }).waitFor();
     assert.equal(enabled, false, 'Private research map remains available while the public map is disabled');
+    // The control is also available directly on the map, including narrow screens.
+    await page.setViewportSize({ width: 375, height: 900 });
+    await settings.waitFor();
+    for (const desired of [true, false]) {
+      await toggle.setChecked(desired);
+      assert.equal(enabled, !desired, 'Changing the switch alone does not publish a setting');
+      await settings.getByRole('button', { name: 'Save setting', exact: true }).click();
+      await settings.getByText('Setting saved. The change was recorded in the administrative audit log.', { exact: true }).waitFor();
+      assert.equal(enabled, desired);
+      await privateMap.getByRole('button', { name: /^Romania ≈ 35$/ }).waitFor();
+    }
+    assert.equal(saves, 5, 'Both settings locations use the same persisted flag');
+    const mobileWidth = await page.evaluate(() => ({ viewport: innerWidth, content: document.documentElement.scrollWidth }));
+    assert.ok(mobileWidth.content <= mobileWidth.viewport + 1, 'Inline visibility settings fit on mobile');
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.locator('#dashboard-sidebar-desktop [data-dashboard-view="public-features"]').click();
+    await page.getByRole('heading', { level: 1, name: 'Map visibility', exact: true }).waitFor();
+    assert.equal(await toggle.isChecked(), false, 'Dedicated settings reflect the value saved on the map tab');
     const publicDirect = await page.evaluate(async args => {
       const { supabase } = await import('/Q-pro/src/lib/supabase.ts');
       const result = await supabase.rpc('get_participation_map_stats', args);
@@ -127,7 +145,7 @@ export async function verifyBrowserPublicFeatures({ context, page, fixtureDefini
     await page.getByRole('button', { name: copy.navWorldMap, exact: true }).click();
     await publicMap.getByRole('button', { name: /^Romania ≈ 35$/ }).waitFor();
     assert.equal(await page.getByRole('button', { name: MAP_TRANSLATIONS.en.filters, exact: true }).count(), 0);
-    console.log('Public feature browser checks passed: switch persistence in both directions, disabled routes/links/geography, preserved input, malformed/error/offline fail-closed, private map independence and ordinary-user denial.');
+    console.log('Public feature browser checks passed: dedicated and inline mobile switches, explicit save, persistence in both directions, disabled routes/links/geography, preserved input, malformed/error/offline fail-closed, private map independence and ordinary-user denial.');
   } finally {
     await context.setOffline(false);
     setPublicEnabled(true);

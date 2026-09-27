@@ -63,6 +63,9 @@ export async function verifyBrowserPortalTestData({ context, page, catalog, mapC
     await page.getByRole('button', { name: 'Dashboard', exact: true }).click();
     await page.getByRole('heading', { level: 1, name: 'Specialist cohort', exact: true }).waitFor();
     await panel.getByText('No test dataset is available.', { exact: true }).waitFor();
+    // Wait for the actual cohort result, not only a transient network-idle gap:
+    // the initial five count requests and final row request can settle separately.
+    await page.getByText('No responses match these filters.', { exact: true }).waitFor();
     await page.waitForLoadState('networkidle');
     const liveReads = tableReads;
     await panel.getByRole('button', { name: 'Create test dataset', exact: true }).click();
@@ -116,6 +119,7 @@ export async function verifyBrowserPortalTestData({ context, page, catalog, mapC
     assert.equal(tableReads, liveReads, 'Same-account session revalidation preserves the test-only data source');
     const mapReadsBeforeTest = mapCalls.length;
     await chooseView('map');
+    assert.equal(await page.getByRole('switch', { name: 'Show participation map to public users', exact: true }).isDisabled(), true, 'Inline map visibility is locked in test-data mode too');
     await map.locator('[data-test-map-notice]').waitFor();
     await map.getByRole('button', { name: 'All participants', exact: true }).waitFor();
     await page.waitForFunction(() => !document.querySelector('[data-participation-map] [aria-busy="true"]'));

@@ -36,6 +36,7 @@ import SpecialtyConfigurationEditor from '@/components/SpecialtyConfigurationEdi
 import { useSpecialtyCatalog } from '@/lib/SpecialtyCatalogContext';
 import { STUDENT_STUDY_YEARS } from '@/lib/participantProfile';
 import { MAP_TRANSLATIONS } from '@/data/mapI18n';
+import { PUBLIC_FEATURES_TRANSLATIONS } from '@/data/publicFeaturesI18n';
 import PortalTestDataPanel, { PORTAL_TEST_COPY } from '@/components/PortalTestDataPanel';
 import { usePortalTestDataset } from '@/lib/usePortalTestDataset';
 import { filterTestSpecialists, filterTestStudents, hasCompleteTestInterview, markPortalTestCsv } from '@/lib/portalTestDashboard';
@@ -1042,8 +1043,8 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
 
   const viewCopy: Record<DashboardView, { title: string; description: string }> = {
     'public-features': {
-      title: french ? 'Paramètres · Fonctions publiques' : romanian ? 'Setări · Funcții publice' : 'Settings · Public features',
-      description: french ? 'Contrôles administratifs audités.' : romanian ? 'Controale administrative auditate.' : 'Audited administrative controls.',
+      title: PUBLIC_FEATURES_TRANSLATIONS[lang].title,
+      description: PUBLIC_FEATURES_TRANSLATIONS[lang].description,
     },
     analytics: {
       title: french ? 'Analyses de recherche' : romanian ? 'Analize de cercetare' : 'Research analyses',
@@ -1256,9 +1257,12 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
         )}
 
         {view === 'map' && portalProfile && (
-          <Suspense fallback={<div role="status" className="flex items-center gap-2 rounded-2xl bg-white p-6 text-sm text-brand-800"><Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />{MAP_TRANSLATIONS[lang].loading}</div>}>
-            <ParticipationMap embedded onBack={goToPreviousDashboardPage} refreshKey={mapRefreshKey} testDataset={testMode ? testDataset ?? undefined : undefined} />
-          </Suspense>
+          <>
+            {portalProfile.can_edit && <PublicFeaturesSettings compact testMode={testMode} />}
+            <Suspense fallback={<div role="status" className="flex items-center gap-2 rounded-2xl bg-white p-6 text-sm text-brand-800"><Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />{MAP_TRANSLATIONS[lang].loading}</div>}>
+              <ParticipationMap embedded onBack={goToPreviousDashboardPage} refreshKey={mapRefreshKey} testDataset={testMode ? testDataset ?? undefined : undefined} />
+            </Suspense>
+          </>
         )}
 
         {isCohortView(view) && <section className="mb-5 rounded-2xl border border-ink-100 bg-white p-4 shadow-soft">

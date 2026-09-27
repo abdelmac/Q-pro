@@ -26,6 +26,16 @@ Keep the old frontend accessible during a deliberate transition, but avoid split
 
 ## Everyday monitoring without a mandatory paid subscription
 
+### Public map visibility
+
+Authorized doctors/professors can use **Dashboard → Participation map** (the control above the private map) or **Administration → Map visibility**. Select **Show participation map to public users**, then **Save setting**. Both controls share the existing server setting; changing the checkbox without saving does not publish a change. Read-only researchers cannot change it, and test-data mode disables both controls. The private map and its filters remain independent of public visibility. EN/FR/RO labels are available.
+
+A read-only readiness check on **26 September 2026** against the project configured by the Pages workflow (`txrvbkdcfyhatauovngh`) returned HTTP 404 / `PGRST202` for `get_public_features`. The live API did not expose the expected function at that time; this can indicate a missing migration or stale schema cache, not a valid disabled-map response. Before relying on the live switch, review the hosted migration state and function availability, with an approved backup before applying outstanding migrations. The existing implementation is in `supabase/migrations/20260925145121_research_map_visibility_and_analytics.sql`. Do not blindly replay that migration against a partly upgraded database. [PostgREST error reference](https://docs.postgrest.org/en/stable/references/errors.html#group-2-schema-cache).
+
+The UI changes were tested against intercepted synthetic backend responses; this does not establish hosted readiness. No production setting was changed by this check. The installation-help panel was removed from the first page in all languages; PWA/browser installation support and memory-only questionnaire progress remain unchanged.
+
+### Routine checks
+
 Use provider dashboards and application error/pending states first. Assign one operator to review:
 
 - Database size, largest tables/indexes, storage, egress, Auth MAU and the upcoming invoice weekly; also before recruitment mailings.

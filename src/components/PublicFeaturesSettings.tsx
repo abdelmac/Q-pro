@@ -5,7 +5,7 @@ import { usePublicFeatures } from '@/lib/PublicFeaturesContext';
 import { setPublicMapEnabled } from '@/lib/supabase';
 import { PUBLIC_FEATURES_TRANSLATIONS } from '@/data/publicFeaturesI18n';
 
-export default function PublicFeaturesSettings({ testMode = false }: { testMode?: boolean }) {
+export default function PublicFeaturesSettings({ testMode = false, compact = false }: { testMode?: boolean; compact?: boolean }) {
   const { lang } = useLanguage();
   const copy = PUBLIC_FEATURES_TRANSLATIONS[lang];
   const { publicMapEnabled, status, checkedAt, refresh, invalidate } = usePublicFeatures();
@@ -39,9 +39,9 @@ export default function PublicFeaturesSettings({ testMode = false }: { testMode?
     }
   };
 
-  return <section data-public-features-settings className="max-w-3xl space-y-5">
-    <p className="text-xs font-semibold uppercase tracking-wider text-brand-700">{copy.settings} / {copy.title}</p>
-    <p className="text-sm leading-relaxed text-ink-600">{copy.description}</p>
+  return <section data-public-features-settings className={compact ? 'mb-6 space-y-3' : 'max-w-3xl space-y-5'}>
+    <h2 className="text-xs font-semibold uppercase tracking-wider text-brand-700">{copy.settings} / {copy.title}</h2>
+    {!compact && <p className="text-sm leading-relaxed text-ink-600">{copy.description}</p>}
     <form onSubmit={save} className="rounded-2xl border border-ink-200 bg-white p-5 sm:p-7">
       <div className="flex gap-3">
         <Globe2 className="mt-1 h-6 w-6 shrink-0 text-brand-700" aria-hidden="true" />
@@ -53,10 +53,10 @@ export default function PublicFeaturesSettings({ testMode = false }: { testMode?
               className="h-6 w-6 shrink-0 accent-brand-800 disabled:opacity-40" />
           </label>
           <p className="mt-2 text-sm text-ink-600" role="status">{status === 'checking' ? copy.checking : status === 'unavailable' ? copy.unavailable : publicMapEnabled ? copy.enabled : copy.disabled}</p>
-          {checkedAt !== null && <time dateTime={new Date(checkedAt).toISOString()} className="mt-1 block text-xs text-ink-400">{new Intl.DateTimeFormat(lang, { dateStyle: 'medium', timeStyle: 'short' }).format(checkedAt)}</time>}
+          {!compact && checkedAt !== null && <time dateTime={new Date(checkedAt).toISOString()} className="mt-1 block text-xs text-ink-400">{new Intl.DateTimeFormat(lang, { dateStyle: 'medium', timeStyle: 'short' }).format(checkedAt)}</time>}
         </div>
       </div>
-      <p className="mt-5 text-sm leading-relaxed text-ink-600">{copy.explanation}</p>
+      <p className="mt-5 text-sm leading-relaxed text-ink-600">{compact ? copy.compactExplanation : copy.explanation}</p>
       <div className="mt-6 flex flex-wrap gap-3">
         <button type="submit" disabled={testMode || saving || !dirty || status !== 'ready'} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-brand-800 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-900 disabled:cursor-not-allowed disabled:opacity-40">
           {saving && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}{saving ? copy.saving : copy.save}
@@ -66,9 +66,9 @@ export default function PublicFeaturesSettings({ testMode = false }: { testMode?
       {outcome && <p role={outcome === 'failed' ? 'alert' : 'status'} className={`mt-4 text-sm ${outcome === 'failed' ? 'text-red-700' : 'text-emerald-800'}`}>{outcome === 'failed' ? copy.saveError : copy.saved}</p>}
       {testMode && <p role="status" className="mt-4 text-sm text-amber-800">{copy.testMode}</p>}
     </form>
-    <div className="flex gap-3 rounded-2xl border border-brand-100 bg-brand-50/50 p-5 text-sm leading-relaxed text-ink-600">
+    {!compact && <div className="flex gap-3 rounded-2xl border border-brand-100 bg-brand-50/50 p-5 text-sm leading-relaxed text-ink-600">
       <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-brand-700" aria-hidden="true" />
       <div><p>{copy.privacy}</p><p className="mt-3">{copy.audit}</p></div>
-    </div>
+    </div>}
   </section>;
 }
