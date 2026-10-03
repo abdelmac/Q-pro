@@ -3,6 +3,10 @@ import type { Language } from '@/data/i18n';
 const en = {
   settings: 'Settings',
   title: 'Map visibility',
+  show: 'Show public map',
+  hide: 'Hide public map',
+  setupRequired: 'Map visibility control is unavailable on this deployment.',
+  setupHelp: 'Supabase cannot find the map-settings function (PGRST202). Check the database migrations and API schema cache. The public map stays hidden and this control stays disabled until the server check succeeds.',
   mapLabel: 'Show participation map to public users',
   description: 'Control the public map on the website and mobile apps. Only administrators can change this setting.',
   enabled: 'Public map enabled',
@@ -29,6 +33,9 @@ export const PUBLIC_FEATURES_TRANSLATIONS: Record<Language, PublicFeaturesString
   en,
   fr: {
     settings: 'Paramètres', title: 'Visibilité de la carte',
+    show: 'Afficher la carte publique', hide: 'Masquer la carte publique',
+    setupRequired: 'Le contrôle de visibilité de la carte est indisponible sur ce déploiement.',
+    setupHelp: 'Supabase ne trouve pas la fonction de paramétrage de la carte (PGRST202). Vérifiez les migrations et le cache du schéma API. La carte publique reste masquée et ce contrôle reste désactivé jusqu’à une vérification réussie.',
     mapLabel: 'Afficher la carte de participation au public',
     description: 'Contrôlez la carte publique sur le site et les applications mobiles. Seuls les administrateurs peuvent modifier ce paramètre.',
     enabled: 'Carte publique activée', disabled: 'Carte publique masquée',
@@ -48,6 +55,9 @@ export const PUBLIC_FEATURES_TRANSLATIONS: Record<Language, PublicFeaturesString
   },
   ro: {
     settings: 'Setări', title: 'Vizibilitatea hărții',
+    show: 'Afișează harta publică', hide: 'Ascunde harta publică',
+    setupRequired: 'Controlul vizibilității hărții nu este disponibil în această implementare.',
+    setupHelp: 'Supabase nu găsește funcția pentru setările hărții (PGRST202). Verifică migrările bazei de date și memoria cache a schemei API. Harta publică rămâne ascunsă, iar controlul rămâne dezactivat până la o verificare reușită.',
     mapLabel: 'Afișează harta participării pentru public',
     description: 'Controlează harta publică pe site și în aplicațiile mobile. Numai administratorii pot modifica această setare.',
     enabled: 'Hartă publică activată', disabled: 'Hartă publică ascunsă',

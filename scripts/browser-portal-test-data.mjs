@@ -50,6 +50,12 @@ export async function verifyBrowserPortalTestData({ context, page, catalog, mapC
   await context.route(tablePattern, tableHandler);
   await context.route(analyticsPattern, analyticsHandler);
   const panel = page.locator('[data-portal-test-panel]');
+  const testTools = panel.locator('[data-portal-test-tools]');
+  const openTestTools = async () => {
+    if (!await testTools.evaluate(element => element.open)) {
+      await testTools.locator(':scope > summary').click();
+    }
+  };
   const map = page.locator('[data-participation-map="admin"]');
   const chooseView = async view => {
     await page.locator(`#dashboard-sidebar-desktop [data-dashboard-view="${view}"]`).click();
@@ -62,12 +68,16 @@ export async function verifyBrowserPortalTestData({ context, page, catalog, mapC
     await signIn();
     await page.getByRole('button', { name: 'Dashboard', exact: true }).click();
     await page.getByRole('heading', { level: 1, name: 'Specialist cohort', exact: true }).waitFor();
-    await panel.getByText('No test dataset is available.', { exact: true }).waitFor();
+    await panel.getByText('No test dataset is available.', { exact: true }).waitFor({ state: 'attached' });
     // Wait for the actual cohort result, not only a transient network-idle gap:
     // the initial five count requests and final row request can settle separately.
     await page.getByText('No responses match these filters.', { exact: true }).waitFor();
     await page.waitForLoadState('networkidle');
     const liveReads = tableReads;
+    assert.equal(await testTools.evaluate(element => element.open), false, 'Test dataset tools start collapsed in live research');
+    assert.equal(await panel.locator('[data-portal-data-mode="live"]').isVisible(), true);
+    assert.equal(await panel.locator('[data-portal-data-mode="test"]').isVisible(), true);
+    await openTestTools();
     await panel.getByRole('button', { name: 'Create test dataset', exact: true }).click();
     await panel.locator('[data-portal-test-banner]').waitFor();
     await page.waitForFunction(() => document.querySelectorAll('table tbody tr').length === 5);
@@ -75,6 +85,24 @@ export async function verifyBrowserPortalTestData({ context, page, catalog, mapC
     assert.equal(tableReads, liveReads, 'Creating/selecting a test dataset never reloads real cohorts');
     const originalDatasetId = recipe.id;
     const originalRows = await page.locator('table tbody').textContent();
+    await testTools.locator(':scope > summary').click();
+    assert.equal(await panel.locator('[data-portal-test-banner]').isVisible(), true, 'The synthetic-data warning stays visible when test tools are collapsed');
+    assert.equal(await panel.getByText('These fictional responses and exact counts are for interface testing only. They are not research evidence and must never calibrate the real model.', { exact: true }).isVisible(), true);
+    assert.equal(await page.locator('[data-public-map-toolbar]').getByRole('button', { name: /^(Show|Hide) public map$/ }).isDisabled(), true, 'Quick visibility changes are locked in synthetic mode');
+    const advanced = page.locator('[data-dashboard-advanced-filters]');
+    await advanced.locator(':scope > summary').click();
+    await advanced.getByLabel('Data version', { exact: true }).selectOption('all');
+    await page.locator('[data-dashboard-version-summary]').getByText('All versions', { exact: true }).waitFor();
+    await advanced.locator(':scope > summary').click();
+    assert.match(await advanced.locator(':scope > summary').textContent(), /0 active/);
+    await page.getByRole('button', { name: 'Reset filters', exact: true }).click();
+    await page.locator('[data-dashboard-version-summary]').getByText('Current versions only', { exact: true }).waitFor();
+    assert.match(await advanced.locator(':scope > summary').textContent(), /1 active/);
+    await page.setViewportSize({ width: 375, height: 900 });
+    const firstDetails = page.locator('table tbody tr').first().getByRole('button', { name: 'Details', exact: true });
+    const detailBounds = await firstDetails.boundingBox();
+    assert.ok(detailBounds.x >= 0 && detailBounds.x + detailBounds.width <= 375 && detailBounds.height >= 44, 'Record details are reachable without horizontal scrolling on mobile');
+    await page.setViewportSize({ width: 1440, height: 1000 });
 
     await page.locator('table tbody tr').first().getByRole('button', { name: 'Details', exact: true }).click();
     const detail = page.getByRole('dialog');
@@ -85,6 +113,7 @@ export async function verifyBrowserPortalTestData({ context, page, catalog, mapC
     await page.getByRole('button', { name: 'Load full analysis', exact: true }).click();
     await page.getByRole('button', { name: 'Recompute analysis', exact: true }).waitFor();
 
+    await page.locator('[data-dashboard-exports] > summary').click();
     const download = page.waitForEvent('download');
     await page.getByRole('button', { name: 'JSON', exact: true }).click();
     const artifact = await download;
@@ -149,12 +178,17 @@ export async function verifyBrowserPortalTestData({ context, page, catalog, mapC
 
     // Losing the recipe or its service must never silently display real responses.
     datasetFailure = true;
+    await openTestTools();
     await panel.getByRole('button', { name: 'Check test dataset', exact: true }).click();
     await panel.getByRole('alert').waitFor();
+    await testTools.locator(':scope > summary').click();
+    assert.equal(await panel.getByRole('alert').isVisible(), true, 'A dataset error stays visible when test tools are collapsed');
+    assert.equal(await panel.locator('[data-portal-test-banner]').isVisible(), true);
     assert.equal(await page.locator('table tbody tr').count(), 0);
     assert.equal(tableReads, readsAfterReload);
     assert.equal(await panel.locator('[data-portal-data-mode="live"]').getAttribute('aria-pressed'), 'false');
     datasetFailure = false;
+    await openTestTools();
     await panel.getByRole('button', { name: 'Check test dataset', exact: true }).click();
     await page.waitForFunction(() => document.querySelectorAll('table tbody tr').length === 5);
 
@@ -171,7 +205,8 @@ export async function verifyBrowserPortalTestData({ context, page, catalog, mapC
 
     // The complete deletion controls must remain usable on a narrow phone.
     await page.setViewportSize({ width: 375, height: 900 });
-    await panel.locator('summary').click();
+    await openTestTools();
+    await panel.getByText('Manage / delete test dataset', { exact: true }).click();
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), 'Expanded test controls must not overflow a mobile viewport');
     await page.screenshot({ path: 'browser-qa.local/portal-test-delete-mobile375.png', fullPage: true });
     await panel.locator('#portal-test-delete-confirmation').fill('wrong-id');

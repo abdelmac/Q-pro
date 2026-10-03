@@ -76,15 +76,31 @@ export function getSupabaseConfigurationError(): string | null {
 }
 
 export interface PublicFeatures { public_map_enabled: boolean }
+export type PublicFeaturesIssue = 'setup-required' | 'unavailable';
+
+export class PublicFeaturesError extends Error {
+  readonly issue: PublicFeaturesIssue;
+
+  constructor(issue: PublicFeaturesIssue) {
+    super(issue === 'setup-required'
+      ? 'The public feature setting is not available on this deployment.'
+      : 'The public feature setting could not be checked.');
+    this.name = 'PublicFeaturesError';
+    this.issue = issue;
+  }
+}
 
 /** Return only the explicit public allowlist; malformed/missing settings fail closed. */
 export async function fetchPublicFeatures(signal?: AbortSignal): Promise<PublicFeatures> {
-  if (!supabase) return { public_map_enabled: false };
+  if (!supabase) throw new PublicFeaturesError('unavailable');
   let request = supabase.rpc('get_public_features');
   if (signal) request = request.abortSignal(signal);
   const { data, error } = await request;
-  if (error) throw error;
-  return { public_map_enabled: data !== null && !Array.isArray(data) && typeof data === 'object' && data.public_map_enabled === true };
+  if (error) throw new PublicFeaturesError(error.code === 'PGRST202' ? 'setup-required' : 'unavailable');
+  if (data === null || Array.isArray(data) || typeof data !== 'object' || typeof data.public_map_enabled !== 'boolean') {
+    throw new PublicFeaturesError('unavailable');
+  }
+  return { public_map_enabled: data.public_map_enabled };
 }
 
 export async function setPublicMapEnabled(enabled: boolean): Promise<PublicFeatures> {

@@ -128,7 +128,60 @@ try {
     assert.equal(/NaN|Infinity|undefined/.test(path.d), false);
     if (path.code !== null) assert.ok(COUNTRIES.some(country => country.code === path.code));
   }
-  console.log('Participation map checks passed: aggregate-only RPC, privacy/count contract, administrator roles and access errors, filters, geography, localization and geometry.');
+
+  // Exercise the real visibility helper with an entirely synthetic client and configuration.
+  const featureOutput = join(temporaryDirectory, 'public-feature-tests.mjs');
+  await build({
+    stdin: {
+      contents: `export { fetchPublicFeatures, PublicFeaturesError } from './src/lib/supabase';`,
+      resolveDir: process.cwd(), loader: 'ts',
+    },
+    outfile: featureOutput, bundle: true, platform: 'node', format: 'esm', tsconfig: 'tsconfig.app.json', logLevel: 'silent',
+    define: { 'import.meta.env': 'globalThis.__publicFeaturesEnv' },
+    plugins: [{
+      name: 'synthetic-public-feature-client',
+      setup(builder) {
+        builder.onResolve({ filter: /^@supabase\/supabase-js$/ }, () => ({ path: 'feature-client', namespace: 'fixture' }));
+        builder.onLoad({ filter: /.*/, namespace: 'fixture' }, () => ({ contents: `
+          export const createClient = () => ({ rpc(name) {
+            globalThis.__publicFeaturesCalls.push(name);
+            const promise = Promise.resolve(globalThis.__publicFeaturesResponse);
+            promise.abortSignal = signal => { globalThis.__publicFeaturesSignal = signal; return promise; };
+            return promise;
+          }});
+        ` }));
+      },
+    }],
+  });
+  globalThis.__publicFeaturesEnv = {};
+  globalThis.__publicFeaturesCalls = [];
+  const unconfigured = await import(`${pathToFileURL(featureOutput).href}?unconfigured`);
+  await assert.rejects(() => unconfigured.fetchPublicFeatures(), error =>
+    error instanceof unconfigured.PublicFeaturesError && error.issue === 'unavailable',
+  'Missing configuration must not be reported as a confirmed disabled map');
+  assert.equal(globalThis.__publicFeaturesCalls.length, 0);
+
+  globalThis.__publicFeaturesEnv = { VITE_SUPABASE_URL: 'https://synthetic.invalid', VITE_SUPABASE_PUBLISHABLE_KEY: 'synthetic-only' };
+  const { fetchPublicFeatures, PublicFeaturesError } = await import(`${pathToFileURL(featureOutput).href}?configured`);
+  for (const enabled of [true, false]) {
+    globalThis.__publicFeaturesResponse = { data: { public_map_enabled: enabled, unrelated: 'not exposed' }, error: null };
+    assert.deepEqual(await fetchPublicFeatures(), { public_map_enabled: enabled });
+  }
+  const visibilitySignal = new AbortController().signal;
+  await fetchPublicFeatures(visibilitySignal);
+  assert.equal(globalThis.__publicFeaturesSignal, visibilitySignal);
+  for (const data of [undefined, null, [], true, 1, 'false', {}, { public_map_enabled: 'true' }, { public_map_enabled: 1 }, { public_map_enabled: null }]) {
+    globalThis.__publicFeaturesResponse = { data, error: null };
+    await assert.rejects(() => fetchPublicFeatures(), error => error instanceof PublicFeaturesError && error.issue === 'unavailable',
+      'Malformed settings must remain unavailable rather than becoming a confirmed disabled map');
+  }
+  for (const [code, issue] of [['PGRST202', 'setup-required'], ['42501', 'unavailable'], ['unexpected', 'unavailable']]) {
+    globalThis.__publicFeaturesResponse = { data: { public_map_enabled: true }, error: { code, message: 'private server detail' } };
+    await assert.rejects(() => fetchPublicFeatures(), error =>
+      error instanceof PublicFeaturesError && error.issue === issue && !error.message.includes('private server detail'));
+  }
+  assert.ok(globalThis.__publicFeaturesCalls.every(name => name === 'get_public_features'), 'Visibility checks use only the public read RPC');
+  console.log('Participation map checks passed: aggregate-only RPC, strict visibility readiness, privacy/count contract, administrator roles and access errors, filters, geography, localization and geometry.');
 } finally {
   const resolvedDirectory = resolve(temporaryDirectory);
   if (!resolvedDirectory.startsWith(resolve(tmpdir()) + sep) || !resolvedDirectory.includes('q-pro-map-tests-')) throw new Error('Unexpected test temporary directory');
@@ -137,4 +190,8 @@ try {
   delete globalThis.__mapRpcCalls;
   delete globalThis.__mapRpcError;
   delete globalThis.__mapRpcStatus;
+  delete globalThis.__publicFeaturesEnv;
+  delete globalThis.__publicFeaturesCalls;
+  delete globalThis.__publicFeaturesResponse;
+  delete globalThis.__publicFeaturesSignal;
 }

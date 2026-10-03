@@ -1,6 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { translateSpecialtyName } from '@/data/i18n';
 import { useLanguage } from '@/lib/LanguageContext';
+import { usePublicFeatures } from '@/lib/PublicFeaturesContext';
 import { getDashboardNavigationScrollKey, useScrollToPageTop } from '@/lib/scrollToTop';
 import { DATA_VERSIONS, formatSupabaseError, getSupabaseConfigurationError, supabase } from '@/lib/supabase';
 import type { Database } from '@/lib/database.types';
@@ -189,6 +190,7 @@ function applyDateFilters<T extends {
 
 export default function Dashboard({ onBack }: { onBack: () => void }) {
   const { lang } = useLanguage();
+  const { refresh: refreshPublicFeatures, status: publicFeaturesStatus } = usePublicFeatures();
   const { specialties: liveSpecialties, version: liveCatalogVersion, refresh: refreshCatalog } = useSpecialtyCatalog();
   const french = lang === 'fr';
   const romanian = lang === 'ro';
@@ -275,6 +277,13 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
   const visibleSpecialists = loadedSource === sourceKey ? specialists : [];
   const visibleCounts = loadedSource === sourceKey ? counts : EMPTY_COUNTS;
   const visibleTotal = loadedSource === sourceKey ? activeTotal : 0;
+  const advancedFilterCount = Number(languageFilter !== 'all') + Number(dataVersionFilter !== 'all')
+    + Number(Boolean(dateFrom)) + Number(Boolean(dateTo));
+  const versionLabel = dataVersionFilter === 'current'
+    ? (french ? 'Versions courantes uniquement' : romanian ? 'Numai versiunile curente' : 'Current versions only')
+    : dataVersionFilter === 'legacy'
+      ? (french ? 'Données legacy uniquement' : romanian ? 'Numai date vechi' : 'Legacy data only')
+      : (french ? 'Toutes les versions' : romanian ? 'Toate versiunile' : 'All versions');
 
   const resetPageAndAnalysis = useCallback(() => {
     loadRequest.current += 1;
@@ -1000,7 +1009,12 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
   };
 
   const refreshData = () => {
+    if (view === 'public-features') {
+      void refreshPublicFeatures();
+      return;
+    }
     if (view === 'map' || view === 'analytics') {
+      if (view === 'map') void refreshPublicFeatures();
       setMapRefreshKey(value => value + 1);
       return;
     }
@@ -1169,7 +1183,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
         <section className="min-w-0 flex-1">
           <div className="px-4 py-5 sm:px-8 sm:py-7 lg:px-10">
             <div className="mx-auto max-w-[1500px]">
-              <header className="mb-8 flex flex-wrap items-start justify-between gap-4 border-b border-ink-100 pb-6">
+              <header className="mb-4 flex flex-wrap items-start justify-between gap-4 border-b border-ink-100 pb-4">
                 <div className="flex min-w-0 items-start gap-3">
                   <button
                     ref={sidebarTriggerRef}
@@ -1208,7 +1222,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
                   <button
                     type="button"
                     onClick={refreshData}
-                    disabled={loading}
+                    disabled={loading || (view === 'public-features' && publicFeaturesStatus === 'checking')}
                     title={french ? 'Actualiser' : romanian ? 'Actualizează datele' : 'Refresh data'}
                     className="inline-flex items-center gap-2 rounded-full border border-ink-200 bg-white px-4 py-2.5 text-sm font-semibold text-ink-700 shadow-soft disabled:opacity-40"
                   >
@@ -1218,11 +1232,18 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
                 )}
               </header>
 
+        {canManageTestData && <PublicFeaturesSettings
+          key={authIdentity}
+          testMode={testMode}
+          quick={view !== 'map' && view !== 'public-features'}
+          compact={view === 'map'}
+          onOpenSettings={() => selectDashboardView('public-features')}
+        />}
         {canManageTestData && <PortalTestDataPanel lang={lang} manager={testManager} />}
         {error && <p className="mb-5 rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-700">{error}</p>}
         {!testBlocked && <>
 
-        {isCohortView(view) && <div className="mb-8 grid grid-cols-2 gap-4 xl:grid-cols-5">
+        {isCohortView(view) && <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5">
           <Stat label={french ? 'Spécialistes' : 'Specialists'} value={visibleCounts.specialists} icon={<Stethoscope className="h-5 w-5" />} />
           <Stat label={french ? 'Entretiens actuels complets' : 'Complete current interviews'} value={visibleCounts.specialistsComplete} icon={<CheckCircle2 className="h-5 w-5" />} />
           <Stat label={french ? 'Étudiants' : romanian ? 'Studenți' : 'Students'} value={visibleCounts.students} icon={<Users className="h-5 w-5" />} />
@@ -1230,14 +1251,17 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
           <Stat label={french ? 'Étudiants avec année' : romanian ? 'Studenți cu anul declarat' : 'Students with study year'} value={visibleCounts.studentsWithYear} icon={<GraduationCap className="h-5 w-5" />} />
         </div>}
 
-        {isCohortView(view) && <div className="mb-5 flex flex-wrap items-center justify-end gap-2">
+        {isCohortView(view) && <details data-dashboard-exports className="mb-4 rounded-2xl border border-ink-100 bg-white p-4">
+          <summary className="min-h-11 cursor-pointer content-center text-sm font-semibold text-ink-700">{french ? 'Exporter les données filtrées' : romanian ? 'Exportă datele filtrate' : 'Export filtered data'}</summary>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
             {!testMode && <p className="mr-auto text-xs text-ink-500">{french ? 'Exports interactifs : 1 000 soumissions maximum. Analyses complètes dans Analyses de recherche.' : romanian ? 'Exporturi interactive: maximum 1.000 de trimiteri. Analize complete în Analize de cercetare.' : 'Interactive exports: up to 1,000 submissions. Full analyses under Research analyses.'}</p>}
             {exporting && <button type="button" className="min-h-11 rounded-lg border px-3 text-sm" onClick={() => { exportRequest.current++; dataAbort.current.abort(); dataAbort.current = new AbortController(); setExporting(null); }}>{french ? 'Annuler l’export' : romanian ? 'Anulează exportul' : 'Cancel export'}</button>}
             <ExportButton icon={<Download className="h-4 w-4" />} label={french ? 'CSV large' : 'Wide CSV'} busy={exporting === 'raw'} disabled={exporting !== null} onClick={() => void exportData('raw')} />
             <ExportButton icon={<Download className="h-4 w-4" />} label={french ? 'CSV long' : 'Long CSV'} busy={exporting === 'long'} disabled={exporting !== null} onClick={() => void exportData('long')} />
             <ExportButton icon={<BarChart3 className="h-4 w-4" />} label={french ? 'CSV analytique' : 'Analytic CSV'} busy={exporting === 'analytic'} disabled={exporting !== null} onClick={() => void exportData('analytic')} />
             <ExportButton icon={<FileJson className="h-4 w-4" />} label="JSON" busy={exporting === 'json'} disabled={exporting !== null} onClick={() => void exportData('json')} />
-        </div>}
+          </div>
+        </details>}
 
         {view === 'algorithm' && (
           <AlgorithmExplanation
@@ -1248,7 +1272,6 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
           />
         )}
 
-        {view === 'public-features' && portalProfile?.can_edit && <PublicFeaturesSettings testMode={testMode} />}
         {view === 'analytics' && <ResearchAnalytics testMode={testMode} refreshToken={mapRefreshKey} />}
 
         {view === 'configuration' && testMode && <p data-test-configuration-locked className="rounded-xl border border-amber-300 bg-amber-50 p-5 text-sm text-amber-950">{testCopy.locked}</p>}
@@ -1258,7 +1281,6 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
 
         {view === 'map' && portalProfile && (
           <>
-            {portalProfile.can_edit && <PublicFeaturesSettings compact testMode={testMode} />}
             <Suspense fallback={<div role="status" className="flex items-center gap-2 rounded-2xl bg-white p-6 text-sm text-brand-800"><Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />{MAP_TRANSLATIONS[lang].loading}</div>}>
               <ParticipationMap embedded onBack={goToPreviousDashboardPage} refreshKey={mapRefreshKey} testDataset={testMode ? testDataset ?? undefined : undefined} />
             </Suspense>
@@ -1266,7 +1288,14 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
         )}
 
         {isCohortView(view) && <section className="mb-5 rounded-2xl border border-ink-100 bg-white p-4 shadow-soft">
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h2 className="text-sm font-semibold text-ink-900">{french ? 'Filtrer les réponses' : romanian ? 'Filtrează răspunsurile' : 'Filter responses'}</h2>
+              <p data-dashboard-version-summary className="mt-1 text-xs text-brand-700">{versionLabel}</p>
+            </div>
+            <button type="button" onClick={resetFilters} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-ink-200 px-3 py-2 text-xs font-semibold text-ink-600 hover:bg-ink-50"><FilterX className="h-4 w-4" aria-hidden="true" />{french ? 'Réinitialiser' : romanian ? 'Resetează filtrele' : 'Reset filters'}</button>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             {view === 'specialists' ? (
               <>
                 <FilterSelect label={french ? 'Spécialité réelle' : 'Actual specialty'} value={specialtyFilter} onChange={(value) => { setSpecialtyFilter(value); resetPageAndAnalysis(); }}>
@@ -1317,21 +1346,23 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
                 </FilterSelect>
               </>
             )}
-            <FilterSelect label={french ? 'Langue' : 'Language'} value={languageFilter} onChange={(value) => { setLanguageFilter(value); resetPageAndAnalysis(); }}>
-              <option value="all">{french ? 'Toutes les langues' : 'All languages'}</option>
+          </div>
+          <details data-dashboard-advanced-filters className="mt-3 border-t border-ink-100 pt-2">
+            <summary className="min-h-11 cursor-pointer content-center text-sm font-semibold text-ink-600">{french ? 'Filtres supplémentaires' : romanian ? 'Filtre suplimentare' : 'Additional filters'} <span className="ml-1 rounded-full bg-brand-50 px-2 py-1 text-xs text-brand-800">{advancedFilterCount} {french ? 'actifs' : romanian ? 'active' : 'active'}</span></summary>
+            <div className="mt-2 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <FilterSelect label={french ? 'Langue' : romanian ? 'Limba' : 'Language'} value={languageFilter} onChange={(value) => { setLanguageFilter(value); resetPageAndAnalysis(); }}>
+              <option value="all">{french ? 'Toutes les langues' : romanian ? 'Toate limbile' : 'All languages'}</option>
               <option value="fr">Français</option><option value="en">English</option><option value="ro">Română</option>
             </FilterSelect>
-            <FilterSelect label={french ? 'Version des données' : 'Data version'} value={dataVersionFilter} onChange={(value) => { setDataVersionFilter(value as DataVersionFilter); resetPageAndAnalysis(); }}>
-              <option value="current">{french ? 'Versions courantes uniquement' : 'Current versions only'}</option>
-              <option value="all">{french ? 'Toutes les versions' : 'All versions'}</option>
-              <option value="legacy">{french ? 'Données legacy uniquement' : 'Legacy data only'}</option>
+            <FilterSelect label={french ? 'Version des données' : romanian ? 'Versiunea datelor' : 'Data version'} value={dataVersionFilter} onChange={(value) => { setDataVersionFilter(value as DataVersionFilter); resetPageAndAnalysis(); }}>
+              <option value="current">{french ? 'Versions courantes uniquement' : romanian ? 'Numai versiunile curente' : 'Current versions only'}</option>
+              <option value="all">{french ? 'Toutes les versions' : romanian ? 'Toate versiunile' : 'All versions'}</option>
+              <option value="legacy">{french ? 'Données legacy uniquement' : romanian ? 'Numai date vechi' : 'Legacy data only'}</option>
             </FilterSelect>
-            <FilterDate label={french ? 'Depuis' : 'From'} value={dateFrom} onChange={(value) => { setDateFrom(value); resetPageAndAnalysis(); }} />
-            <FilterDate label={french ? 'Jusqu’au' : 'To'} value={dateTo} onChange={(value) => { setDateTo(value); resetPageAndAnalysis(); }} />
-            <div className="flex items-end">
-              <button type="button" onClick={resetFilters} className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-ink-200 px-3 py-2.5 text-xs font-semibold text-ink-600 hover:bg-ink-50"><FilterX className="h-4 w-4" />{french ? 'Réinitialiser' : 'Reset filters'}</button>
+            <FilterDate label={french ? 'Depuis' : romanian ? 'De la' : 'From'} value={dateFrom} onChange={(value) => { setDateFrom(value); resetPageAndAnalysis(); }} />
+            <FilterDate label={french ? 'Jusqu’au' : romanian ? 'Până la' : 'To'} value={dateTo} onChange={(value) => { setDateTo(value); resetPageAndAnalysis(); }} />
             </div>
-          </div>
+          </details>
         </section>}
 
         {view === 'specialists' && (
@@ -1403,6 +1434,7 @@ function SpecialistTable({
   return (
     <table className="w-full min-w-[2220px] text-left text-sm">
       <thead className="bg-ink-50 text-xs text-ink-500"><tr>
+        <th className="sticky left-0 z-10 bg-ink-50 px-3 py-3 font-semibold">{french ? 'Détails' : lang === 'ro' ? 'Detalii' : 'Details'}</th>
         <th className="px-5 py-3 font-semibold">{french ? 'Spécialité réelle' : 'Actual specialty'}</th>
         <th className="px-4 py-3 font-semibold">
           {french ? 'Questionnaire 81 items' : lang === 'ro' ? 'Chestionar 81 itemi' : '81-item questionnaire'}
@@ -1417,10 +1449,10 @@ function SpecialistTable({
         <th className="px-4 py-3 font-semibold">{french ? 'Schéma' : 'Schema'}</th>
         <th className="px-4 py-3 font-semibold">{french ? 'Langue' : 'Language'}</th>
         <th className="px-4 py-3 font-semibold">{french ? 'Date' : 'Date'}</th>
-        <th className="px-4 py-3"><span className="sr-only">{french ? 'Détails' : 'Details'}</span></th>
       </tr></thead>
       <tbody>{rows.map((row) => (
         <tr key={row.id} className="border-t border-ink-100 hover:bg-ink-50/60">
+          <td className="sticky left-0 z-10 bg-white px-3 py-3"><DetailButton lang={lang} loading={loadingId === row.id} onClick={() => onOpen(row.id)} /></td>
           <td className="px-5 py-3 font-medium text-ink-900">{translateSpecialtyName(row.actual_specialty, lang)}</td>
           <td className="px-4 py-3">
             {row.questionnaire_completed
@@ -1437,7 +1469,6 @@ function SpecialistTable({
           <td className="px-4 py-3 font-mono text-xs">v{row.submission_schema_version}</td>
           <td className="px-4 py-3 uppercase">{row.language}</td>
           <td className="px-4 py-3 text-ink-500">{new Date(row.created_at).toLocaleDateString(locale)}</td>
-          <td className="px-4 py-3"><DetailButton french={french} loading={loadingId === row.id} onClick={() => onOpen(row.id)} /></td>
         </tr>
       ))}</tbody>
     </table>
@@ -1469,33 +1500,33 @@ export function StudentTable({
   return (
     <table className="w-full min-w-[1220px] text-left text-sm">
       <thead className="bg-ink-50 text-xs text-ink-500"><tr>
+        <th className="sticky left-0 z-10 bg-ink-50 px-3 py-3 font-semibold">{french ? 'Détails' : lang === 'ro' ? 'Detalii' : 'Details'}</th>
         <th className="px-5 py-3 font-semibold">{french ? 'Public' : lang === 'ro' ? 'Public' : 'Audience'}</th>
         <th className="px-4 py-3 font-semibold">{french ? 'Année d’étude' : lang === 'ro' ? 'Anul de studiu' : 'Study year'}</th>
         <th className="px-4 py-3 font-semibold">{french ? 'Spécialité préférée' : lang === 'ro' ? 'Specialitatea preferată' : 'Preferred specialty'}</th>
         <th className="px-4 py-3 font-semibold">{french ? 'Regard sur la médecine' : lang === 'ro' ? 'Perspectiva asupra medicinei' : 'View of medicine'}</th>
         <th className="px-4 py-3 font-semibold">{french ? 'Langue' : lang === 'ro' ? 'Limba' : 'Language'}</th>
         <th className="px-4 py-3 font-semibold">{french ? 'Date' : 'Date'}</th>
-        <th className="px-4 py-3"><span className="sr-only">{french ? 'Détails' : 'Details'}</span></th>
       </tr></thead>
       <tbody>{rows.map((row) => (
         <tr key={row.id} className="border-t border-ink-100 hover:bg-ink-50/60">
+          <td className="sticky left-0 z-10 bg-white px-3 py-3"><DetailButton lang={lang} loading={loadingId === row.id} onClick={() => onOpen(row.id)} /></td>
           <td className="px-5 py-3"><Badge tone={row.participant_role === 'curious' ? 'amber' : 'green'}>{participantRoleLabel(row.participant_role, lang)}</Badge></td>
           <td className="px-4 py-3">{row.study_year ?? '—'}</td>
           <td className="px-4 py-3 font-medium text-ink-900">{row.preferred_specialty ? translateSpecialtyName(row.preferred_specialty, lang) : '—'}</td>
           <td className="px-4 py-3"><AnswerPreview value={row.medicine_view} /></td>
           <td className="px-4 py-3 uppercase">{row.language}</td>
           <td className="px-4 py-3 text-ink-500">{new Date(row.created_at).toLocaleDateString(locale)}</td>
-          <td className="px-4 py-3"><DetailButton french={french} loading={loadingId === row.id} onClick={() => onOpen(row.id)} /></td>
         </tr>
       ))}</tbody>
     </table>
   );
 }
 
-function DetailButton({ french, loading, onClick }: { french: boolean; loading: boolean; onClick: () => void }) {
+function DetailButton({ lang, loading, onClick }: { lang: 'en' | 'fr' | 'ro'; loading: boolean; onClick: () => void }) {
   return (
-    <button type="button" onClick={onClick} disabled={loading} className="inline-flex items-center gap-1.5 rounded-full border border-ink-200 px-3 py-1.5 text-xs font-semibold text-ink-700 hover:bg-white disabled:opacity-50">
-      {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Eye className="h-3.5 w-3.5" />}{french ? 'Détails' : 'Details'}
+    <button type="button" onClick={onClick} disabled={loading} className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-ink-200 px-3 py-2 text-xs font-semibold text-ink-700 hover:bg-brand-50 disabled:opacity-50">
+      {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <Eye className="h-3.5 w-3.5" aria-hidden="true" />}{lang === 'fr' ? 'Détails' : lang === 'ro' ? 'Detalii' : 'Details'}
     </button>
   );
 }
@@ -1504,7 +1535,7 @@ function FilterSelect({ label, value, onChange, children }: { label: string; val
   return (
     <label className="block">
       <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-ink-400">{label}</span>
-      <select value={value} onChange={(event) => onChange(event.target.value)} className="w-full rounded-xl border border-ink-200 bg-white px-3 py-2.5 text-xs text-ink-800 focus:border-brand-500 focus:outline-none">{children}</select>
+      <select aria-label={label} value={value} onChange={(event) => onChange(event.target.value)} className="min-h-11 w-full rounded-xl border border-ink-200 bg-white px-3 py-2.5 text-xs text-ink-800 focus:border-brand-500 focus:outline-none">{children}</select>
     </label>
   );
 }
@@ -1531,5 +1562,5 @@ function Badge({ tone, children }: { tone: 'green' | 'amber'; children: React.Re
 }
 
 function Stat({ label, value, icon }: { label: string; value: number; icon: React.ReactNode }) {
-  return <div className="flex items-center gap-4 rounded-2xl border border-ink-100 bg-white p-5 shadow-soft"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-50 text-brand-600">{icon}</div><div><p className="text-2xl font-semibold text-ink-900">{value}</p><p className="text-xs text-ink-500">{label}</p></div></div>;
+  return <div className="flex items-center gap-2 rounded-xl border border-ink-100 bg-white p-3"><div className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600 sm:flex">{icon}</div><div><p className="text-xl font-semibold tabular-nums text-ink-900">{value}</p><p className="text-xs text-ink-500">{label}</p></div></div>;
 }
