@@ -16,7 +16,8 @@ export async function verifyBrowserResearchFlows({ page, context, catalog, fixtu
       draft: localStorage.getItem(storageKey), preference: localStorage.getItem(preferenceKey),
       writes: window.__questionnaireStorageWrites,
     }), { storageKey, preferenceKey }), { draft: null, preference: null, writes: [] });
-    assert.equal(await page.getByText('On this device', { exact: true }).count(), 0);
+    assert.equal(await page.getByText(/^On this device(?:\s|[·•—-]|$)|\bProgress saved locally\b/i).count(), 0,
+      'Neither the standalone local-progress notice nor its combined status badge may be shown');
     assert.equal(await page.getByRole('button', { name: 'Resume questionnaire', exact: true }).count(), 0);
     assert.equal(await page.getByLabel('Save my progress on this device', { exact: true }).count(), 0);
   }
