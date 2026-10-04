@@ -1,0 +1,10 @@
+{
+  "name": "medcompass-web",
+  "compatibility_date": "2026-10-05",
+  "build": {
+    "command": "npm run build:hosted && node scripts/verify-cloudflare-hosting.mjs --build-dir dist"
+  },
+  "assets": {
+    "directory": "./dist"
+  }
+}

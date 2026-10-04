@@ -1,4 +1,4 @@
-# Cloudflare Pages response headers. Supabase must set its own API cache policy.
+# Cloudflare Workers Static Assets / Pages headers. Supabase sets its own API cache policy.
 /*
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY
