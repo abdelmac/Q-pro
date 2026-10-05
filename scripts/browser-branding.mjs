@@ -44,13 +44,13 @@ export async function verifyBrowserBranding({ page, fixtureDefinitions }) {
     assert.deepEqual(artwork.unresolvedPaints, [], `${label}: paint and mask references resolve within this logo`);
     assert.deepEqual(artwork.duplicateIds, [], `${label}: logo instances have distinct gradient IDs`);
     assert.deepEqual(artwork.blendModes, ['normal'], `${label}: transparent artwork does not rely on blending a white image`);
-    if (artwork.variant !== 'mark') assert.equal(artwork.wordmark, 'Specialty Match', `${label}: vector lettering is complete`);
+    if (artwork.variant !== 'mark') assert.equal(artwork.wordmark, 'MedCompass', `${label}: vector lettering is complete`);
   };
   const checkLayout = async label => {
     await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
     const dimensions = await page.evaluate(() => ({ width: innerWidth, scroll: document.documentElement.scrollWidth }));
     assert.ok(dimensions.scroll <= dimensions.width + 1, `${label}: horizontal overflow ${JSON.stringify(dimensions)}`);
-    const logo = page.getByRole('img', { name: 'Specialty Match', exact: true });
+    const logo = page.getByRole('img', { name: 'MedCompass', exact: true });
     await logo.waitFor({ state: 'visible' });
     const box = await logo.boundingBox();
     assert.ok(box && box.width > 0 && box.height > 0, `${label}: logo is rendered`);
@@ -60,6 +60,7 @@ export async function verifyBrowserBranding({ page, fixtureDefinitions }) {
   };
 
   await page.getByRole('heading', { name: TRANSLATIONS.en.roleIntrospection, exact: true }).waitFor();
+  assert.equal(await page.title(), 'MedCompass — Find Your Medical Path', 'Browser tab uses the current product name');
   const horizontalLogo = page.locator('[data-brand-logo="horizontal"]');
   await checkVectorArtwork(horizontalLogo, 'Initial horizontal logo');
   const magnifiedArtwork = await horizontalLogo.evaluate(async element => {
@@ -104,6 +105,7 @@ export async function verifyBrowserBranding({ page, fixtureDefinitions }) {
       const result = { rel: link.rel, type: link.type, sizes: link.getAttribute('sizes'), status: response?.status ?? 200, contentType: response?.headers.get('content-type'), pathname: new URL(link.href).pathname };
       if (link.rel === 'manifest') {
         const manifest = await response.json();
+        if (manifest.name !== 'MedCompass' || manifest.short_name !== 'MedCompass') throw new Error('Install metadata must use MedCompass');
         result.icons = await Promise.all(manifest.icons.map(async entry => {
           const url = new URL(entry.src, link.href);
           const image = new Image(); image.src = url.href; await image.decode();
@@ -153,10 +155,24 @@ export async function verifyBrowserBranding({ page, fixtureDefinitions }) {
 
     await page.getByRole('button', { name: copy.navCredits, exact: true }).click();
     await page.getByRole('heading', { name: copy.creditsTitle, exact: true }).waitFor();
+    const creators = page.getByRole('region', { name: copy.creditsCreatorsTitle, exact: true });
+    await creators.waitFor({ state: 'visible' });
+    assert.deepEqual(await creators.getByRole('heading', { level: 3 }).allTextContents(), [
+      'MACHTA Abdelkader Saleh', 'Dr Andrei Cristian Bondar',
+    ], `Credits name both joint creators in ${language.code}`);
+    const profileLink = creators.getByRole('link', { name: `${copy.creditsBondarProfile} (${copy.creditsProfileNewTab})`, exact: true });
+    assert.equal(await profileLink.getAttribute('href'), 'https://evenimente-arpp.ro/speaker/sef-lucrari-univ-dr-andrei-cristian-bondar/');
+    assert.equal(await profileLink.getAttribute('target'), '_blank', 'Profile link preserves the open app');
+    assert.equal(await profileLink.getAttribute('rel'), 'noopener noreferrer', 'External profile link isolates its browsing context');
     for (const width of widths) {
       await page.setViewportSize({ width, height: width >= 768 ? 1000 : 812 });
       const logo = await checkLayout(`credits branding ${language.code} ${width}px`);
       assert.equal(await logo.getAttribute('data-brand-logo'), 'stacked');
+      const creatorStyles = await creators.getByRole('heading', { level: 3 }).evaluateAll(headings => headings.map(heading => {
+        const style = getComputedStyle(heading);
+        return [style.fontSize, style.fontWeight, style.color];
+      }));
+      assert.deepEqual(creatorStyles[0], creatorStyles[1], `Joint creators have equal prominence in ${language.code} at ${width}px`);
       if (language.code === 'en' && (width === 375 || width === 1440)) {
         await page.screenshot({ path: `browser-qa.local/branding-credits-${width === 375 ? 'mobile375' : 'desktop1440'}.png`, fullPage: true });
       }

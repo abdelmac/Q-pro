@@ -1,8 +1,10 @@
-# Q Project
+# MedCompass
 
 ## Structure de la base de données et portail Specialist/Admin
 
 **Version documentaire :** 16 septembre 2026
+
+**Actualisation du nom :** 5 octobre 2026 — seul le nom du produit a été actualisé. Les descriptions techniques et résultats de vérification conservent leur date de référence ; consulter `docs/OPERATIONS.md` pour l'état opérationnel récent. Le nom historique du fichier Word est conservé pour ne pas casser les liens existants.
 
 **Migrations de référence :** `supabase/migrations/20260831120000_specialist_admin_portal.sql`, `supabase/migrations/20260904193000_accuracy_and_qualitative_specialist_v2.sql`, `supabase/migrations/20260906090000_limit_student_study_year_to_six.sql`, `supabase/migrations/20260910090000_optional_specialist_questionnaire.sql`, `supabase/migrations/20260911090000_participant_medicine_reflection.sql` et `supabase/migrations/20260916114539_optional_participant_medicine_reflection.sql`
 
@@ -12,7 +14,7 @@
 
 **Jeu de test isolé :** `supabase/migrations/20260916171852_portal_test_dataset.sql`. Une recette privée permet aux administrateurs de générer un aperçu de cinq spécialistes, cinq étudiants et cinq personnes qui explorent la médecine. Aucun de ces quinze exemples n'est une participation réelle.
 
-Ce document décrit la structure fonctionnelle et technique de la base Q Project après l’introduction du portail Specialist/Admin. Il ne contient aucun secret, aucune adresse de compte et aucun mot de passe.
+Ce document décrit la structure fonctionnelle et technique de la base MedCompass après l’introduction du portail Specialist/Admin. Il ne contient aucun secret, aucune adresse de compte et aucun mot de passe.
 
 <!-- PAGEBREAK -->
 
@@ -36,7 +38,7 @@ Ce document décrit la structure fonctionnelle et technique de la base Q Project
 
 ## 1. Résumé exécutif
 
-Q Project utilise Supabase pour deux familles de données strictement séparées :
+MedCompass utilise Supabase pour deux familles de données strictement séparées :
 
 - les **réponses anonymes de recherche** des étudiants, des personnes qui explorent la médecine et des spécialistes ;
 - la **configuration versionnée du moteur de matching**, comprenant les descriptions, les résumés cliniques et les profils de traits des spécialités.
@@ -185,7 +187,7 @@ Aucune clé de cette recette ne référence `student_responses`, `specialist_res
 
 ### 5.1 `auth.users`
 
-Table gérée par Supabase Auth. Q Project ne la recrée pas et n’y stocke aucune donnée de questionnaire.
+Table gérée par Supabase Auth. MedCompass ne la recrée pas et n’y stocke aucune donnée de questionnaire.
 
 Éléments utilisés par l’application :
 

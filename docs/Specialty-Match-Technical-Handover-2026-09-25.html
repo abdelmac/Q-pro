@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><title>Specialty Match — Technical Handover &amp; One-Year Return Guide</title>
+<html lang="en"><head><meta charset="utf-8"><title>MedCompass — Technical Handover &amp; One-Year Return Guide</title>
 <style>
 @page { size: A4; margin: 14mm 14mm 16mm; }
 * { box-sizing: border-box; }
@@ -49,18 +49,18 @@ tr { break-inside: avoid; }
 </style></head><body>
 
 <section class="sheet cover" id="cover">
-<img class="logo" src="@@LOGO@@" alt="Specialty Match compass logo">
+<img class="logo" src="@@LOGO@@" alt="MedCompass compass logo">
 <p class="kicker" style="margin-top:6mm">Owner &amp; maintainer handbook · Edition 01</p>
-<h1>Specialty Match<br>Technical handover</h1>
+<h1>MedCompass<br>Technical handover</h1>
 <p class="lead">The technology, the research rules, and the practical knowledge you need to return confidently after a year.</p>
 <div class="coverline"></div>
 <div class="facts"><div class="fact"><b>81</b>self-assessment items</div><div class="fact"><b>58</b>specialty narratives</div><div class="fact"><b>3</b>languages &amp; audiences</div></div>
 <div class="callout"><strong>The project in one sentence</strong><br>A multilingual medical-exploration application built with React and TypeScript, with a versioned matching engine, Supabase research storage and staff authentication, an administrative portal, and shared web/mobile code.</div>
 <h3>Read this first</h3>
-<p>This is a <strong>repository snapshot dated 25 September 2026</strong>, based on Git revision <code>@@GIT_COMMIT@@</code> and the accompanying source, migrations and test reports. A file existing in the repository does not prove that it has been deployed.</p>
+<p>This guide records the <strong>technical baseline dated 25 September 2026</strong>. Branding refreshed on <strong>5 October 2026</strong> from checkout <code>@@GIT_COMMIT@@</code>; this refresh does not revalidate the dated technical descriptions or tests. A file existing in the repository does not prove deployment.</p>
 <p>The live database, provider accounts and app stores were not contacted to verify release status while preparing this PDF. The guide contains <strong>no passwords, API-key values, access tokens, patient information or research responses</strong>.</p>
 <div class="callout warning"><strong>Most important rule:</strong> verify and update the database before publishing a frontend that needs new RPCs. Back up first. Never reset production to make local tests pass.</div>
-<p class="small muted rule">Project names used in files: Specialty Match / Q Project / Q-pro. The npm package still has its original starter name; that is not the product’s research or release version.</p>
+<p class="small muted rule">MedCompass retains historical filenames, repository paths and app identifiers for compatibility. See <code>docs/OPERATIONS.md</code> for current deployments. Research and release versions are separate from branding.</p>
 </section>
 
 <section class="sheet" id="return">
@@ -318,7 +318,7 @@ npm run dev</pre>
 <p><strong>Do not confuse public catalog caching with answer persistence.</strong> The current client can reuse a validated published catalog for up to 30 days. A failed refresh can still leave a usable cached catalog for a new assessment. Saving needs server acceptance of the referenced published version. This is not permission to restore old answers with a changed model.</p>
 <h3>Native projects in the repository</h3>
 <table><thead><tr><th style="width:30%">Configuration</th><th>Recorded baseline</th></tr></thead><tbody>
-<tr><td>Identity</td><td><code>ro.qpro.specialtymatch</code> · Specialty Match.</td></tr>
+<tr><td>Identity</td><td><code>ro.qpro.specialtymatch</code> · MedCompass.</td></tr>
 <tr><td>Web bundle</td><td><code>capacitor.config.ts</code> points to <code>dist-mobile</code>; do not replace it with an arbitrary remote <code>server.url</code>.</td></tr>
 <tr><td>Android</td><td><code>android/</code>; recorded min SDK 24 and target/compile SDK 36; documented JDK 21 toolchain. Recheck future requirements.</td></tr>
 <tr><td>iOS</td><td><code>ios/</code>; minimum deployment baseline 15; macOS/Xcode and signing are required for actual archive/device release.</td></tr>

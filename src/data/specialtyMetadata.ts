@@ -2,7 +2,7 @@ import type { Trait } from './traits';
 import type { SpecialtyCategory } from './specialties';
 
 // ============================================================
-// Q PROJECT — Specialty metadata
+// MedCompass — Specialty metadata
 // Rich metadata for each specialty used in the explorer,
 // detail pages, and comparison views.
 // ============================================================

@@ -11,7 +11,7 @@ interface BrandLogoProps {
 /** True vector artwork: transparent at every size, with no bitmap or font download
  * needed for the compass. Unique IDs keep multiple instances independent.
  */
-export default function BrandLogo({ className = 'w-44', variant = 'horizontal', tone = 'default', label = 'Specialty Match' }: BrandLogoProps) {
+export default function BrandLogo({ className = 'w-44', variant = 'horizontal', tone = 'default', label = 'MedCompass' }: BrandLogoProps) {
   const id = useId().replace(/:/g, '');
   const gradientId = `brand-gradient-${id}`;
   const needleId = `brand-needle-${id}`;
@@ -25,7 +25,7 @@ export default function BrandLogo({ className = 'w-44', variant = 'horizontal', 
       role="img"
       aria-label={label}
       focusable="false"
-      viewBox={variant === 'horizontal' ? '0 0 354 64' : variant === 'mark' ? artwork.markViewBox : '0 0 354 218'}
+      viewBox={variant === 'horizontal' ? '0 0 302 64' : variant === 'mark' ? artwork.markViewBox : '0 0 302 218'}
       className={`block h-auto max-w-full shrink-0 ${className}`}
       xmlns="http://www.w3.org/2000/svg"
     >
@@ -39,7 +39,7 @@ export default function BrandLogo({ className = 'w-44', variant = 'horizontal', 
           <circle cx="49" cy="50" r="4" fill="black" />
         </mask>
       </defs>
-      <svg x={variant === 'stacked' ? 99 : 0} y="0" width={markSize} height={markSize} viewBox={artwork.markViewBox} aria-hidden="true">
+      <svg x={variant === 'stacked' ? 73 : 0} y="0" width={markSize} height={markSize} viewBox={artwork.markViewBox} aria-hidden="true">
         <path d={artwork.ringPath} fill={`url(#${gradientId})`} />
         <g mask={`url(#${needleId})`}>
           <path d={artwork.northPath} fill={artwork.teal} />
@@ -51,15 +51,15 @@ export default function BrandLogo({ className = 'w-44', variant = 'horizontal', 
           x={variant === 'stacked' ? 2 : 78}
           y={variant === 'stacked' ? 207 : 44}
           fontFamily="Inter, system-ui, sans-serif"
-          fontSize={variant === 'stacked' ? 42 : 34}
+          fontSize={variant === 'stacked' ? 46 : 34}
           fontWeight="600"
           letterSpacing="-1.1"
-          textLength={variant === 'stacked' ? 350 : 274}
+          textLength={variant === 'stacked' ? 298 : 220}
           lengthAdjust="spacingAndGlyphs"
           aria-hidden="true"
         >
-          <tspan fill={inverse ? '#ffffff' : artwork.wordBlue}>Specialty</tspan>
-          <tspan fill={inverse ? '#5eead4' : artwork.wordTeal}> Match</tspan>
+          <tspan fill={inverse ? '#ffffff' : artwork.wordBlue}>Med</tspan>
+          <tspan fill={inverse ? '#5eead4' : artwork.wordTeal}>Compass</tspan>
         </text>
       )}
     </svg>

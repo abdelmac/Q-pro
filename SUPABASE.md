@@ -1,6 +1,6 @@
-# Configuration Supabase — Q Project
+# Configuration Supabase — MedCompass
 
-Q Project utilise Supabase pour collecter des réponses de recherche anonymes et pour fournir un portail fermé aux chercheurs, Doctors et Professors autorisés. La clé `VITE_SUPABASE_PUBLISHABLE_KEY` est publique par conception ; la sécurité repose sur Supabase Auth, les privilèges PostgreSQL, les RPC validées et les politiques RLS. Ne jamais placer une clé `service_role`, `sb_secret_...`, un mot de passe PostgreSQL ou un access token dans une variable `VITE_*`.
+MedCompass utilise Supabase pour collecter des réponses de recherche anonymes et pour fournir un portail fermé aux chercheurs, Doctors et Professors autorisés. La clé `VITE_SUPABASE_PUBLISHABLE_KEY` est publique par conception ; la sécurité repose sur Supabase Auth, les privilèges PostgreSQL, les RPC validées et les politiques RLS. Ne jamais placer une clé `service_role`, `sb_secret_...`, un mot de passe PostgreSQL ou un access token dans une variable `VITE_*`.
 
 ## Architecture déployée
 

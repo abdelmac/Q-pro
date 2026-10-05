@@ -909,30 +909,30 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
         await setMetadata(rows);
         if (requestId !== exportRequest.current || activeSource.current !== sourceKey) return;
         if (kind === 'json') {
-          downloadTextFile(`${prefix}q-project-specialists-${date}.json`, jsonRows(rows), 'application/json;charset=utf-8');
+          downloadTextFile(`${prefix}medcompass-specialists-${date}.json`, jsonRows(rows), 'application/json;charset=utf-8');
         } else {
           const csv = kind === 'raw'
             ? specialistRawCsv(rows)
             : kind === 'long'
               ? specialistLongCsv(rows)
               : specialistAnalyticCsv(rows, specialties);
-          downloadTextFile(`${prefix}q-project-specialists-${kind}-${date}.csv`, testId ? markPortalTestCsv(csv, testId) : csv, 'text/csv;charset=utf-8');
-          if (!testId) downloadTextFile(`q-project-specialists-${kind}-${date}.metadata.json`, JSON.stringify({ ...exportMetadata, submissions: rows.length }, null, 2), 'application/json');
+          downloadTextFile(`${prefix}medcompass-specialists-${kind}-${date}.csv`, testId ? markPortalTestCsv(csv, testId) : csv, 'text/csv;charset=utf-8');
+          if (!testId) downloadTextFile(`medcompass-specialists-${kind}-${date}.metadata.json`, JSON.stringify({ ...exportMetadata, submissions: rows.length }, null, 2), 'application/json');
         }
       } else {
         const rows = await fetchAllStudents();
         await setMetadata(rows);
         if (requestId !== exportRequest.current || activeSource.current !== sourceKey) return;
         if (kind === 'json') {
-          downloadTextFile(`${prefix}q-project-students-${date}.json`, jsonRows(rows), 'application/json;charset=utf-8');
+          downloadTextFile(`${prefix}medcompass-students-${date}.json`, jsonRows(rows), 'application/json;charset=utf-8');
         } else {
           const csv = kind === 'raw'
             ? studentRawCsv(rows, specialties)
             : kind === 'long'
               ? studentLongCsv(rows)
               : studentAnalyticCsv(rows, specialties);
-          downloadTextFile(`${prefix}q-project-students-${kind}-${date}.csv`, testId ? markPortalTestCsv(csv, testId) : csv, 'text/csv;charset=utf-8');
-          if (!testId) downloadTextFile(`q-project-students-${kind}-${date}.metadata.json`, JSON.stringify({ ...exportMetadata, submissions: rows.length }, null, 2), 'application/json');
+          downloadTextFile(`${prefix}medcompass-students-${kind}-${date}.csv`, testId ? markPortalTestCsv(csv, testId) : csv, 'text/csv;charset=utf-8');
+          if (!testId) downloadTextFile(`medcompass-students-${kind}-${date}.metadata.json`, JSON.stringify({ ...exportMetadata, submissions: rows.length }, null, 2), 'application/json');
         }
       }
     } catch (exportError) {

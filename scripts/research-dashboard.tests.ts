@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import AlgorithmExplanation from '../src/components/AlgorithmExplanation';
 import DashboardSidebar from '../src/components/DashboardSidebar';
 import PageBackButton from '../src/components/PageBackButton';
@@ -36,7 +37,7 @@ import {
   type SpecialistQuestionnaireChoiceCopy,
 } from '../src/components/SpecialistQuestionnaireChoice';
 import SpecialtyBibliography from '../src/components/SpecialtyBibliography';
-import { TRANSLATIONS } from '../src/data/i18n';
+import { QUESTION_TRANSLATIONS, TRANSLATIONS, translateQuestion } from '../src/data/i18n';
 import { ALL_QUESTION_IDS } from '../src/data/questions';
 import { SPECIALTIES } from '../src/data/specialties';
 import { SPECIALTY_METADATA } from '../src/data/specialtyMetadata';
@@ -678,7 +679,7 @@ assert.equal(
 );
 
 const roleSelectionCopy: RoleSelectionCopy = {
-  appName: 'Q-Pro',
+  appName: 'MedCompass',
   title: 'Identify your profile',
   description: 'Choose the profile that applies to you.',
   introspection: 'What draws you to medicine?',
@@ -743,7 +744,7 @@ assert.deepEqual(
 );
 
 const specialistPathCopy: SpecialistQuestionnaireChoiceCopy = {
-  appName: 'Q-Pro',
+  appName: 'MedCompass',
   back: 'Back',
   title: 'How would you like to contribute?',
   description: 'The 81-item questionnaire is optional.',
@@ -817,6 +818,39 @@ assert.equal(isValidOptionalStudentStudyYear(undefined), true, 'An optional stud
 
 const ratings = Object.fromEntries(ALL_QUESTION_IDS.map((id, index) => [id, (index % 10) + 1]));
 assert.equal(ALL_QUESTION_IDS.length, 81, 'The questionnaire must keep all 81 rating questions');
+for (const language of ['en', 'ro', 'fr'] as const) {
+  assert.deepEqual(Object.keys(QUESTION_TRANSLATIONS[language]), ALL_QUESTION_IDS,
+    `All 81 ${language} questions must retain their IDs and ordering without fallback labels`);
+  for (const id of ALL_QUESTION_IDS) {
+    const text = QUESTION_TRANSLATIONS[language][id];
+    assert.ok(text.trim().length > 0, `${language} ${id} must have its own text`);
+    assert.equal(translateQuestion(id, language), text);
+  }
+}
+const unchangedQuestionTranslations = {
+  en: '89d94cc80f2e275005b56f4db34e357908416e65914a6917320a85e7ab808e87',
+  fr: '6ed9474fa3d420f5e2cfa839deab28fe28c16a287d52132867aa3a82f0980f50',
+};
+for (const language of ['en', 'fr'] as const) {
+  assert.equal(createHash('sha256').update(JSON.stringify(QUESTION_TRANSLATIONS[language])).digest('hex'),
+    unchangedQuestionTranslations[language], `The Romanian wording release must leave ${language} items unchanged`);
+}
+for (const [id, text] of Object.entries(QUESTION_TRANSLATIONS.ro)) {
+  assert.match(text, /^(?:Acordați|Preferați|Sunteți|Vă|Gândiți|Aveți|Căutați|Acceptați|Abordați|Tindeți|Lucrați|Comunicați|Vreți|Simțiți|Găsiți|Acționați|Puteți|Rămâneți|Prețuiți) /u,
+    `${id} must address the participant in the polite form`);
+  assert.doesNotMatch(text, /(?:^|[^\p{L}])(?:ești|îți|te|tău|tale|tăi|tine|preferi|vrei|poți|ai)(?=$|[^\p{L}])/iu,
+    `${id} must not mix familiar and polite address`);
+  assert.doesNotMatch(text, /\[|\]|[şţŞŢ]/u, `${id} must not retain pasted brackets or legacy cedilla diacritics`);
+  assert.equal(text, text.trim(), `${id} must not contain accidental surrounding whitespace`);
+}
+assert.equal(QUESTION_TRANSLATIONS.ro.T4, 'Sunteți capabil să vă concentrați perioade lungi de timp.');
+assert.equal(QUESTION_TRANSLATIONS.ro.W4, 'Vă simțiți confortabil când repetați aceeași activitate.', 'Repeating an activity measures comfort rather than ease');
+assert.equal(QUESTION_TRANSLATIONS.ro.I2, 'Lucrați bine în echipă.', 'Teamwork ability stays distinct from enjoying teamwork');
+assert.equal(QUESTION_TRANSLATIONS.ro.P2, 'Sunteți relaxat.', 'General relaxed temperament stays distinct from calmness during a crisis');
+assert.equal(QUESTION_TRANSLATIONS.ro.P8, 'Sunteți serios și motivat, mai degrabă decât relaxat.');
+assert.equal(QUESTION_TRANSLATIONS.ro.P13, 'Rămâneți calm într-o situație de criză.');
+assert.equal(QUESTION_TRANSLATIONS.ro.S9, 'Vă place să predați.');
+assert.equal(QUESTION_TRANSLATIONS.ro.V10, 'Sunteți tolerant cu ceilalți.', 'Tolerant of others must not become tolerated by others');
 assert.deepEqual(
   RATING_VALUES,
   [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],

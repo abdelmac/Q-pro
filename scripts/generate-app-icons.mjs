@@ -8,7 +8,7 @@ import { dirname } from 'node:path';
 import { deflateSync } from 'node:zlib';
 import { chromium } from 'playwright';
 
-const source = await readFile('public/branding/specialty-match-logo.png');
+const source = await readFile('docs/sources/specialty-match-logo-original.png');
 assert.equal(createHash('sha256').update(source).digest('hex'), 'a94bd5c7f200df275760278c506267f3fc833d53f26ab484d0f0836744b12c98', 'Review the supplied artwork before changing the icon source');
 const geometry = JSON.parse(await readFile('src/data/brandArtwork.json', 'utf8'));
 const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="${geometry.markViewBox}">

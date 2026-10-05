@@ -95,7 +95,7 @@ const COPY: Record<Language, Omit<GuideCopy, 'steps'> & { steps: Array<Omit<Step
     eyebrow: 'Transparent scoring model',
     title: 'How the matching algorithm works',
     subtitle: 'The engine is a versioned weighted-similarity model. It compares a participant profile with specialty target profiles; it is not a diagnostic or a machine-learning prediction.',
-    diagramTitle: 'Q-Pro scoring pipeline',
+    diagramTitle: 'MedCompass scoring pipeline',
     diagramDescription: 'Six stages transform 81 ratings and selected values into comparable traits, specialty fit indices, and a descending ranking.',
     diagramHint: 'Scroll horizontally to inspect the full diagram.',
     steps: [
@@ -163,7 +163,7 @@ const COPY: Record<Language, Omit<GuideCopy, 'steps'> & { steps: Array<Omit<Step
     eyebrow: 'Modèle de calcul transparent',
     title: 'Comment fonctionne l’algorithme de correspondance',
     subtitle: 'Le moteur est un modèle versionné de similarité pondérée. Il compare le profil d’un participant aux profils cibles des spécialités ; ce n’est ni un diagnostic ni une prédiction par apprentissage automatique.',
-    diagramTitle: 'Chaîne de calcul Q-Pro',
+    diagramTitle: 'Chaîne de calcul MedCompass',
     diagramDescription: 'Six étapes transforment 81 notes et les valeurs choisies en traits comparables, indices d’adéquation par spécialité et classement décroissant.',
     diagramHint: 'Faites défiler horizontalement pour consulter tout le schéma.',
     steps: [
@@ -231,7 +231,7 @@ const COPY: Record<Language, Omit<GuideCopy, 'steps'> & { steps: Array<Omit<Step
     eyebrow: 'Model de calcul transparent',
     title: 'Cum funcționează algoritmul de potrivire',
     subtitle: 'Motorul este un model versionat de similaritate ponderată. Compară profilul participantului cu profilurile-țintă ale specialităților; nu este un diagnostic și nici o predicție bazată pe învățare automată.',
-    diagramTitle: 'Fluxul de calcul Q-Pro',
+    diagramTitle: 'Fluxul de calcul MedCompass',
     diagramDescription: 'Șase etape transformă 81 de evaluări și valorile selectate în trăsături comparabile, indici de potrivire și un clasament descrescător.',
     diagramHint: 'Derulează orizontal pentru a vedea întreaga diagramă.',
     steps: [

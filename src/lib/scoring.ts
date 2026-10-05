@@ -1,5 +1,5 @@
 // ============================================================
-// Q PROJECT — Scoring engine
+// MedCompass — Scoring engine
 // Translated from the Q Project Python reference implementation.
 // Enhanced with dimension sub-scores, trade-offs, opposite-fit,
 // and adjustable priority weights.
@@ -307,13 +307,13 @@ export function generateExplanation(result: SpecialtyScore, lang: Language = 'en
   const specialtyName = translateSpecialtyName(result.specialty.name, lang);
 
   if (lang === 'ro') {
-    return `${specialtyName} se aliniază cu mai multe caracteristici ale profilului tău, în special ${traitsText}. Aceste trăsături se suprapun cu cerințe profesionale importante reprezentate în profilul Q Project pentru această specialitate.`;
+    return `${specialtyName} se aliniază cu mai multe caracteristici ale profilului tău, în special ${traitsText}. Aceste trăsături se suprapun cu cerințe profesionale importante reprezentate în profilul MedCompass pentru această specialitate.`;
   }
   if (lang === 'fr') {
-    return `${specialtyName} correspond à plusieurs caractéristiques de votre profil, notamment ${traitsText}. Ces traits recoupent des exigences professionnelles importantes représentées dans le profil Q Project de cette spécialité.`;
+    return `${specialtyName} correspond à plusieurs caractéristiques de votre profil, notamment ${traitsText}. Ces traits recoupent des exigences professionnelles importantes représentées dans le profil MedCompass de cette spécialité.`;
   }
 
-  return `${specialtyName} aligns with several characteristics in your profile, particularly ${traitsText}. These traits overlap with important working demands represented in the Q Project profile for this specialty.`;
+  return `${specialtyName} aligns with several characteristics in your profile, particularly ${traitsText}. These traits overlap with important working demands represented in the MedCompass profile for this specialty.`;
 }
 
 // --------------------------------------------------------

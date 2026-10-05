@@ -12,6 +12,7 @@ import { pathToFileURL } from 'node:url';
 import { verifyBrowserResearchFlows } from './browser-research-flows.mjs';
 import { verifyBrowserMapAuthorization } from './browser-map-authorization.mjs';
 import { verifyBrowserBranding } from './browser-branding.mjs';
+import { verifyBrowserRomanianQuestions } from './browser-romanian-questions.mjs';
 
 const testDirectory = await mkdtemp(join(tmpdir(), 'q-pro-browser-tests-'));
 let server;
@@ -19,7 +20,7 @@ let browser;
 try {
   const fixtureModule = join(testDirectory, 'fixtures.mjs');
   await build({
-    stdin: { contents: `export { SPECIALTIES } from './src/data/specialties'; export { TRANSLATIONS, LANGUAGES } from './src/data/i18n'; export { MAP_TRANSLATIONS } from './src/data/mapI18n'; export { LOCAL_PROGRESS_COPY } from './src/data/localProgressI18n'; export { ALL_QUESTION_IDS, RATING_SECTIONS } from './src/data/questions';`, resolveDir: process.cwd(), loader: 'ts' },
+    stdin: { contents: `export { SPECIALTIES } from './src/data/specialties'; export { TRANSLATIONS, LANGUAGES, QUESTION_TRANSLATIONS } from './src/data/i18n'; export { MAP_TRANSLATIONS } from './src/data/mapI18n'; export { LOCAL_PROGRESS_COPY } from './src/data/localProgressI18n'; export { ALL_QUESTION_IDS, RATING_SECTIONS } from './src/data/questions';`, resolveDir: process.cwd(), loader: 'ts' },
     outfile: fixtureModule, bundle: true, platform: 'node', format: 'esm', tsconfig: 'tsconfig.app.json', logLevel: 'silent',
   });
   const fixtureDefinitions = await import(pathToFileURL(fixtureModule).href);
@@ -106,12 +107,13 @@ try {
   if (process.argv.includes('--map-auth-only')) {
     await verifyBrowserMapAuthorization({ context, fixtureDefinitions, mapFixture, catalog });
   } else {
+  await verifyBrowserRomanianQuestions({ page, fixtureDefinitions });
   for (const language of LANGUAGES) {
     const copy = TRANSLATIONS[language.code];
     const mapCopy = MAP_TRANSLATIONS[language.code];
     if (language.code !== 'en') await chooseLanguage(language);
     await page.getByRole('heading', { name: copy.roleIntrospection, exact: true }).waitFor();
-    assert.equal(await page.getByText(/^(Install|Installer|Instalează) Specialty Match$/, { exact: true }).count(), 0, 'Installation instructions are removed in every language');
+    assert.equal(await page.getByText(/^(Install|Installer|Instalează) (?:MedCompass|Specialty Match)$/, { exact: true }).count(), 0, 'Installation instructions are removed in every language');
     assert.equal(await page.locator('aside details summary').count(), 0, 'No local-save panel is shown without pending contributions');
     assert.equal(await page.locator('[data-pending-submissions]').count(), 0, 'An empty queue has no contribution notice');
     assert.deepEqual(await page.locator('[data-participant-role]').evaluateAll(elements => elements.map(element => element.dataset.participantRole)), ['curious', 'student', 'specialist']);

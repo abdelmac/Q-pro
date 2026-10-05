@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Specialty Match — Project Accounts Checklist</title>
+<title>MedCompass — Project Accounts Checklist</title>
 <style>
 @page { size: A4; margin: 12mm 14mm 16mm; }
 * { box-sizing: border-box; }
@@ -28,12 +28,12 @@ tr { break-inside: avoid; }
 .warning { background: #fff5e2; border-left-color: #c08b2f; }
 .fields { display: grid; grid-template-columns: 1fr 1fr; gap: 2mm 5mm; margin: 2mm 0; font-size: 8.8pt; }
 .line { display: inline-block; min-width: 34mm; border-bottom: 1px solid #8aa0ac; height: 3.5mm; }
-.sources { border-top: 1px solid #dce7eb; padding-top: 2mm; margin-top: 3mm; font-size: 7.4pt; line-height: 1.4; }
+.sources { border-top: 1px solid #dce7eb; padding-top: 2mm; margin-top: 1mm; font-size: 7.4pt; line-height: 1.4; }
 </style>
 </head>
 <body>
 <main class="sheet">
-<header><img src="@@LOGO@@" alt="Specialty Match compass"><div><div class="kicker">Specialty Match · Owner reference</div><h1>Your project accounts</h1></div></header>
+<header><img src="@@LOGO@@" alt="MedCompass compass"><div><div class="kicker">MedCompass · Owner reference</div><h1>Your project accounts</h1></div></header>
 <p>Tick each box after checking access. <strong>Reuse accounts you already control; do not create duplicates.</strong><br><span class="small muted">Repository snapshot: 25 September 2026 · Live sign-in, ownership and billing are not verified.</span></p>
 
 <h2>1. Essential access for this web project</h2>
@@ -64,7 +64,7 @@ tr { break-inside: avoid; }
 <div class="fields"><div>Project owner: <span class="line"></span></div><div>Recovery contact: <span class="line"></span></div><div>Supabase login email: <span class="line"></span></div><div>Last access check: <span class="line"></span></div></div>
 <div class="callout warning small"><strong>No passwords or keys belong on this sheet or in Git.</strong> Replace any password previously shared in chat if it is still in use. Supabase public frontend keys are not account logins. Never put database passwords or privileged keys in <strong>VITE_*</strong> variables.</div>
 <p class="small"><strong>No separate service account needed:</strong> React, TypeScript, Vite, Tailwind, Capacitor or the custom map. No OpenAI, Google Maps or Mapbox API account is used by the current app.</p>
-<div class="sources muted">Evidence: Git remote; .github/workflows/deploy-pages.yml; SUPABASE.md (roles); docs/OPERATIONS.md and MOBILE.md; user-supplied admin email. Numbered links point to official provider guidance checked 25 September 2026. Keep any privately completed copy outside the repository.</div>
+<div class="sources muted">Evidence: Git remote, deploy-pages.yml, SUPABASE.md, OPERATIONS.md, MOBILE.md and supplied admin email. Guidance checked 25 September 2026. Branding-only refresh: 5 October 2026; no new account/test checks. See docs/OPERATIONS.md for newer hosting details. Historical filename retained for links. Keep privately completed copies outside the repository.</div>
 </main>
 </body>
 </html>

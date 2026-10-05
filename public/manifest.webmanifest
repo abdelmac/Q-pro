@@ -1,7 +1,7 @@
 {
   "id": "./",
-  "name": "Specialty Match",
-  "short_name": "Specialty Match",
+  "name": "MedCompass",
+  "short_name": "MedCompass",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

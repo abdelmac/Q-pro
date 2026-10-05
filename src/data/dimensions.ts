@@ -1,7 +1,7 @@
 import type { Trait } from './traits';
 
 // ============================================================
-// Q PROJECT — Dimension definitions
+// MedCompass — Dimension definitions
 // Groups traits into major dimensions used for sub-scores,
 // comparison, and adjustable priorities.
 // ============================================================

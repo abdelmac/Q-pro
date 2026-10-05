@@ -1,7 +1,7 @@
 import type { Language } from './i18n';
 
 const english = {
-  title: 'Specialty Match Around the World',
+  title: 'MedCompass Around the World',
   subtitle: 'Different paths into medicine, connected across borders.',
   back: 'Back',
   publicLabel: 'Public participation map',
@@ -105,7 +105,7 @@ export const TEST_MAP_TRANSLATIONS: Record<Language, Partial<MapStrings>> = {
 export const MAP_TRANSLATIONS: Record<Language, MapStrings> = {
   en: english,
   fr: {
-    title: 'Specialty Match à travers le monde',
+    title: 'MedCompass à travers le monde',
     subtitle: 'Des chemins différents vers la médecine, reliés au-delà des frontières.',
     back: 'Retour', publicLabel: 'Carte publique de participation',
     total: 'Réponses publiées', countries: 'Pays représentés', students: 'Étudiants',
@@ -139,7 +139,7 @@ export const MAP_TRANSLATIONS: Record<Language, MapStrings> = {
     regionUnavailable: 'Choisissez d’abord un pays si vous souhaitez ajouter une région.',
   },
   ro: {
-    title: 'Specialty Match în jurul lumii',
+    title: 'MedCompass în jurul lumii',
     subtitle: 'Drumuri diferite către medicină, unite dincolo de granițe.',
     back: 'Înapoi', publicLabel: 'Harta publică a participării',
     total: 'Răspunsuri publicate', countries: 'Țări reprezentate', students: 'Studenți',

@@ -1,5 +1,5 @@
 // ============================================================
-// Q PROJECT — Specialty profiles built from base archetypes.
+// MedCompass — Specialty profiles built from base archetypes.
 // Each trait value is (ideal, importance) where importance is
 // 1=relevant, 2=important, 3=very important.
 // ============================================================

@@ -1,5 +1,5 @@
 // ============================================================
-// Q PROJECT — Trait definitions, question mappings, value mappings
+// MedCompass — Trait definitions, question mappings, value mappings
 // Translated from the Q Project Python reference implementation.
 // ============================================================
 

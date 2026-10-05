@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the Q Project database documentation as a dependency-free DOCX.
+"""Generate the MedCompass database documentation as a dependency-free DOCX.
 
 The generator intentionally uses only Python's standard library. A DOCX file is
 an Open Packaging Convention ZIP archive containing WordprocessingML documents.
@@ -21,6 +21,7 @@ from xml.etree import ElementTree as ET
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 SOURCE_PATH = PROJECT_ROOT / "docs" / "STRUCTURE_BASE_DE_DONNEES.md"
+# Preserve the historical filename so existing links continue to resolve.
 OUTPUT_PATH = PROJECT_ROOT / "docs" / "Q-Project-Structure-Base-de-donnees.docx"
 
 W_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
@@ -631,7 +632,7 @@ def create_footer() -> ET.Element:
     style.set(w("val"), "Footer")
     alignment = ET.SubElement(properties, w("jc"))
     alignment.set(w("val"), "center")
-    add_text_run(paragraph, "Q Project · Structure de la base de données · ", color="60777A", size=17)
+    add_text_run(paragraph, "MedCompass · Structure de la base de données · ", color="60777A", size=17)
     begin_run = ET.SubElement(paragraph, w("r"))
     begin = ET.SubElement(begin_run, w("fldChar"))
     begin.set(w("fldCharType"), "begin")
@@ -729,10 +730,10 @@ def create_document_relationships() -> ET.Element:
 
 def create_core_properties() -> ET.Element:
     root = ET.Element(qn(CP_NS, "coreProperties"))
-    ET.SubElement(root, qn(DC_NS, "title")).text = "Q Project — Structure de la base de données"
+    ET.SubElement(root, qn(DC_NS, "title")).text = "MedCompass — Structure de la base de données"
     ET.SubElement(root, qn(DC_NS, "subject")).text = "Supabase, portail Specialist/Admin et provenance scientifique"
-    ET.SubElement(root, qn(DC_NS, "creator")).text = "Q Project"
-    ET.SubElement(root, qn(CP_NS, "lastModifiedBy")).text = "Q Project documentation generator"
+    ET.SubElement(root, qn(DC_NS, "creator")).text = "MedCompass"
+    ET.SubElement(root, qn(CP_NS, "lastModifiedBy")).text = "MedCompass documentation generator"
     ET.SubElement(root, qn(DC_NS, "description")).text = (
         "Architecture, dictionnaire, permissions, workflow, sécurité et limites scientifiques."
     )
@@ -750,9 +751,9 @@ def create_core_properties() -> ET.Element:
 
 def create_app_properties() -> ET.Element:
     root = ET.Element(qn(EP_NS, "Properties"))
-    ET.SubElement(root, qn(EP_NS, "Application")).text = "Q Project OOXML generator"
+    ET.SubElement(root, qn(EP_NS, "Application")).text = "MedCompass OOXML generator"
     ET.SubElement(root, qn(EP_NS, "AppVersion")).text = "1.0"
-    ET.SubElement(root, qn(EP_NS, "Company")).text = "Q Project"
+    ET.SubElement(root, qn(EP_NS, "Company")).text = "MedCompass"
     ET.SubElement(root, qn(EP_NS, "DocSecurity")).text = "0"
     ET.SubElement(root, qn(EP_NS, "ScaleCrop")).text = "false"
     return root

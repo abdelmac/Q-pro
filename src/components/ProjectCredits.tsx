@@ -1,4 +1,4 @@
-import { Heart, MessageCircle, Stethoscope } from 'lucide-react';
+import { ExternalLink, Heart, MessageCircle, Stethoscope } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 import LanguageSwitcher from './LanguageSwitcher';
 import PageBackButton from './PageBackButton';
@@ -17,6 +17,26 @@ export default function ProjectCredits({ onBack }: { onBack: () => void }) {
         <p className="mb-3 text-sm font-semibold text-brand-700">{t.navCredits}</p>
         <h1 className="font-display text-3xl font-semibold tracking-tight text-ink-900 text-balance sm:text-4xl">{t.creditsTitle}</h1>
         <p className="mt-4 text-lg leading-relaxed text-ink-500">{t.creditsSubtitle}</p>
+        <section className="mt-10" aria-labelledby="credits-creators-title">
+          <h2 id="credits-creators-title" className="font-display text-xl font-semibold text-ink-900">{t.creditsCreatorsTitle}</h2>
+          <ul className="mt-4 grid gap-4 sm:grid-cols-2">
+            <li className="min-w-0 rounded-2xl border border-brand-100 bg-white p-6">
+              <h3 className="font-display text-xl font-semibold leading-snug text-ink-900">MACHTA Abdelkader Saleh</h3>
+            </li>
+            <li className="min-w-0 rounded-2xl border border-brand-100 bg-white p-6">
+              <h3 className="font-display text-xl font-semibold leading-snug text-ink-900">Dr Andrei Cristian Bondar</h3>
+              <a
+                href="https://evenimente-arpp.ro/speaker/sef-lucrari-univ-dr-andrei-cristian-bondar/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-md text-sm font-medium text-brand-700 underline decoration-brand-200 underline-offset-4 hover:text-brand-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-4"
+              >
+                <span>{t.creditsBondarProfile}<span className="sr-only"> ({t.creditsProfileNewTab})</span></span>
+                <ExternalLink className="h-4 w-4 shrink-0" aria-hidden="true" />
+              </a>
+            </li>
+          </ul>
+        </section>
         <section className="mt-10 rounded-3xl border border-brand-100 bg-white p-7 shadow-soft sm:p-9">
           <Heart className="mb-4 h-7 w-7 text-brand-600" aria-hidden="true" />
           <h2 className="text-sm font-semibold text-brand-700">{t.creditsMotivationTitle}</h2>

@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'ro.qpro.specialtymatch',
-  appName: 'Specialty Match',
+  appName: 'MedCompass',
   webDir: 'dist-mobile',
   // Load bundled assets, including the scoring engine and narratives, offline.
   // Never put a remote server.url or secret/service-role key here.

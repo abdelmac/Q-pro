@@ -1,4 +1,4 @@
-# Specialty Match on iOS and Android
+# MedCompass on iOS and Android
 
 Release guidance and official requirements checked **25 September 2026**. Account creation, payment, signing and store publication remain explicit owner actions.
 

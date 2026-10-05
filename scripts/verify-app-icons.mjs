@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { inflateSync } from 'node:zlib';
@@ -97,7 +97,8 @@ const publicPngs = [
   ['favicon-16.png', 16], ['favicon-32.png', 32], ['favicon-48.png', 48],
   ['apple-touch-icon.png', 180], ['icon-192.png', 192], ['icon-512.png', 512],
 ];
-assert.equal(sha256(await load('public/branding/specialty-match-logo.png')), originalHash, 'The supplied artwork remains byte-for-byte unchanged');
+assert.equal(sha256(await load('docs/sources/specialty-match-logo-original.png')), originalHash, 'The supplied artwork remains byte-for-byte unchanged outside the published assets');
+assert.ok(!(await readdir(resolve(root, 'public/branding'))).includes('specialty-match-logo.png'), 'Retired wordmark is archived, not served as a public asset');
 const vector = await text('public/branding/compass.svg');
 assert.match(vector, /<svg\b[^>]*\bxmlns=["']http:\/\/www\.w3\.org\/2000\/svg["']/, 'Compass is a standalone SVG document');
 assert.match(vector, /<svg\b[^>]*\bviewBox=["']0 0 100 100["']/, 'Compass SVG has a square vector viewport');
@@ -168,7 +169,16 @@ function verifyLinks(html, base, label) {
 verifyLinks(await text('index.html'), '/', 'Source HTML');
 
 const manifest = JSON.parse(await text('public/manifest.webmanifest'));
-assert.equal(manifest.name, 'Specialty Match', 'Manifest application name');
+assert.equal(manifest.name, 'MedCompass', 'Manifest application name');
+assert.equal(manifest.short_name, 'MedCompass', 'Home-screen application name');
+assert.match(await text('index.html'), /<title>MedCompass — Find Your Medical Path<\/title>/, 'Browser tab uses MedCompass');
+assert.match(await text('index.html'), /name="application-name" content="MedCompass"/, 'Browser application metadata uses MedCompass');
+assert.match(await text('index.html'), /name="apple-mobile-web-app-title" content="MedCompass"/, 'Apple home-screen metadata uses MedCompass');
+assert.match(await text('capacitor.config.ts'), /appName: 'MedCompass'/, 'Capacitor display name uses MedCompass');
+for (const name of ['app_name', 'title_activity_main']) {
+  assert.ok((await text('android/app/src/main/res/values/strings.xml')).includes(`<string name="${name}">MedCompass</string>`), `Android ${name} uses MedCompass`);
+}
+assert.match(await text('ios/App/App/Info.plist'), /<key>CFBundleDisplayName<\/key>\s*<string>MedCompass<\/string>/, 'iOS display name uses MedCompass');
 for (const key of ['id', 'start_url', 'scope']) assert.equal(manifest[key], './', `Manifest ${key} stays within a subpath or mobile origin`);
 for (const size of [192, 512]) {
   const icon = manifest.icons?.find(entry => entry.src === `branding/icon-${size}.png`);

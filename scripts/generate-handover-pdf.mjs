@@ -10,6 +10,7 @@ if (argumentsList.length > 1 || (argumentsList.length === 1 && argumentsList[0] 
   throw new Error('Usage: node scripts/generate-handover-pdf.mjs [--accounts]');
 }
 const accountsSheet = argumentsList[0] === '--accounts';
+// Preserve historical filenames so existing links continue to resolve.
 const stem = accountsSheet
   ? 'Specialty-Match-Accounts-Checklist-2026-09-25'
   : 'Specialty-Match-Technical-Handover-2026-09-25';
@@ -51,7 +52,7 @@ try {
   await page.pdf({ path: output, format: 'A4', printBackground: true, preferCSSPageSize: true,
     displayHeaderFooter: true, tagged: true, outline: true,
     headerTemplate: '<span></span>',
-    footerTemplate: `<div style="width:100%;margin:0 14mm;font-family:Arial,sans-serif;font-size:8px;color:#536775;display:flex;justify-content:space-between"><span>SPECIALTY MATCH · ${documentLabel} · 25 September 2026</span><span><span class="pageNumber"></span> / <span class="totalPages"></span></span></div>` });
+    footerTemplate: `<div style="width:100%;margin:0 14mm;font-family:Arial,sans-serif;font-size:8px;color:#536775;display:flex;justify-content:space-between"><span>MEDCOMPASS · ${documentLabel} · Baseline: 25 September 2026</span><span><span class="pageNumber"></span> / <span class="totalPages"></span></span></div>` });
   for (let index = 0; index < audit.length; index++) {
     await page.locator('.sheet').nth(index).screenshot({ path: resolve(qaDirectory, `page-${String(index + 1).padStart(2, '0')}.png`) });
   }
