@@ -10,7 +10,7 @@ export default function LanguageSwitcher() {
   const current = LANGUAGES.find((l) => l.code === lang)!;
 
   return (
-    <div className="relative">
+    <div className="relative ml-auto">
       <button
         onClick={() => setOpen(!open)}
         className="inline-flex items-center gap-2 px-3 py-2 rounded-full text-sm font-medium text-ink-600 hover:text-ink-900 hover:bg-ink-100 transition-colors"

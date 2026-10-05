@@ -16,6 +16,7 @@ import { RESULTS_TOP_COUNT } from '@/lib/resultsPresentation';
 import type { ParticipantRole } from '@/lib/participantProfile';
 import LanguageSwitcher from './LanguageSwitcher';
 import PageBackButton from './PageBackButton';
+import PageHomeButton from './PageHomeButton';
 import SpecialtyBibliography from './SpecialtyBibliography';
 import BrandLogo from './BrandLogo';
 import {
@@ -27,6 +28,7 @@ interface ResultsProps {
   scores: SpecialtyScore[];
   preferredSpecialty: string | null;
   onBack: () => void;
+  onHome?: () => void;
   onRestart: () => void;
   participantRole: ParticipantRole;
   onContributeData: () => void;
@@ -169,7 +171,7 @@ function TraitComparisonList({ items }: { items: readonly ComparedTrait[] }) {
 }
 
 export default function Results({
-  scores, preferredSpecialty, onBack, onRestart, participantRole, onContributeData,
+  scores, preferredSpecialty, onBack, onHome, onRestart, participantRole, onContributeData,
   onOpenExplorer, onOpenComparison, onOpenMethodology,
 }: ResultsProps) {
   const { lang, t } = useLanguage();
@@ -230,12 +232,13 @@ export default function Results({
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3 border-b border-ink-100 bg-white/80 px-4 py-4 backdrop-blur sm:px-10 sm:py-7">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <PageBackButton onClick={onBack} label={t.back} />
+          {onHome && <PageHomeButton onClick={onHome} />}
           <BrandLogo variant="mark" className="w-10 shrink-0 lg:hidden" />
           <BrandLogo className="hidden w-48 shrink-0 lg:block" />
         </div>
-        <div className="flex flex-wrap items-center justify-end gap-2">
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
           <button onClick={onOpenExplorer} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold text-ink-600 hover:text-ink-900 hover:bg-ink-100 transition-colors">
             <Compass className="w-4 h-4" /> {t.navExplorer}
           </button>

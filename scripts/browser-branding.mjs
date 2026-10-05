@@ -156,7 +156,12 @@ export async function verifyBrowserBranding({ page, fixtureDefinitions }) {
       assert.equal(await logo.getAttribute('data-brand-logo'), 'horizontal');
       const logoBox = await logo.boundingBox();
       const switcherBox = await page.locator('header button').last().boundingBox();
-      assert.ok(logoBox && switcherBox && logoBox.x + logoBox.width <= switcherBox.x + 1, 'Logo does not overlap the language switcher');
+      assert.ok(logoBox && switcherBox && (
+        logoBox.x + logoBox.width <= switcherBox.x + 1
+        || switcherBox.x + switcherBox.width <= logoBox.x + 1
+        || logoBox.y + logoBox.height <= switcherBox.y + 1
+        || switcherBox.y + switcherBox.height <= logoBox.y + 1
+      ), 'Logo does not overlap the language switcher, including wrapped mobile headers');
       if (language.code === 'en' && (width === 375 || width === 1440)) {
         await page.screenshot({ path: `browser-qa.local/branding-role-${width === 375 ? 'mobile375' : 'desktop1440'}.png`, fullPage: true });
       }

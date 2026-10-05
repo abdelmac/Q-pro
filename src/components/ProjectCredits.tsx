@@ -2,15 +2,19 @@ import { ExternalLink, Heart, MessageCircle, Stethoscope } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 import LanguageSwitcher from './LanguageSwitcher';
 import PageBackButton from './PageBackButton';
+import PageHomeButton from './PageHomeButton';
 import BrandLogo from './BrandLogo';
 import universityLogo from '@/assets/titu-maiorescu-logo.png';
 
-export default function ProjectCredits({ onBack }: { onBack: () => void }) {
+export default function ProjectCredits({ onBack, onHome }: { onBack: () => void; onHome?: () => void }) {
   const { t } = useLanguage();
   return (
     <div className="min-h-screen bg-accent-50">
-      <header className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-ink-100 bg-white/90 px-6 py-5 backdrop-blur sm:px-10">
-        <PageBackButton onClick={onBack} label={t.back} />
+      <header className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3 border-b border-ink-100 bg-white/90 px-6 py-5 backdrop-blur sm:px-10">
+        <div className="flex flex-wrap items-center gap-2">
+          <PageBackButton onClick={onBack} label={t.back} />
+          {onHome && <PageHomeButton onClick={onHome} />}
+        </div>
         <LanguageSwitcher />
       </header>
       <main className="mx-auto max-w-3xl px-6 py-12 sm:py-16">

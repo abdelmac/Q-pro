@@ -36,6 +36,7 @@ import { getAppStorage, installMobileLifecycle } from '@/lib/mobileRuntime';
 import { flushPendingResearchSubmissions } from '@/lib/supabase';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import PageBackButton from '@/components/PageBackButton';
+import PageHomeButton from '@/components/PageHomeButton';
 import BrandLogo from '@/components/BrandLogo';
 import {
   createAppNavigationReducer,
@@ -227,6 +228,26 @@ function AppContent() {
     dispatchNavigation(resetNavigation());
   };
 
+  const returnHome = () => {
+    if (contributionSubmitting) return;
+    // Contribution forms also hold optional geography/consent inputs locally.
+    // Confirm on those pages even when their written fields are still empty.
+    const hasAssessment = phase === 'student' || phase === 'specialist'
+      || preferredSpecialty !== null
+      || actualSpecialty !== null
+      || selectedValues.length > 0
+      || Object.keys(ratings).length > 0
+      || participantReflectionDraft.studyYear !== ''
+      || participantReflectionDraft.medicineView.trim().length > 0
+      || specialistDraft.actualSpecialty !== null
+      || specialistDraft.wouldChooseAgain !== null
+      || [specialistDraft.currentSpecialtyView, specialistDraft.specialtyChangesOverYears,
+        specialistDraft.mostImportantSpecialtyQuality, specialistDraft.wouldNotChooseAgainReason,
+        specialistDraft.studentSelfQuestion].some(value => value.trim().length > 0);
+    if (hasAssessment && !window.confirm(t.homeExitConfirm)) return;
+    restart();
+  };
+
   const selectParticipantRole = (role: ParticipantRole) => {
     clearAssessment();
     setParticipantRole(role);
@@ -301,14 +322,17 @@ function AppContent() {
 
   const renderPage = () => {
   if (phase === 'credits') {
-    return <ProjectCredits onBack={goBack} />;
+    return <ProjectCredits onBack={goBack} onHome={returnHome} />;
   }
 
   if (phase === 'participation-map') {
     if (!publicMapEnabled) {
       const copy = PUBLIC_FEATURES_TRANSLATIONS[lang];
       return <main data-public-map-unavailable className="min-h-screen bg-accent-50 px-6 py-5 sm:px-10 sm:py-7">
-        <PageBackButton onClick={goBack} label={t.back} />
+        <div className="flex flex-wrap items-center gap-2">
+          <PageBackButton onClick={goBack} label={t.back} />
+          <PageHomeButton onClick={returnHome} />
+        </div>
         <div className="mx-auto mt-14 max-w-xl rounded-2xl border border-ink-200 bg-white p-6">
           <h1 className="text-xl font-semibold text-ink-900">{copy.mapUnavailable}</h1>
           <p className="mt-3 text-sm leading-relaxed text-ink-600">{copy.mapUnavailableHelp}</p>
@@ -318,7 +342,7 @@ function AppContent() {
     }
     return (
       <Suspense fallback={<main className="min-h-screen bg-accent-50 p-6"><PageBackButton onClick={goBack} label={t.back} /></main>}>
-        <ParticipationMap onBack={goBack} />
+        <ParticipationMap onBack={goBack} onHome={returnHome} />
       </Suspense>
     );
   }
@@ -330,7 +354,7 @@ function AppContent() {
   if (phase === 'intro') {
     return (
       <>
-        <Intro onStart={startQuiz} totalQuestions={totalQuestions} participantRole={participantRole} onBack={goBack} onChangeRole={changeParticipantRole} onOpenExplorer={() => goTo({ phase: 'explorer' })} onOpenMethodology={() => goTo({ phase: 'methodology' })} onOpenDashboard={() => goTo({ phase: 'dashboard' })} onOpenCredits={() => goTo({ phase: 'credits' })} onOpenWorldMap={publicMapEnabled ? () => goTo({ phase: 'participation-map' }) : undefined} />
+        <Intro onStart={startQuiz} totalQuestions={totalQuestions} participantRole={participantRole} onBack={goBack} onHome={returnHome} onChangeRole={changeParticipantRole} onOpenExplorer={() => goTo({ phase: 'explorer' })} onOpenMethodology={() => goTo({ phase: 'methodology' })} onOpenDashboard={() => goTo({ phase: 'dashboard' })} onOpenCredits={() => goTo({ phase: 'credits' })} onOpenWorldMap={publicMapEnabled ? () => goTo({ phase: 'participation-map' }) : undefined} />
         {(catalogGateMessage || (catalogError && catalogSource !== 'remote')) && (
           <div role="alert" className="fixed bottom-5 left-1/2 z-50 w-[min(92vw,680px)] -translate-x-1/2 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 shadow-lift">
             <p className="font-semibold">{catalogGateMessage ?? (lang === 'fr' ? 'Catalogue publié indisponible.' : 'Published catalog unavailable.')}</p>
@@ -350,6 +374,7 @@ function AppContent() {
         onAnswerQuestionnaire={answerSpecialistQuestionnaire}
         onSkipQuestionnaire={skipSpecialistQuestionnaire}
         onBack={goBack}
+        onHome={returnHome}
       />
     );
   }
@@ -357,8 +382,11 @@ function AppContent() {
   if (phase === 'qprofile') {
     return (
       <div className="min-h-screen bg-accent-50">
-        <header className="px-6 py-5 sm:px-10 sm:py-7 flex items-center justify-between gap-3 border-b border-ink-100 bg-white/80 backdrop-blur sticky top-0 z-10">
-          <PageBackButton onClick={goBack} label={t.back} />
+        <header className="px-6 py-5 sm:px-10 sm:py-7 flex flex-wrap items-center justify-between gap-3 border-b border-ink-100 bg-white/80 backdrop-blur sticky top-0 z-10">
+          <div className="flex flex-wrap items-center gap-2">
+            <PageBackButton onClick={goBack} label={t.back} />
+            <PageHomeButton onClick={returnHome} />
+          </div>
           <BrandLogo variant="mark" className="w-10 shrink-0 sm:hidden" />
           <BrandLogo className="hidden w-48 shrink-0 sm:block" />
           <LanguageSwitcher />
@@ -379,6 +407,7 @@ function AppContent() {
         preferredSpecialty={isSpecialist ? null : preferredSpecialty}
         onRestart={restart}
         onBack={goBack}
+        onHome={returnHome}
         participantRole={participantRole}
         onContributeData={() => goTo({ phase: 'specialist' })}
         onOpenExplorer={() => goTo({ phase: 'explorer' })}
@@ -391,8 +420,11 @@ function AppContent() {
   if (phase === 'student') {
     return (
       <div className="min-h-screen">
-        <header className="px-6 py-5 sm:px-10 sm:py-7 flex items-center justify-between gap-3 border-b border-ink-100 bg-white/80 backdrop-blur sticky top-0 z-10">
-          <PageBackButton onClick={goBack} label={t.back} disabled={contributionSubmitting} />
+        <header className="px-6 py-5 sm:px-10 sm:py-7 flex flex-wrap items-center justify-between gap-3 border-b border-ink-100 bg-white/80 backdrop-blur sticky top-0 z-10">
+          <div className="flex flex-wrap items-center gap-2">
+            <PageBackButton onClick={goBack} label={t.back} disabled={contributionSubmitting} />
+            <PageHomeButton onClick={returnHome} disabled={contributionSubmitting} />
+          </div>
           <BrandLogo variant="mark" className="w-10 shrink-0 sm:hidden" />
           <BrandLogo className="hidden w-48 shrink-0 sm:block" />
           <LanguageSwitcher />
@@ -423,8 +455,11 @@ function AppContent() {
   if (phase === 'specialist') {
     return (
       <div className="min-h-screen">
-        <header className="px-6 py-5 sm:px-10 sm:py-7 flex items-center justify-between gap-3 border-b border-ink-100 bg-white/80 backdrop-blur sticky top-0 z-10">
-          <PageBackButton onClick={goBack} label={t.back} disabled={contributionSubmitting} />
+        <header className="px-6 py-5 sm:px-10 sm:py-7 flex flex-wrap items-center justify-between gap-3 border-b border-ink-100 bg-white/80 backdrop-blur sticky top-0 z-10">
+          <div className="flex flex-wrap items-center gap-2">
+            <PageBackButton onClick={goBack} label={t.back} disabled={contributionSubmitting} />
+            <PageHomeButton onClick={returnHome} disabled={contributionSubmitting} />
+          </div>
           <BrandLogo variant="mark" className="w-10 shrink-0 sm:hidden" />
           <BrandLogo className="hidden w-48 shrink-0 sm:block" />
           <LanguageSwitcher />
@@ -459,6 +494,7 @@ function AppContent() {
     return (
       <SpecialtyExplorer
         scores={scoreForExplorer}
+        onHome={returnHome}
         onSelectSpecialty={(name) => {
           goTo({ phase: 'detail', specialtyName: name });
         }}
@@ -473,13 +509,14 @@ function AppContent() {
       <SpecialtyDetail
         specialtyName={explorerSpecialty}
         score={score}
+        onHome={returnHome}
         onBack={goBack}
       />
     );
   }
 
   if (phase === 'methodology') {
-    return <MethodologyPage onBack={goBack} />;
+    return <MethodologyPage onBack={goBack} onHome={returnHome} />;
   }
 
   if (phase === 'comparison') {
@@ -487,6 +524,7 @@ function AppContent() {
       <SpecialtyComparison
         studentTraits={studentTraits}
         onBack={goBack}
+        onHome={returnHome}
       />
     );
   }
@@ -499,10 +537,13 @@ function AppContent() {
     <div className="min-h-screen flex flex-col bg-accent-50">
       <header className="px-6 py-4 sm:px-10 sm:py-5 border-b border-ink-100 bg-white/80 backdrop-blur sticky top-0 z-10">
         <div className="max-w-3xl mx-auto">
-          <div className="flex items-center justify-between gap-3 mb-4">
-            <PageBackButton onClick={handleBack} label={t.back} />
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <PageBackButton onClick={handleBack} label={t.back} />
+              <PageHomeButton onClick={returnHome} />
+            </div>
             <BrandLogo className="hidden w-40 shrink-0 md:block" />
-            <div className="flex items-center gap-3">
+            <div className="ml-auto flex items-center gap-3">
               {isSpecialist && (
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-brand-50 border border-brand-100 text-brand-700 text-xs font-semibold">
                   {t.specialistBadge}

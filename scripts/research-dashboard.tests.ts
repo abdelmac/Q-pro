@@ -38,7 +38,7 @@ import {
 } from '../src/components/SpecialistQuestionnaireChoice';
 import SpecialtyBibliography from '../src/components/SpecialtyBibliography';
 import { QUESTION_TRANSLATIONS, TRANSLATIONS, translateQuestion } from '../src/data/i18n';
-import { ALL_QUESTION_IDS } from '../src/data/questions';
+import { ALL_QUESTION_IDS, RATING_SECTIONS } from '../src/data/questions';
 import { SPECIALTIES } from '../src/data/specialties';
 import { SPECIALTY_METADATA } from '../src/data/specialtyMetadata';
 import {
@@ -845,13 +845,43 @@ for (const language of ['en', 'ro', 'fr'] as const) {
     assert.equal(translateQuestion(id, language), text);
   }
 }
-const unchangedQuestionTranslations = {
-  en: '89d94cc80f2e275005b56f4db34e357908416e65914a6917320a85e7ab808e87',
-  fr: '6ed9474fa3d420f5e2cfa839deab28fe28c16a287d52132867aa3a82f0980f50',
+const revisedQuestionWording = {
+  en: {
+    P8: 'You are driven rather than laid-back.',
+    P13: 'You remain calm in a crisis situation.',
+    V9: 'You are comfortable with mortality.',
+  },
+  ro: {
+    P8: 'Sunteți motivat, mai degrabă decât relaxat.',
+    P13: 'Rămâneți calm într-o situație de criză.',
+    V9: 'Sunteți confortabil cu mortalitatea.',
+  },
+  fr: {
+    P8: 'Vous êtes déterminé plutôt que détendu.',
+    P13: 'Vous restez calme dans une situation de crise.',
+    V9: 'Vous êtes à l\'aise avec la mortalité.',
+  },
 };
-for (const language of ['en', 'fr'] as const) {
-  assert.equal(createHash('sha256').update(JSON.stringify(QUESTION_TRANSLATIONS[language])).digest('hex'),
-    unchangedQuestionTranslations[language], `The Romanian wording release must leave ${language} items unchanged`);
+// Baselines captured before the approved P8/P13/V9 wording changes on 5 October 2026.
+const unchangedQuestionTranslations = {
+  en: '9c83036675836b589021e6094a9f3ba74d030045d915830e2e5ac83c9a2e92bd',
+  ro: '35e8d416aecd32e9a250bc7e44ad126285ee21cc5a6fe076978decc48899b5fa',
+  fr: 'f258fa1dfbb29cc14b3fd61b6df7816b6db76463b6935113bbec7ba6aca53bc4',
+};
+for (const language of ['en', 'ro', 'fr'] as const) {
+  for (const [id, text] of Object.entries(revisedQuestionWording[language])) {
+    assert.equal(QUESTION_TRANSLATIONS[language][id], text,
+      `${language} ${id} must use the approved wording`);
+  }
+  const unchangedQuestions = Object.fromEntries(Object.entries(QUESTION_TRANSLATIONS[language])
+    .filter(([id]) => !(id in revisedQuestionWording[language])));
+  assert.equal(Object.keys(unchangedQuestions).length, 78);
+  assert.equal(createHash('sha256').update(JSON.stringify(unchangedQuestions)).digest('hex'),
+    unchangedQuestionTranslations[language], `The wording revision must leave the other 78 ${language} items unchanged`);
+}
+for (const { id, text } of RATING_SECTIONS.flatMap((section) => section.questions)) {
+  assert.equal(QUESTION_TRANSLATIONS.en[id], text,
+    `${id} canonical English and localized English must use the same wording`);
 }
 for (const [id, text] of Object.entries(QUESTION_TRANSLATIONS.ro)) {
   assert.match(text, /^(?:Acordați|Preferați|Sunteți|Vă|Gândiți|Aveți|Căutați|Acceptați|Abordați|Tindeți|Lucrați|Comunicați|Vreți|Simțiți|Găsiți|Acționați|Puteți|Rămâneți|Prețuiți) /u,
@@ -865,8 +895,6 @@ assert.equal(QUESTION_TRANSLATIONS.ro.T4, 'Sunteți capabil să vă concentrați
 assert.equal(QUESTION_TRANSLATIONS.ro.W4, 'Vă simțiți confortabil când repetați aceeași activitate.', 'Repeating an activity measures comfort rather than ease');
 assert.equal(QUESTION_TRANSLATIONS.ro.I2, 'Lucrați bine în echipă.', 'Teamwork ability stays distinct from enjoying teamwork');
 assert.equal(QUESTION_TRANSLATIONS.ro.P2, 'Sunteți relaxat.', 'General relaxed temperament stays distinct from calmness during a crisis');
-assert.equal(QUESTION_TRANSLATIONS.ro.P8, 'Sunteți serios și motivat, mai degrabă decât relaxat.');
-assert.equal(QUESTION_TRANSLATIONS.ro.P13, 'Rămâneți calm într-o situație de criză.');
 assert.equal(QUESTION_TRANSLATIONS.ro.S9, 'Vă place să predați.');
 assert.equal(QUESTION_TRANSLATIONS.ro.V10, 'Sunteți tolerant cu ceilalți.', 'Tolerant of others must not become tolerated by others');
 assert.deepEqual(

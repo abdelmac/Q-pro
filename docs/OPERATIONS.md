@@ -78,6 +78,22 @@ Passed: lint, TypeScript, dashboard regressions, unchanged app-icon checks, host
 
 Live `www` credits checks passed at 375/1440 pixels with backend/third-party requests and service workers blocked: university image decoding, translated roles/link, Bondar-first ordering and no horizontal overflow. Public-DNS HTTPS checks with normal TLS verification confirmed matching HTML, main-bundle and logo hashes on both custom domains and the fallback address. No database, account, DNS, paid service or GitHub Pages/native-store setting was changed; the assistant did not commit or push.
 
+### Home navigation and three question revisions — 5 October 2026
+
+The public page headers now include a translated **Home / Acasă / Accueil** button. It returns directly to the opening participant-selection page using in-app navigation, without reloading. When questionnaire choices, ratings or reflections exist, leaving requires confirmation; contribution forms always confirm because they also contain optional geography/consent fields. Cancelling preserves the current state. Confirming resets only the current in-memory assessment, not consented saved/pending submissions or unrelated browser storage. Home is disabled during a contribution submission. The existing dashboard exit/sign-out flow and embedded admin map are unchanged. Narrow headers can wrap, keeping the language dropdown within the viewport.
+
+The owner approved these exact English changes, with matching French/Romanian translations (Romanian P13 already used the requested meaning):
+
+- P8: `You are driven rather than laid-back.`
+- P13: `You remain calm in a crisis situation.`
+- V9: `You are comfortable with mortality.`
+
+This supersedes the earlier P8 deferral; W4, I2 and P2 remain unchanged. All other 78 question texts in each language are protected by baseline regression checks. IDs/order, the 1–10 scale, scoring mappings, `q81-v1`, `client-scoring-v2` and mathematical model checksum `fnv1a64-baadc8f1c40d0e07` are unchanged. **P8 and V9 alter the scope of the statements**: an unchanged score implementation is not evidence that responses before/after this wording change are scientifically interchangeable. The model checksum excludes question wording; historical dashboards display current labels, and existing submissions do not store a wording snapshot. Use release timing/source history to interpret cohorts, not this checksum alone.
+
+Published static version: `b58f40bf-42bf-4da6-b2b1-ab1e31f4ea81` (previous: `8ba4bc71-675f-4b47-b43c-639d107ff5be`). Passed lint, TypeScript, dashboard/scoring regressions, hosted build/artifact checks and the full synthetic browser suite, including all 81 questions in EN/FR/RO. A final `npm run test:browser -- --home-only` pass checks Home at 320/375/1440 pixels in all three languages, opened language-menu bounds, keyboard use, preservation on cancellation, clear-on-confirm and a clean restart, specialist geography-only forms, and no reload/local-draft writes/research submissions. Mobile screenshots were inspected. The existing large-chunk build warning remains. Read-only HTTPS checks with public DNS and normal TLS verification confirmed matching HTML/main-bundle hashes at both custom domains and the Workers fallback. No database, account, DNS or paid-plan changes were made by this release; the assistant did not commit or push.
+
+Live `www` checks also passed in EN/RO/FR at 375/1440 pixels: role → credits → Home and student intro → Home, translated labels, keyboard use, touch targets, opened language menus, no overlap/overflow or JavaScript errors, and exactly one document load per case. These used deployed static assets with **synthetic catalog/settings responses**; all real backend/auth/submission, third-party and WebSocket traffic was blocked. They do not verify production sign-in or account creation.
+
 ### Capacity and the future social application
 
 Supabase Free currently includes **500 MB of database space per project**, **1 GB of file storage**, and **50,000 monthly active Auth users**; projects can pause after a week of inactivity and automatic backups are not included. This is not a guarantee of capacity for 50,000 active social-network users. Pro starts at **USD 25/month**, beyond the current budget. [Supabase pricing](https://supabase.com/pricing).

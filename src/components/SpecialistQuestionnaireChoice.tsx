@@ -8,6 +8,7 @@ import {
 import { useLanguage } from '@/lib/LanguageContext';
 import LanguageSwitcher from './LanguageSwitcher';
 import BrandLogo from './BrandLogo';
+import PageHomeButton from './PageHomeButton';
 
 export interface SpecialistQuestionnaireChoiceCopy {
   appName: string;
@@ -26,6 +27,7 @@ interface SpecialistQuestionnaireChoiceViewProps {
   onAnswerQuestionnaire: () => void;
   onSkipQuestionnaire: () => void;
   onBack: () => void;
+  onHome?: () => void;
 }
 
 export function SpecialistQuestionnaireChoiceView({
@@ -33,6 +35,7 @@ export function SpecialistQuestionnaireChoiceView({
   onAnswerQuestionnaire,
   onSkipQuestionnaire,
   onBack,
+  onHome,
 }: SpecialistQuestionnaireChoiceViewProps) {
   const choices = [
     {
@@ -55,9 +58,12 @@ export function SpecialistQuestionnaireChoiceView({
 
   return (
     <div className="flex min-h-screen flex-col bg-accent-50">
-      <header className="flex items-center justify-between gap-4 px-5 py-5 sm:px-10 sm:py-7">
+      <header className="flex flex-wrap items-center justify-between gap-4 px-5 py-5 sm:px-10 sm:py-7">
         <BrandLogo className="w-40 shrink-0 sm:w-48" label={copy.appName} />
-        <LanguageSwitcher />
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          {onHome && <PageHomeButton onClick={onHome} />}
+          <LanguageSwitcher />
+        </div>
       </header>
 
       <main className="flex flex-1 items-center justify-center px-5 py-8 sm:px-6 sm:py-14">
@@ -123,10 +129,12 @@ export default function SpecialistQuestionnaireChoice({
   onAnswerQuestionnaire,
   onSkipQuestionnaire,
   onBack,
+  onHome,
 }: {
   onAnswerQuestionnaire: () => void;
   onSkipQuestionnaire: () => void;
   onBack: () => void;
+  onHome?: () => void;
 }) {
   const { t } = useLanguage();
 
@@ -135,6 +143,7 @@ export default function SpecialistQuestionnaireChoice({
       onAnswerQuestionnaire={onAnswerQuestionnaire}
       onSkipQuestionnaire={onSkipQuestionnaire}
       onBack={onBack}
+      onHome={onHome}
       copy={{
         appName: t.appName,
         back: t.back,

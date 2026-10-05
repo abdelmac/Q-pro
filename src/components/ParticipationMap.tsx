@@ -13,10 +13,12 @@ import {
   type ParticipationMapFilters, type ParticipationMapStats,
 } from '@/lib/participationMap';
 import PageBackButton from './PageBackButton';
+import PageHomeButton from './PageHomeButton';
 import LanguageSwitcher from './LanguageSwitcher';
 
 interface ParticipationMapProps {
   onBack: () => void;
+  onHome?: () => void;
   embedded?: boolean;
   refreshKey?: number;
   testDataset?: PortalTestDataset;
@@ -74,7 +76,7 @@ function MapFilters({ value, onChange, onApply, onReset, copy, prefix }: {
   </form>;
 }
 
-export default function ParticipationMap({ onBack, embedded = false, refreshKey = 0, testDataset }: ParticipationMapProps) {
+export default function ParticipationMap({ onBack, onHome, embedded = false, refreshKey = 0, testDataset }: ParticipationMapProps) {
   const { lang } = useLanguage();
   const isTestView = embedded && testDataset !== undefined;
   const sourceId = isTestView ? testDataset.id : null;
@@ -195,13 +197,14 @@ export default function ParticipationMap({ onBack, embedded = false, refreshKey 
 
   return <div className={embedded ? 'min-w-0' : 'min-h-screen bg-[#f6f8fb]'} data-participation-map={embedded ? 'admin' : 'public'}>
     {!embedded && <header className="border-b border-ink-100 bg-white px-4 py-4 sm:px-8">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
+      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center gap-3">
           <PageBackButton label={copy.back} onClick={onBack} />
+          {onHome && <PageHomeButton onClick={onHome} />}
           <BrandLogo variant="mark" className="w-9 lg:hidden" />
           <BrandLogo className="hidden w-48 lg:block" />
         </div>
-        <div className="flex items-center gap-3"><span className="hidden items-center gap-2 text-xs font-medium text-brand-800 sm:flex"><Globe2 className="h-4 w-4" aria-hidden="true" />{copy.publicLabel}</span><LanguageSwitcher /></div>
+        <div className="ml-auto flex items-center gap-3"><span className="hidden items-center gap-2 text-xs font-medium text-brand-800 sm:flex"><Globe2 className="h-4 w-4" aria-hidden="true" />{copy.publicLabel}</span><LanguageSwitcher /></div>
       </div>
     </header>}
     <Content className={embedded ? '' : 'mx-auto max-w-7xl px-4 py-8 sm:px-8 sm:py-12'}>

@@ -4,15 +4,17 @@ import { translateSpecialtyName, translateCategory } from '@/data/i18n';
 import { useSpecialtyCatalog } from '@/lib/SpecialtyCatalogContext';
 import SpecialtyBibliography from './SpecialtyBibliography';
 import PageBackButton from './PageBackButton';
+import PageHomeButton from './PageHomeButton';
 import BrandLogo from './BrandLogo';
 
 interface SpecialtyDetailProps {
   specialtyName: string;
   score?: number;
   onBack: () => void;
+  onHome?: () => void;
 }
 
-export default function SpecialtyDetail({ specialtyName, score, onBack }: SpecialtyDetailProps) {
+export default function SpecialtyDetail({ specialtyName, score, onBack, onHome }: SpecialtyDetailProps) {
   const { t, lang } = useLanguage();
   const { specialties, getDescription, getClinicalSummary } = useSpecialtyCatalog();
   const specialty = specialties.find((s) => s.name === specialtyName);
@@ -30,8 +32,11 @@ export default function SpecialtyDetail({ specialtyName, score, onBack }: Specia
 
   return (
     <div className="min-h-screen">
-      <header className="px-6 py-5 sm:px-10 sm:py-7 flex items-center justify-between gap-3 border-b border-ink-100 bg-white/80 backdrop-blur sticky top-0 z-10">
-        <PageBackButton onClick={onBack} label={t.explorerBackToExplorer} />
+      <header className="px-6 py-5 sm:px-10 sm:py-7 flex flex-wrap items-center justify-between gap-3 border-b border-ink-100 bg-white/80 backdrop-blur sticky top-0 z-10">
+        <div className="flex flex-wrap items-center gap-2">
+          <PageBackButton onClick={onBack} label={t.explorerBackToExplorer} />
+          {onHome && <PageHomeButton onClick={onHome} />}
+        </div>
         <BrandLogo variant="mark" className="w-10 shrink-0 sm:hidden" />
         <BrandLogo className="hidden w-48 shrink-0 sm:block" />
       </header>

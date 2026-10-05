@@ -6,14 +6,16 @@ import { COMPARISON_AXES } from '@/data/dimensions';
 import { X, Plus, Check } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import PageBackButton from './PageBackButton';
+import PageHomeButton from './PageHomeButton';
 import BrandLogo from './BrandLogo';
 
 interface SpecialtyComparisonProps {
   studentTraits: Record<string, number>;
   onBack: () => void;
+  onHome?: () => void;
 }
 
-export default function SpecialtyComparison({ studentTraits, onBack }: SpecialtyComparisonProps) {
+export default function SpecialtyComparison({ studentTraits, onBack, onHome }: SpecialtyComparisonProps) {
   const { t, lang } = useLanguage();
   const { specialties } = useSpecialtyCatalog();
   const [selected, setSelected] = useState<string[]>([]);
@@ -39,8 +41,11 @@ export default function SpecialtyComparison({ studentTraits, onBack }: Specialty
 
   return (
     <div className="min-h-screen">
-      <header className="px-6 py-5 sm:px-10 sm:py-7 flex items-center justify-between gap-3 border-b border-ink-100 bg-white/80 backdrop-blur sticky top-0 z-10">
-        <PageBackButton onClick={onBack} label={t.comparisonBack} />
+      <header className="px-6 py-5 sm:px-10 sm:py-7 flex flex-wrap items-center justify-between gap-3 border-b border-ink-100 bg-white/80 backdrop-blur sticky top-0 z-10">
+        <div className="flex flex-wrap items-center gap-2">
+          <PageBackButton onClick={onBack} label={t.comparisonBack} />
+          {onHome && <PageHomeButton onClick={onHome} />}
+        </div>
         <BrandLogo variant="mark" className="w-10 shrink-0 sm:hidden" />
         <BrandLogo className="hidden w-48 shrink-0 sm:block" />
       </header>

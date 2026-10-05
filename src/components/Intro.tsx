@@ -3,6 +3,7 @@ import type { ParticipantRole } from '@/lib/participantProfile';
 import { FEATURE_FLAGS } from '@/config/features';
 import LanguageSwitcher from './LanguageSwitcher';
 import PageBackButton from './PageBackButton';
+import PageHomeButton from './PageHomeButton';
 import BrandLogo from './BrandLogo';
 import { Stethoscope, Brain, Heart, HeartPulse, Sparkles, ArrowRight, Compass, Globe2, BookOpen, BarChart3, GraduationCap, RefreshCw } from 'lucide-react';
 
@@ -11,6 +12,7 @@ interface IntroProps {
   totalQuestions: number;
   participantRole: ParticipantRole;
   onBack: () => void;
+  onHome: () => void;
   onChangeRole: () => void;
   onOpenExplorer: () => void;
   onOpenMethodology: () => void;
@@ -19,7 +21,7 @@ interface IntroProps {
   onOpenWorldMap?: () => void;
 }
 
-export default function Intro({ onStart, totalQuestions, participantRole, onBack, onChangeRole, onOpenExplorer, onOpenMethodology, onOpenDashboard, onOpenCredits, onOpenWorldMap }: IntroProps) {
+export default function Intro({ onStart, totalQuestions, participantRole, onBack, onHome, onChangeRole, onOpenExplorer, onOpenMethodology, onOpenDashboard, onOpenCredits, onOpenWorldMap }: IntroProps) {
   const { t } = useLanguage();
   const isSpecialist = participantRole === 'specialist';
   const isCurious = participantRole === 'curious';
@@ -29,13 +31,14 @@ export default function Intro({ onStart, totalQuestions, participantRole, onBack
 
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="flex items-center justify-between gap-2 px-3 py-5 sm:px-10 sm:py-7">
+      <header className="flex flex-wrap items-center justify-between gap-2 px-3 py-5 sm:px-10 sm:py-7">
         <div className="flex items-center gap-2">
           <PageBackButton onClick={onBack} label={t.back} />
+          <PageHomeButton onClick={onHome} />
           <BrandLogo className="hidden w-52 lg:block" label={t.appName} />
           <BrandLogo variant="mark" className="w-9 lg:hidden" label={t.appName} />
         </div>
-        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+        <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-3">
           <button
             type="button"
             onClick={onChangeRole}

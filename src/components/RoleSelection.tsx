@@ -3,6 +3,7 @@ import { useLanguage } from '@/lib/LanguageContext';
 import type { ParticipantRole } from '@/lib/participantProfile';
 import LanguageSwitcher from './LanguageSwitcher';
 import BrandLogo from './BrandLogo';
+import PageHomeButton from './PageHomeButton';
 
 export interface RoleSelectionCopy {
   appName: string;
@@ -61,9 +62,12 @@ export function RoleSelectionView({ copy, onSelectRole, onOpenCredits, onOpenWor
 
   return (
     <div className="min-h-screen flex flex-col bg-accent-50">
-      <header className="flex items-center justify-between gap-4 px-6 py-5 sm:px-10 sm:py-7">
+      <header className="flex flex-wrap items-center justify-between gap-3 px-6 py-5 sm:px-10 sm:py-7">
         <BrandLogo className="w-36 min-[375px]:w-44 sm:w-56" label={copy.appName} />
-        <LanguageSwitcher />
+        <div className="ml-auto flex items-center gap-2">
+          <PageHomeButton current onClick={() => window.scrollTo({ top: 0, left: 0, behavior: 'auto' })} />
+          <LanguageSwitcher />
+        </div>
       </header>
 
       <main className="flex flex-1 flex-col items-center justify-center px-6 py-8 sm:py-12">

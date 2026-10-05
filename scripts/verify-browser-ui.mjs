@@ -13,6 +13,7 @@ import { verifyBrowserResearchFlows } from './browser-research-flows.mjs';
 import { verifyBrowserMapAuthorization } from './browser-map-authorization.mjs';
 import { verifyBrowserBranding } from './browser-branding.mjs';
 import { verifyBrowserRomanianQuestions } from './browser-romanian-questions.mjs';
+import { verifyBrowserHomeNavigation } from './browser-home-navigation.mjs';
 
 const testDirectory = await mkdtemp(join(tmpdir(), 'q-pro-browser-tests-'));
 let server;
@@ -108,9 +109,15 @@ try {
     assert.deepEqual(pageErrors, [], 'Branding-only checks have no browser runtime errors');
     assert.equal(requests.some(request => request.rpc.startsWith('submit_')), false, 'Branding-only checks do not submit research data');
     console.log('Branding-only browser checks passed. All backend endpoints were mocked; no production requests.');
+  } else if (process.argv.includes('--home-only')) {
+    await verifyBrowserHomeNavigation({ context, fixtureDefinitions });
+    assert.deepEqual(pageErrors, [], 'Home-only checks have no browser runtime errors');
+    assert.equal(requests.some(request => request.rpc.startsWith('submit_')), false, 'Home-only checks do not submit research data');
+    console.log('Home-only browser checks passed. All backend endpoints were mocked; no production requests.');
   } else if (process.argv.includes('--map-auth-only')) {
     await verifyBrowserMapAuthorization({ context, fixtureDefinitions, mapFixture, catalog });
   } else {
+  await verifyBrowserHomeNavigation({ context, fixtureDefinitions });
   await verifyBrowserRomanianQuestions({ page, fixtureDefinitions });
   for (const language of LANGUAGES) {
     const copy = TRANSLATIONS[language.code];

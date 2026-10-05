@@ -61,6 +61,7 @@ export interface UIStrings {
   // Quiz navigation
   step: (current: number, total: number) => string;
   home: string;
+  homeExitConfirm: string;
   back: string;
   continue: string;
   seeResults: string;
@@ -377,6 +378,7 @@ const en: UIStrings = {
 
   step: (current: number, total: number) => `Step ${current} of ${total}`,
   home: 'Home',
+  homeExitConfirm: 'Return to the home page? This will end your current questionnaire and clear your answers from this page. Contributions you already chose to save will not be deleted.',
   back: 'Back',
   continue: 'Continue',
   seeResults: 'See my results',
@@ -680,6 +682,7 @@ const ro: UIStrings = {
 
   step: (current: number, total: number) => `Pasul ${current} din ${total}`,
   home: 'Acasă',
+  homeExitConfirm: 'Reveniți la pagina de start? Chestionarul curent se va încheia, iar răspunsurile de pe această pagină vor fi șterse. Contribuțiile pe care ați ales deja să le salvați nu vor fi șterse.',
   back: 'Înapoi',
   continue: 'Continuă',
   seeResults: 'Vezi rezultatele',
@@ -983,6 +986,7 @@ const fr: UIStrings = {
 
   step: (current: number, total: number) => `Étape ${current} sur ${total}`,
   home: 'Accueil',
+  homeExitConfirm: 'Revenir à l’accueil ? Cela terminera le questionnaire en cours et effacera vos réponses de cette page. Les contributions que vous avez déjà choisi d’enregistrer ne seront pas supprimées.',
   back: 'Retour',
   continue: 'Continuer',
   seeResults: 'Voir mes résultats',
@@ -1300,12 +1304,12 @@ export const QUESTION_TRANSLATIONS: Record<Language, Record<string, string>> = {
     P5: 'You are adventurous or enjoy challenges.',
     P6: 'You are comfortable with uncertainty.',
     P7: 'You are energetic.',
-    P8: 'You are serious and driven rather than laid-back.',
+    P8: 'You are driven rather than laid-back.',
     P9: 'You are optimistic.',
     P10: 'You can handle failure gracefully.',
     P11: 'You are self-confident.',
     P12: 'You are a perfectionist.',
-    P13: 'You remain calm in a crisis.',
+    P13: 'You remain calm in a crisis situation.',
     S1: 'You have good manual dexterity.',
     S2: 'You have good observational skills.',
     S3: 'You are able to perform multiple activities simultaneously.',
@@ -1323,7 +1327,7 @@ export const QUESTION_TRANSLATIONS: Record<Language, Record<string, string>> = {
     V6: 'You value organization.',
     V7: 'You want a good income.',
     V8: 'You identify with professional role models.',
-    V9: 'You are comfortable with your own mortality.',
+    V9: 'You are comfortable with mortality.',
     V10: 'You are tolerant of others.',
     V11: 'You value harmony.',
   },
@@ -1384,7 +1388,7 @@ export const QUESTION_TRANSLATIONS: Record<Language, Record<string, string>> = {
     P5: 'Sunteți aventuros sau vă plac provocările.',
     P6: 'Sunteți confortabil cu incertitudinea.',
     P7: 'Sunteți energic.',
-    P8: 'Sunteți serios și motivat, mai degrabă decât relaxat.',
+    P8: 'Sunteți motivat, mai degrabă decât relaxat.',
     P9: 'Sunteți optimist.',
     P10: 'Puteți gestiona eșecul cu demnitate.',
     P11: 'Sunteți încrezător în dumneavoastră.',
@@ -1407,7 +1411,7 @@ export const QUESTION_TRANSLATIONS: Record<Language, Record<string, string>> = {
     V6: 'Prețuiți organizarea.',
     V7: 'Vreți un venit bun.',
     V8: 'Vă identificați cu modele profesionale.',
-    V9: 'Sunteți confortabil cu propria mortalitate.',
+    V9: 'Sunteți confortabil cu mortalitatea.',
     V10: 'Sunteți tolerant cu ceilalți.',
     V11: 'Prețuiți armonia.',
   },
@@ -1468,12 +1472,12 @@ export const QUESTION_TRANSLATIONS: Record<Language, Record<string, string>> = {
     P5: 'Vous êtes aventureux ou aimez les défis.',
     P6: 'Vous êtes à l\'aise avec l\'incertitude.',
     P7: 'Vous êtes énergique.',
-    P8: 'Vous êtes sérieux et déterminé plutôt que détendu.',
+    P8: 'Vous êtes déterminé plutôt que détendu.',
     P9: 'Vous êtes optimiste.',
     P10: 'Vous savez gérer l\'échec avec élégance.',
     P11: 'Vous êtes sûr de vous.',
     P12: 'Vous êtes perfectionniste.',
-    P13: 'Vous restez calme dans une crise.',
+    P13: 'Vous restez calme dans une situation de crise.',
     S1: 'Vous avez une bonne dextérité manuelle.',
     S2: 'Vous avez de bonnes capacités d\'observation.',
     S3: 'Vous êtes capable d\'effectuer plusieurs activités simultanément.',
@@ -1491,7 +1495,7 @@ export const QUESTION_TRANSLATIONS: Record<Language, Record<string, string>> = {
     V6: 'Vous valorisez l\'organisation.',
     V7: 'Vous voulez un bon revenu.',
     V8: 'Vous vous identifiez à des modèles professionnels.',
-    V9: 'Vous êtes à l\'aise avec votre propre mortalité.',
+    V9: 'Vous êtes à l\'aise avec la mortalité.',
     V10: 'Vous êtes tolérant envers les autres.',
     V11: 'Vous valorisez l\'harmonie.',
   },

@@ -5,13 +5,15 @@ import {
   Sliders, ShieldCheck, Code, Lightbulb, Heart, BarChart3,
 } from 'lucide-react';
 import PageBackButton from './PageBackButton';
+import PageHomeButton from './PageHomeButton';
 import BrandLogo from './BrandLogo';
 
 interface MethodologyPageProps {
   onBack: () => void;
+  onHome?: () => void;
 }
 
-export default function MethodologyPage({ onBack }: MethodologyPageProps) {
+export default function MethodologyPage({ onBack, onHome }: MethodologyPageProps) {
   const { t } = useLanguage();
 
   const sections = [
@@ -42,8 +44,11 @@ export default function MethodologyPage({ onBack }: MethodologyPageProps) {
 
   return (
     <div className="min-h-screen">
-      <header className="px-6 py-5 sm:px-10 sm:py-7 flex items-center justify-between gap-3 border-b border-ink-100 bg-white/80 backdrop-blur sticky top-0 z-10">
-        <PageBackButton onClick={onBack} label={t.methodologyBack} />
+      <header className="px-6 py-5 sm:px-10 sm:py-7 flex flex-wrap items-center justify-between gap-3 border-b border-ink-100 bg-white/80 backdrop-blur sticky top-0 z-10">
+        <div className="flex flex-wrap items-center gap-2">
+          <PageBackButton onClick={onBack} label={t.methodologyBack} />
+          {onHome && <PageHomeButton onClick={onHome} />}
+        </div>
         <BrandLogo variant="mark" className="w-10 shrink-0 sm:hidden" />
         <BrandLogo className="hidden w-48 shrink-0 sm:block" />
       </header>
