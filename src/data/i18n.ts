@@ -40,6 +40,11 @@ export interface UIStrings {
   creditsCreatorsTitle: string;
   creditsBondarProfile: string;
   creditsProfileNewTab: string;
+  creditsBondarAffiliation: string;
+  creditsMachtaAffiliation: string;
+  creditsUniversityTitle: string;
+  creditsUniversityName: string;
+  creditsUniversityWebsite: string;
   creditsMotivationTitle: string;
   creditsMotivation: string;
   creditsMotivationDescription: string;
@@ -352,6 +357,11 @@ const en: UIStrings = {
   creditsCreatorsTitle: 'A joint project by',
   creditsBondarProfile: 'Professional profile on ARPP',
   creditsProfileNewTab: 'opens in a new tab',
+  creditsBondarAffiliation: 'Teaching staff · Titu Maiorescu University',
+  creditsMachtaAffiliation: 'Student · Titu Maiorescu University',
+  creditsUniversityTitle: 'Creators’ academic affiliation',
+  creditsUniversityName: 'Titu Maiorescu University',
+  creditsUniversityWebsite: 'Visit the university website',
   creditsMotivationTitle: 'Why we made it',
   creditsMotivation: 'We made this project because we really wanted to make it.',
   creditsMotivationDescription: 'It began with a simple curiosity: what does a life in medicine actually feel like, and how can we help people ask themselves the questions that matter?',
@@ -650,6 +660,11 @@ const ro: UIStrings = {
   creditsCreatorsTitle: 'Un proiect realizat împreună de',
   creditsBondarProfile: 'Profil profesional pe ARPP',
   creditsProfileNewTab: 'se deschide într-o filă nouă',
+  creditsBondarAffiliation: 'Cadru didactic · Universitatea Titu Maiorescu',
+  creditsMachtaAffiliation: 'Student · Universitatea Titu Maiorescu',
+  creditsUniversityTitle: 'Afilierea universitară a autorilor',
+  creditsUniversityName: 'Universitatea Titu Maiorescu',
+  creditsUniversityWebsite: 'Vizitați site-ul universității',
   creditsMotivationTitle: 'De ce l-am creat',
   creditsMotivation: 'Am creat acest proiect pentru că ne-am dorit cu adevărat să îl realizăm.',
   creditsMotivationDescription: 'Totul a pornit de la o curiozitate simplă: cum se simte, de fapt, o viață în medicină și cum îi putem ajuta pe oameni să își pună întrebările care contează?',
@@ -948,6 +963,11 @@ const fr: UIStrings = {
   creditsCreatorsTitle: 'Un projet commun de',
   creditsBondarProfile: 'Profil professionnel sur ARPP',
   creditsProfileNewTab: 's’ouvre dans un nouvel onglet',
+  creditsBondarAffiliation: 'Enseignant · Université Titu Maiorescu',
+  creditsMachtaAffiliation: 'Étudiant · Université Titu Maiorescu',
+  creditsUniversityTitle: 'Affiliation universitaire des créateurs',
+  creditsUniversityName: 'Université Titu Maiorescu',
+  creditsUniversityWebsite: 'Visiter le site de l’université',
   creditsMotivationTitle: 'Pourquoi nous l’avons créé',
   creditsMotivation: 'Nous avons créé ce projet parce que nous en avions profondément envie.',
   creditsMotivationDescription: 'Tout est parti d’une curiosité simple : à quoi ressemble vraiment une vie en médecine, et comment aider chacun à se poser les questions qui comptent ?',

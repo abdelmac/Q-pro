@@ -174,6 +174,28 @@ export async function verifyBrowserBranding({ page, fixtureDefinitions }) {
     assert.equal(await profileLink.getAttribute('href'), 'https://evenimente-arpp.ro/speaker/sef-lucrari-univ-dr-andrei-cristian-bondar/');
     assert.equal(await profileLink.getAttribute('target'), '_blank', 'Profile link preserves the open app');
     assert.equal(await profileLink.getAttribute('rel'), 'noopener noreferrer', 'External profile link isolates its browsing context');
+    assert.deepEqual(await creators.getByRole('listitem').locator('p').allTextContents(), [
+      copy.creditsBondarAffiliation, copy.creditsMachtaAffiliation,
+    ], `Creator affiliations are translated and remain in Bondar-first order in ${language.code}`);
+    const university = page.getByRole('region', { name: copy.creditsUniversityTitle, exact: true });
+    await university.waitFor({ state: 'visible' });
+    const universityLogo = university.getByRole('img', { name: copy.creditsUniversityName, exact: true });
+    assert.equal(await university.getByRole('img').count(), 1, 'Credits show one supporting university logo');
+    const universityArtwork = await universityLogo.evaluate(async element => {
+      await element.decode();
+      return { src: element.currentSrc, width: element.naturalWidth, height: element.naturalHeight,
+        declaredWidth: element.getAttribute('width'), declaredHeight: element.getAttribute('height') };
+    });
+    const universityUrl = new URL(universityArtwork.src);
+    assert.equal(universityUrl.origin, new URL(page.url()).origin, 'The university logo is served locally, not hotlinked');
+    assert.ok(universityUrl.pathname.startsWith('/Q-pro/'), 'The university logo respects the GitHub Pages deployment base');
+    assert.match(universityUrl.pathname, /\/titu-maiorescu-logo(?:-[\w-]+)?\.png$/, 'The supplied university artwork is rendered');
+    assert.deepEqual([universityArtwork.width, universityArtwork.height], [150, 150], 'The official square artwork decodes at its original dimensions');
+    assert.deepEqual([universityArtwork.declaredWidth, universityArtwork.declaredHeight], ['150', '150'], 'Intrinsic image dimensions reserve its aspect ratio');
+    const universityLink = university.getByRole('link', { name: `${copy.creditsUniversityWebsite} (${copy.creditsProfileNewTab})`, exact: true });
+    assert.equal(await universityLink.getAttribute('href'), 'https://www.utm.ro/', 'The university link points to its official website');
+    assert.equal(await universityLink.getAttribute('target'), '_blank', 'The university link preserves the open app');
+    assert.equal(await universityLink.getAttribute('rel'), 'noopener noreferrer', 'The university link isolates its browsing context');
     for (const width of widths) {
       await page.setViewportSize({ width, height: width >= 768 ? 1000 : 812 });
       const logo = await checkLayout(`credits branding ${language.code} ${width}px`);
@@ -183,6 +205,17 @@ export async function verifyBrowserBranding({ page, fixtureDefinitions }) {
         return [style.fontSize, style.fontWeight, style.color];
       }));
       assert.deepEqual(creatorStyles[0], creatorStyles[1], `Joint creators have equal prominence in ${language.code} at ${width}px`);
+      const universityDimensions = await universityLogo.evaluate(element => {
+        const box = element.getBoundingClientRect();
+        return { width: box.width, height: box.height, left: box.left, right: box.right,
+          objectFit: getComputedStyle(element).objectFit };
+      });
+      assert.ok(universityDimensions.width > 0 && universityDimensions.width <= 150
+        && universityDimensions.width === universityDimensions.height,
+      `University artwork stays square without being enlarged in ${language.code} at ${width}px`);
+      assert.ok(universityDimensions.left >= 0 && universityDimensions.right <= width + 1,
+        `University artwork fits the viewport in ${language.code} at ${width}px`);
+      assert.equal(universityDimensions.objectFit, 'contain', 'The university seal is not cropped or distorted');
       if (language.code === 'en' && (width === 375 || width === 1440)) {
         await page.screenshot({ path: `browser-qa.local/branding-credits-${width === 375 ? 'mobile375' : 'desktop1440'}.png`, fullPage: true });
       }
@@ -195,5 +228,5 @@ export async function verifyBrowserBranding({ page, fixtureDefinitions }) {
   await chooseLanguage(LANGUAGES.find(language => language.code === 'en'));
   await page.setViewportSize({ width: 375, height: 812 });
   await page.getByRole('heading', { name: TRANSLATIONS.en.roleIntrospection, exact: true }).waitFor();
-  console.log('Branding: transparent vector lockups, unique gradients, 4x rendering, SVG/browser/home-screen icons, single-paragraph EN/FR/RO home introductions, role and credits pages at 320/375/768/1440px passed.');
+  console.log('Branding: transparent vector lockups, unique gradients, 4x rendering, SVG/browser/home-screen icons, single-paragraph EN/FR/RO home introductions, Bondar-first credits with localized affiliations and the local university seal, role and credits pages at 320/375/768/1440px passed.');
 }

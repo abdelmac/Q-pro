@@ -1,5 +1,6 @@
 // Isolated synthetic built-site test. No production backend is contacted.
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { createServer } from 'node:http';
 import { readFile, mkdtemp, rm } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
@@ -9,6 +10,7 @@ import { build } from 'vite';
 import { chromium } from 'playwright';
 import { runInNewContext } from 'node:vm';
 import { publicAppPwaPlugin } from './pwaBuildPlugin.ts';
+import { TRANSLATIONS } from '../src/data/i18n.ts';
 
 function verifyBuildPlugin() {
   const plugin = publicAppPwaPlugin();
@@ -127,6 +129,12 @@ try {
     assert.ok(precache.files.every(name => name === 'index.html' || name === 'manifest.webmanifest'
       || /^assets\/[\w.-]+\.(js|css|woff2?|png|svg)$/.test(name)
       || /^branding\/[\w.-]+\.(svg|ico|png)$/.test(name)));
+    const universityAssets = precache.files.filter(name => /^assets\/titu-maiorescu-logo-[\w-]+\.png$/.test(name));
+    assert.equal(universityAssets.length, 1, 'The official university logo is included in the public offline asset list');
+    const universityAsset = universityAssets[0];
+    assert.equal(createHash('sha256').update(await readFile(join(outputDirectory, universityAsset))).digest('hex'),
+      'b472673b64090c480b1d872bdcb9bd3f173f4f84de9d71b4ff95df6810b8641e',
+      'The build preserves the downloaded official logo byte-for-byte');
     const server = createServer(async (request, response) => {
       const url = new URL(request.url, 'http://fixture.test');
       if (/\/(?:api|rest|auth|functions|exports|dashboard|map|settings)(?:\/|$)/.test(url.pathname)) {
@@ -153,6 +161,8 @@ try {
       await context.route('https://**/*', route => route.abort());
       const page = await context.newPage();
       await page.goto(`${origin}${base}`, { waitUntil: 'networkidle' });
+      assert.equal(await page.getByRole('img', { name: TRANSLATIONS.en.creditsUniversityName, exact: true }).count(), 0,
+        'The university image is not rendered during the initial online home-page visit');
       await page.evaluate(() => Promise.race([
         navigator.serviceWorker.ready,
         new Promise((_, reject) => setTimeout(() => reject(new Error('Worker activation timed out')), 20_000)),
@@ -191,9 +201,20 @@ try {
       await page.locator('h1').waitFor();
       assert.equal(await page.evaluate(() => navigator.onLine), false);
       assert.equal(await page.evaluate(() => Boolean(localStorage.getItem('qpro.questionnaire.v1'))), false);
+      // Open Credits for the first time only after going offline. The university
+      // image must come from the build precache, not a previous Credits visit.
+      await page.getByRole('button', { name: TRANSLATIONS.en.navCredits, exact: true }).click();
+      await page.getByRole('heading', { name: TRANSLATIONS.en.creditsTitle, exact: true }).waitFor();
+      const universityImage = await page.getByRole('img', { name: TRANSLATIONS.en.creditsUniversityName, exact: true })
+        .evaluate(async element => {
+          await element.decode();
+          return { src: element.currentSrc, width: element.naturalWidth, height: element.naturalHeight };
+        });
+      assert.equal(universityImage.src, `${origin}${base}${universityAsset}`, 'The offline logo uses the correct root or GitHub Pages base');
+      assert.deepEqual([universityImage.width, universityImage.height], [150, 150], 'The university logo decodes on the first offline Credits visit');
       await context.setOffline(false);
       assert.equal(await page.evaluate(async path => (await fetch(path)).ok, urls[0]), true, 'Network data recovers online');
-      console.log(`PASS PWA ${base}: generated allowlist, offline public shell, no API/map/auth/export cache fallback, no draft persistence.`);
+      console.log(`PASS PWA ${base}: generated allowlist, offline public shell and first-visit Credits university logo, no API/map/auth/export cache fallback, no draft persistence.`);
     } finally {
       await context.close();
       await new Promise(resolveClose => server.close(resolveClose));
