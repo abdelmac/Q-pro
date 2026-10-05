@@ -11,11 +11,16 @@ assert.ok(args.length === 0 || (args.length === 2 && args[0] === '--build-dir'
   && args[1] && !args[1].startsWith('--')), 'Usage: node scripts/verify-cloudflare-hosting.mjs [--build-dir directory]');
 
 const config = JSON.parse(await text('wrangler.json'));
-const allowedFields = new Set(['name', 'compatibility_date', 'build', 'assets']);
+const allowedFields = new Set(['name', 'compatibility_date', 'workers_dev', 'routes', 'build', 'assets']);
 assert.deepEqual(Object.keys(config).filter(key => !allowedFields.has(key)), [],
-  'Static hosting must not add a Worker script, bindings, schedules, account IDs or domain routes');
+  'Static hosting must not add a Worker script, bindings, schedules or account IDs');
 assert.equal(config.name, 'medcompass-web');
 assert.match(config.compatibility_date, /^\d{4}-\d{2}-\d{2}$/);
+assert.equal(config.workers_dev, true, 'Keep the existing workers.dev address available alongside the custom domains');
+assert.deepEqual(config.routes, [
+  { pattern: 'medcompass-web.com', custom_domain: true },
+  { pattern: 'www.medcompass-web.com', custom_domain: true },
+], 'Preserve only the two attached exact custom domains; no wildcard or additional routes');
 assert.deepEqual(config.assets, { directory: './dist' }, 'Serve only dist; unmatched paths keep the default 404');
 assert.deepEqual(config.build, {
   command: 'npm run build:hosted && node scripts/verify-cloudflare-hosting.mjs --build-dir dist',

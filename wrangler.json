@@ -1,6 +1,17 @@
 {
   "name": "medcompass-web",
   "compatibility_date": "2026-10-05",
+  "workers_dev": true,
+  "routes": [
+    {
+      "pattern": "medcompass-web.com",
+      "custom_domain": true
+    },
+    {
+      "pattern": "www.medcompass-web.com",
+      "custom_domain": true
+    }
+  ],
   "build": {
     "command": "npm run build:hosted && node scripts/verify-cloudflare-hosting.mjs --build-dir dist"
   },
