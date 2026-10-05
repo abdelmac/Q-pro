@@ -21,9 +21,6 @@ export default function ProjectCredits({ onBack }: { onBack: () => void }) {
           <h2 id="credits-creators-title" className="font-display text-xl font-semibold text-ink-900">{t.creditsCreatorsTitle}</h2>
           <ul className="mt-4 grid gap-4 sm:grid-cols-2">
             <li className="min-w-0 rounded-2xl border border-brand-100 bg-white p-6">
-              <h3 className="font-display text-xl font-semibold leading-snug text-ink-900">MACHTA Abdelkader Saleh</h3>
-            </li>
-            <li className="min-w-0 rounded-2xl border border-brand-100 bg-white p-6">
               <h3 className="font-display text-xl font-semibold leading-snug text-ink-900">Dr Andrei Cristian Bondar</h3>
               <a
                 href="https://evenimente-arpp.ro/speaker/sef-lucrari-univ-dr-andrei-cristian-bondar/"
@@ -34,6 +31,9 @@ export default function ProjectCredits({ onBack }: { onBack: () => void }) {
                 <span>{t.creditsBondarProfile}<span className="sr-only"> ({t.creditsProfileNewTab})</span></span>
                 <ExternalLink className="h-4 w-4 shrink-0" aria-hidden="true" />
               </a>
+            </li>
+            <li className="min-w-0 rounded-2xl border border-brand-100 bg-white p-6">
+              <h3 className="font-display text-xl font-semibold leading-snug text-ink-900">MACHTA Abdelkader Saleh</h3>
             </li>
           </ul>
         </section>

@@ -167,9 +167,10 @@ export async function verifyBrowserBranding({ page, fixtureDefinitions }) {
     const creators = page.getByRole('region', { name: copy.creditsCreatorsTitle, exact: true });
     await creators.waitFor({ state: 'visible' });
     assert.deepEqual(await creators.getByRole('heading', { level: 3 }).allTextContents(), [
-      'MACHTA Abdelkader Saleh', 'Dr Andrei Cristian Bondar',
-    ], `Credits name both joint creators in ${language.code}`);
+      'Dr Andrei Cristian Bondar', 'MACHTA Abdelkader Saleh',
+    ], `Credits list Dr Bondar first, followed by Abdelkader, in ${language.code}`);
     const profileLink = creators.getByRole('link', { name: `${copy.creditsBondarProfile} (${copy.creditsProfileNewTab})`, exact: true });
+    assert.equal(await creators.getByRole('listitem').first().getByRole('link').count(), 1, 'Dr Bondar’s first creator card retains his professional profile link');
     assert.equal(await profileLink.getAttribute('href'), 'https://evenimente-arpp.ro/speaker/sef-lucrari-univ-dr-andrei-cristian-bondar/');
     assert.equal(await profileLink.getAttribute('target'), '_blank', 'Profile link preserves the open app');
     assert.equal(await profileLink.getAttribute('rel'), 'noopener noreferrer', 'External profile link isolates its browsing context');
