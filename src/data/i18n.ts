@@ -30,7 +30,6 @@ export interface UIStrings {
   roleSelectionDescription: string;
   roleIntrospection: string;
   projectPerspective: string;
-  projectConnection: string;
   curiousStage: string;
   studentStage: string;
   specialistStage: string;
@@ -342,8 +341,7 @@ const en: UIStrings = {
   roleSelectionTitle: 'First, tell us who you are',
   roleSelectionDescription: 'Choose your profile so the questionnaire follows the right path.',
   roleIntrospection: 'What draws you to medicine, and what are you hoping to find in it?',
-  projectPerspective: 'Shaped by the retrospective perspective of a specialist in psychiatry, MedCompass explores the human side of medicine, beyond stereotypes and textbooks.',
-  projectConnection: 'A place for those considering medicine, those studying it, and those practising it to share perspectives and discover where they belong.',
+  projectPerspective: 'Shaped by the clinical insight of psychiatrists, MedCompass explores the human side of medicine, beyond stereotypes and textbooks',
   curiousStage: 'Before medical studies',
   studentStage: 'During medical studies',
   specialistStage: 'After medical studies',
@@ -641,8 +639,7 @@ const ro: UIStrings = {
   roleSelectionTitle: 'Mai întâi, spune-ne cine ești',
   roleSelectionDescription: 'Alege profilul tău pentru ca chestionarul să urmeze parcursul potrivit.',
   roleIntrospection: 'Ce te atrage la medicină și ce speri să găsești în ea?',
-  projectPerspective: 'Pornind de la perspectiva retrospectivă a unui medic specialist în psihiatrie, MedCompass explorează latura umană a medicinei, dincolo de prejudecăți și manuale.',
-  projectConnection: 'Un loc în care cei care se gândesc la medicină, cei care o studiază și cei care o practică își pot împărtăși perspectivele și își pot descoperi locul.',
+  projectPerspective: 'Pornind de la perspectiva clinică a psihiatrilor, MedCompass explorează latura umană a medicinei, dincolo de prejudecăți și manuale',
   curiousStage: 'Înainte de studiile medicale',
   studentStage: 'În timpul studiilor medicale',
   specialistStage: 'După studiile medicale',
@@ -940,8 +937,7 @@ const fr: UIStrings = {
   roleSelectionTitle: 'D’abord, indiquez-nous qui vous êtes',
   roleSelectionDescription: 'Choisissez votre profil afin que le questionnaire suive le parcours adapté.',
   roleIntrospection: 'Qu’est-ce qui vous attire dans la médecine, et qu’espérez-vous y trouver ?',
-  projectPerspective: 'Nourri du regard rétrospectif d’un médecin spécialiste en psychiatrie, MedCompass explore la dimension humaine de la médecine, au-delà des préjugés et des manuels.',
-  projectConnection: 'Un lieu de rencontre entre celles et ceux qui envisagent la médecine, l’étudient ou l’exercent, pour croiser les expériences et découvrir la place qui leur ressemble.',
+  projectPerspective: 'Nourri du regard clinique de psychiatres, MedCompass explore la dimension humaine de la médecine, au-delà des préjugés et des manuels',
   curiousStage: 'Avant les études de médecine',
   studentStage: 'Pendant les études de médecine',
   specialistStage: 'Après les études de médecine',

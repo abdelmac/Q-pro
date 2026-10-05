@@ -5,6 +5,11 @@ import { mkdir } from 'node:fs/promises';
 export async function verifyBrowserBranding({ page, fixtureDefinitions }) {
   const { LANGUAGES, TRANSLATIONS } = fixtureDefinitions;
   const widths = [320, 375, 768, 1440];
+  const homeIntroductions = {
+    en: 'Shaped by the clinical insight of psychiatrists, MedCompass explores the human side of medicine, beyond stereotypes and textbooks',
+    ro: 'Pornind de la perspectiva clinică a psihiatrilor, MedCompass explorează latura umană a medicinei, dincolo de prejudecăți și manuale',
+    fr: 'Nourri du regard clinique de psychiatres, MedCompass explore la dimension humaine de la médecine, au-delà des préjugés et des manuels',
+  };
   await mkdir('browser-qa.local', { recursive: true });
 
   const chooseLanguage = async language => {
@@ -141,6 +146,10 @@ export async function verifyBrowserBranding({ page, fixtureDefinitions }) {
     const copy = TRANSLATIONS[language.code];
     if (language.code !== 'en') await chooseLanguage(language);
     await page.getByRole('heading', { name: copy.roleIntrospection, exact: true }).waitFor();
+    const homeIntro = page.locator('main > div').filter({ has: page.getByRole('heading', { level: 1 }) });
+    assert.equal(await homeIntro.count(), 1, `The ${language.code} home page has one introduction`);
+    assert.deepEqual(await homeIntro.locator('p').allTextContents(), [homeIntroductions[language.code]], `The ${language.code} home page renders only the new clinical-insight paragraph`);
+    assert.equal('projectConnection' in copy, false, `The ${language.code} second introductory paragraph is removed`);
     for (const width of widths) {
       await page.setViewportSize({ width, height: width >= 768 ? 1000 : 812 });
       const logo = await checkLayout(`role branding ${language.code} ${width}px`);
@@ -185,5 +194,5 @@ export async function verifyBrowserBranding({ page, fixtureDefinitions }) {
   await chooseLanguage(LANGUAGES.find(language => language.code === 'en'));
   await page.setViewportSize({ width: 375, height: 812 });
   await page.getByRole('heading', { name: TRANSLATIONS.en.roleIntrospection, exact: true }).waitFor();
-  console.log('Branding: transparent vector lockups, unique gradients, 4x rendering, SVG/browser/home-screen icons, EN/FR/RO role and credits pages at 320/375/768/1440px passed.');
+  console.log('Branding: transparent vector lockups, unique gradients, 4x rendering, SVG/browser/home-screen icons, single-paragraph EN/FR/RO home introductions, role and credits pages at 320/375/768/1440px passed.');
 }

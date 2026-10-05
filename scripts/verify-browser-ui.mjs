@@ -104,7 +104,11 @@ try {
   await page.goto('http://127.0.0.1:4179/', { waitUntil: 'networkidle' });
   await verifyBrowserBranding({ page, fixtureDefinitions });
 
-  if (process.argv.includes('--map-auth-only')) {
+  if (process.argv.includes('--branding-only')) {
+    assert.deepEqual(pageErrors, [], 'Branding-only checks have no browser runtime errors');
+    assert.equal(requests.some(request => request.rpc.startsWith('submit_')), false, 'Branding-only checks do not submit research data');
+    console.log('Branding-only browser checks passed. All backend endpoints were mocked; no production requests.');
+  } else if (process.argv.includes('--map-auth-only')) {
     await verifyBrowserMapAuthorization({ context, fixtureDefinitions, mapFixture, catalog });
   } else {
   await verifyBrowserRomanianQuestions({ page, fixtureDefinitions });

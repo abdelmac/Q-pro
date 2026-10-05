@@ -683,8 +683,7 @@ const roleSelectionCopy: RoleSelectionCopy = {
   title: 'Identify your profile',
   description: 'Choose the profile that applies to you.',
   introspection: 'What draws you to medicine?',
-  perspective: 'A retrospective clinical perspective.',
-  connection: 'Connecting people through medicine.',
+  perspective: TRANSLATIONS.en.projectPerspective,
   curiousStage: 'Before medical studies',
   studentStage: 'During medical studies',
   specialistStage: 'After medical studies',
@@ -708,6 +707,25 @@ const roleSelection = RoleSelectionView({
 const roleFieldsets = elementPropsByType(roleSelection, 'fieldset');
 const roleLegends = elementPropsByType(roleSelection, 'legend');
 const roleButtons = elementPropsByType(roleSelection, 'button').filter((button) => button['data-participant-role']);
+const roleIntro = elementPropsByType(roleSelection, 'div').find((element) =>
+  elementPropsByType(element.children, 'h1').length === 1
+  && elementPropsByType(element.children, 'fieldset').length === 0,
+);
+assert.ok(roleIntro, 'The role gate must retain its introspective introduction');
+assert.deepEqual(
+  elementPropsByType(roleIntro.children, 'p').map((paragraph) => paragraph.children),
+  [roleSelectionCopy.perspective],
+  'The main introduction must contain only the new clinical-insight paragraph',
+);
+for (const [language, perspective] of Object.entries({
+  en: 'Shaped by the clinical insight of psychiatrists, MedCompass explores the human side of medicine, beyond stereotypes and textbooks',
+  ro: 'Pornind de la perspectiva clinică a psihiatrilor, MedCompass explorează latura umană a medicinei, dincolo de prejudecăți și manuale',
+  fr: 'Nourri du regard clinique de psychiatres, MedCompass explore la dimension humaine de la médecine, au-delà des préjugés et des manuels',
+})) {
+  const copy = TRANSLATIONS[language as keyof typeof TRANSLATIONS];
+  assert.equal(copy.projectPerspective, perspective, `The ${language} home-page introduction uses the requested clinical-insight wording`);
+  assert.equal('projectConnection' in copy, false, `The removed second paragraph is no longer kept in ${language} translations`);
+}
 assert.equal(roleFieldsets.length, 1, 'The identity choices must be grouped in one fieldset');
 assert.equal(roleLegends.length, 1, 'The identity choice group must have one accessible legend');
 assert.equal(roleLegends[0].children, roleSelectionCopy.title);
