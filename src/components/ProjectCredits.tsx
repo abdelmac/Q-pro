@@ -39,6 +39,19 @@ export default function ProjectCredits({ onBack, onHome }: { onBack: () => void;
               </a>
             </li>
             <li className="min-w-0 rounded-2xl border border-brand-100 bg-white p-6">
+              <h3 className="font-display text-xl font-semibold leading-snug text-ink-900">Prof. Univ. Dr. Gabriela Marian</h3>
+              <p className="mt-2 text-sm leading-relaxed text-ink-500">{t.creditsMarianAffiliation}</p>
+              <a
+                href="https://clinica.gmh.ro/medic/Gabriela-Marian"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-md text-sm font-medium text-brand-700 underline decoration-brand-200 underline-offset-4 hover:text-brand-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-4"
+              >
+                <span>{t.creditsMarianProfile}<span className="sr-only"> ({t.creditsProfileNewTab})</span></span>
+                <ExternalLink className="h-4 w-4 shrink-0" aria-hidden="true" />
+              </a>
+            </li>
+            <li className="min-w-0 rounded-2xl border border-brand-100 bg-white p-6">
               <h3 className="font-display text-xl font-semibold leading-snug text-ink-900">MACHTA Abdelkader Saleh</h3>
               <p className="mt-2 text-sm leading-relaxed text-ink-500">{t.creditsMachtaAffiliation}</p>
             </li>

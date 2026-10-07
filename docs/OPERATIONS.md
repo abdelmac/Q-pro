@@ -94,6 +94,16 @@ Published static version: `b58f40bf-42bf-4da6-b2b1-ab1e31f4ea81` (previous: `8ba
 
 Live `www` checks also passed in EN/RO/FR at 375/1440 pixels: role → credits → Home and student intro → Home, translated labels, keyboard use, touch targets, opened language menus, no overlap/overflow or JavaScript errors, and exactly one document load per case. These used deployed static assets with **synthetic catalog/settings responses**; all real backend/auth/submission, third-party and WebSocket traffic was blocked. They do not verify production sign-in or account creation.
 
+### Homepage audience and additional specialist credit — 6 October 2026
+
+The homepage now asks **“What fits you?”**, followed by the owner's exact English paragraph beginning “Primarily designed for students”, then the unchanged clinical-insight paragraph. French and Romanian equivalents use the same two-paragraph order. The participant choices, questionnaire and scoring are unchanged. The homepage-only release was `a4c0371d-95a8-4c8f-8b40-c002debe4a34`, following `b58f40bf-42bf-4da6-b2b1-ab1e31f4ea81`.
+
+The credits also add **Prof. Univ. Dr. Gabriela Marian**, immediately after Dr Andrei Cristian Bondar and before MACHTA Abdelkader Saleh. Bondar and Marian are adjacent in the two-column desktop layout; mobile uses the same reading order in one column. Her [GMH professional profile](https://clinica.gmh.ro/medic/Gabriela-Marian), checked on 6 October 2026, supports the psychiatry, emerita-professor and Titu Maiorescu affiliation labels. The requested name/title is preserved. The section now says “Project team and contributors” rather than automatically attributing joint project ownership to every credited specialist. The profile link opens a separate tab with `noopener noreferrer`; there is no new image hotlink or external clinic request before a visitor follows it.
+
+Published the combined homepage and credits update as Cloudflare version `809ef68f-4c02-4cad-9dce-a8ef52cdf4b5`. Lint, TypeScript, dashboard regression tests, branding browser tests and hosted-build checks passed. Local layout checks covered EN/RO/FR at 320, 375, 768 and 1440 pixels. The deployed HTML and main JavaScript matched the final local build on the apex, `www` and Workers fallback hosts.
+
+Live `www` browser checks passed in EN/RO/FR at 375 and 1440 pixels, including the new homepage paragraphs, all three credits, Marian's profile link, Home navigation and responsive layout, without JavaScript errors. These checks allowed only public static assets and used synthetic catalog/settings responses; no real backend, authentication, research-submission or third-party requests were sent. Full questionnaire/research/PWA suites were not rerun for this copy-only release. No database, account, DNS or paid-plan changes were made.
+
 ### Capacity and the future social application
 
 Supabase Free currently includes **500 MB of database space per project**, **1 GB of file storage**, and **50,000 monthly active Auth users**; projects can pause after a week of inactivity and automatic backups are not included. This is not a guarantee of capacity for 50,000 active social-network users. Pro starts at **USD 25/month**, beyond the current budget. [Supabase pricing](https://supabase.com/pricing).

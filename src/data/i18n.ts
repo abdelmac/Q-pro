@@ -29,6 +29,7 @@ export interface UIStrings {
   roleSelectionTitle: string;
   roleSelectionDescription: string;
   roleIntrospection: string;
+  projectAudience: string;
   projectPerspective: string;
   curiousStage: string;
   studentStage: string;
@@ -39,8 +40,10 @@ export interface UIStrings {
   creditsSubtitle: string;
   creditsCreatorsTitle: string;
   creditsBondarProfile: string;
+  creditsMarianProfile: string;
   creditsProfileNewTab: string;
   creditsBondarAffiliation: string;
+  creditsMarianAffiliation: string;
   creditsMachtaAffiliation: string;
   creditsUniversityTitle: string;
   creditsUniversityName: string;
@@ -346,7 +349,8 @@ const en: UIStrings = {
   questionsCount: (n: number) => `${n} questions · ~8 minutes`,
   roleSelectionTitle: 'First, tell us who you are',
   roleSelectionDescription: 'Choose your profile so the questionnaire follows the right path.',
-  roleIntrospection: 'What draws you to medicine, and what are you hoping to find in it?',
+  roleIntrospection: 'What fits you?',
+  projectAudience: 'Primarily designed for students, but open to everyone—including physicians, professors, and those outside the medical field—who want to discover whether a specialty aligns with their personality.',
   projectPerspective: 'Shaped by the clinical insight of psychiatrists, MedCompass explores the human side of medicine, beyond stereotypes and textbooks',
   curiousStage: 'Before medical studies',
   studentStage: 'During medical studies',
@@ -355,12 +359,14 @@ const en: UIStrings = {
   navWorldMap: 'Around the world',
   creditsTitle: 'The people and purpose behind MedCompass',
   creditsSubtitle: 'An invitation to understand medicine through the people who imagine it, study it, and live it.',
-  creditsCreatorsTitle: 'A joint project by',
+  creditsCreatorsTitle: 'Project team and contributors',
   creditsBondarProfile: 'Professional profile on ARPP',
+  creditsMarianProfile: 'Professional profile on GMH',
   creditsProfileNewTab: 'opens in a new tab',
   creditsBondarAffiliation: 'Teaching staff · Titu Maiorescu University',
+  creditsMarianAffiliation: 'Psychiatrist · Professor emerita · Titu Maiorescu University',
   creditsMachtaAffiliation: 'Student · Titu Maiorescu University',
-  creditsUniversityTitle: 'Creators’ academic affiliation',
+  creditsUniversityTitle: 'Academic affiliation',
   creditsUniversityName: 'Titu Maiorescu University',
   creditsUniversityWebsite: 'Visit the university website',
   creditsMotivationTitle: 'Why we made it',
@@ -650,7 +656,8 @@ const ro: UIStrings = {
   questionsCount: (n: number) => `${n} întrebări · ~8 minute`,
   roleSelectionTitle: 'Mai întâi, spune-ne cine ești',
   roleSelectionDescription: 'Alege profilul tău pentru ca chestionarul să urmeze parcursul potrivit.',
-  roleIntrospection: 'Ce te atrage la medicină și ce speri să găsești în ea?',
+  roleIntrospection: 'Ce vi se potrivește?',
+  projectAudience: 'Conceput în primul rând pentru studenți, dar deschis tuturor — inclusiv medicilor, profesorilor și persoanelor din afara domeniului medical — care doresc să descopere dacă o specialitate se potrivește personalității lor.',
   projectPerspective: 'Pornind de la perspectiva clinică a psihiatrilor, MedCompass explorează latura umană a medicinei, dincolo de prejudecăți și manuale',
   curiousStage: 'Înainte de studiile medicale',
   studentStage: 'În timpul studiilor medicale',
@@ -659,12 +666,14 @@ const ro: UIStrings = {
   navWorldMap: 'În jurul lumii',
   creditsTitle: 'Oamenii și ideea din spatele MedCompass',
   creditsSubtitle: 'O invitație de a înțelege medicina prin oamenii care și-o imaginează, o studiază și o trăiesc.',
-  creditsCreatorsTitle: 'Un proiect realizat împreună de',
+  creditsCreatorsTitle: 'Echipa proiectului și colaboratori',
   creditsBondarProfile: 'Profil profesional pe ARPP',
+  creditsMarianProfile: 'Profil profesional pe GMH',
   creditsProfileNewTab: 'se deschide într-o filă nouă',
   creditsBondarAffiliation: 'Cadru didactic · Universitatea Titu Maiorescu',
+  creditsMarianAffiliation: 'Medic primar psihiatru · Profesor emerit · Universitatea Titu Maiorescu',
   creditsMachtaAffiliation: 'Student · Universitatea Titu Maiorescu',
-  creditsUniversityTitle: 'Afilierea universitară a autorilor',
+  creditsUniversityTitle: 'Afiliere universitară',
   creditsUniversityName: 'Universitatea Titu Maiorescu',
   creditsUniversityWebsite: 'Vizitați site-ul universității',
   creditsMotivationTitle: 'De ce l-am creat',
@@ -954,7 +963,8 @@ const fr: UIStrings = {
   questionsCount: (n: number) => `${n} questions · ~8 minutes`,
   roleSelectionTitle: 'D’abord, indiquez-nous qui vous êtes',
   roleSelectionDescription: 'Choisissez votre profil afin que le questionnaire suive le parcours adapté.',
-  roleIntrospection: 'Qu’est-ce qui vous attire dans la médecine, et qu’espérez-vous y trouver ?',
+  roleIntrospection: 'Qu’est-ce qui vous correspond ?',
+  projectAudience: 'Conçu avant tout pour les étudiants, mais ouvert à tous — médecins, professeurs et personnes extérieures au domaine médical compris — qui souhaitent découvrir si une spécialité correspond à leur personnalité.',
   projectPerspective: 'Nourri du regard clinique de psychiatres, MedCompass explore la dimension humaine de la médecine, au-delà des préjugés et des manuels',
   curiousStage: 'Avant les études de médecine',
   studentStage: 'Pendant les études de médecine',
@@ -963,12 +973,14 @@ const fr: UIStrings = {
   navWorldMap: 'À travers le monde',
   creditsTitle: 'Les personnes et l’intention derrière MedCompass',
   creditsSubtitle: 'Une invitation à comprendre la médecine à travers celles et ceux qui l’imaginent, l’étudient et la vivent.',
-  creditsCreatorsTitle: 'Un projet commun de',
+  creditsCreatorsTitle: 'Équipe du projet et contributeurs',
   creditsBondarProfile: 'Profil professionnel sur ARPP',
+  creditsMarianProfile: 'Profil professionnel sur GMH',
   creditsProfileNewTab: 's’ouvre dans un nouvel onglet',
   creditsBondarAffiliation: 'Enseignant · Université Titu Maiorescu',
+  creditsMarianAffiliation: 'Psychiatre · Professeure émérite · Université Titu Maiorescu',
   creditsMachtaAffiliation: 'Étudiant · Université Titu Maiorescu',
-  creditsUniversityTitle: 'Affiliation universitaire des créateurs',
+  creditsUniversityTitle: 'Affiliation universitaire',
   creditsUniversityName: 'Université Titu Maiorescu',
   creditsUniversityWebsite: 'Visiter le site de l’université',
   creditsMotivationTitle: 'Pourquoi nous l’avons créé',

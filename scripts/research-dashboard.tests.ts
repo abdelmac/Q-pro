@@ -682,7 +682,8 @@ const roleSelectionCopy: RoleSelectionCopy = {
   appName: 'MedCompass',
   title: 'Identify your profile',
   description: 'Choose the profile that applies to you.',
-  introspection: 'What draws you to medicine?',
+  introspection: TRANSLATIONS.en.roleIntrospection,
+  audience: TRANSLATIONS.en.projectAudience,
   perspective: TRANSLATIONS.en.projectPerspective,
   curiousStage: 'Before medical studies',
   studentStage: 'During medical studies',
@@ -714,17 +715,56 @@ const roleIntro = elementPropsByType(roleSelection, 'div').find((element) =>
 assert.ok(roleIntro, 'The role gate must retain its introspective introduction');
 assert.deepEqual(
   elementPropsByType(roleIntro.children, 'p').map((paragraph) => paragraph.children),
-  [roleSelectionCopy.perspective],
-  'The main introduction must contain only the new clinical-insight paragraph',
+  [roleSelectionCopy.audience, roleSelectionCopy.perspective],
+  'The main introduction must place the new audience paragraph before the preserved clinical-insight paragraph',
 );
+const homeAudienceCopy = {
+  en: {
+    title: 'What fits you?',
+    audience: 'Primarily designed for students, but open to everyone—including physicians, professors, and those outside the medical field—who want to discover whether a specialty aligns with their personality.',
+  },
+  ro: {
+    title: 'Ce vi se potrivește?',
+    audience: 'Conceput în primul rând pentru studenți, dar deschis tuturor — inclusiv medicilor, profesorilor și persoanelor din afara domeniului medical — care doresc să descopere dacă o specialitate se potrivește personalității lor.',
+  },
+  fr: {
+    title: 'Qu’est-ce qui vous correspond ?',
+    audience: 'Conçu avant tout pour les étudiants, mais ouvert à tous — médecins, professeurs et personnes extérieures au domaine médical compris — qui souhaitent découvrir si une spécialité correspond à leur personnalité.',
+  },
+};
+for (const [language, expected] of Object.entries({
+  en: { affiliation: 'Psychiatrist · Professor emerita · Titu Maiorescu University', profile: 'Professional profile on GMH' },
+  ro: { affiliation: 'Medic primar psihiatru · Profesor emerit · Universitatea Titu Maiorescu', profile: 'Profil profesional pe GMH' },
+  fr: { affiliation: 'Psychiatre · Professeure émérite · Université Titu Maiorescu', profile: 'Profil professionnel sur GMH' },
+})) {
+  const copy = TRANSLATIONS[language as keyof typeof TRANSLATIONS];
+  assert.equal(copy.creditsMarianAffiliation, expected.affiliation, `Professor Marian’s verified affiliation is localized in ${language}`);
+  assert.equal(copy.creditsMarianProfile, expected.profile, `Professor Marian’s profile link is localized in ${language}`);
+}
 for (const [language, perspective] of Object.entries({
   en: 'Shaped by the clinical insight of psychiatrists, MedCompass explores the human side of medicine, beyond stereotypes and textbooks',
   ro: 'Pornind de la perspectiva clinică a psihiatrilor, MedCompass explorează latura umană a medicinei, dincolo de prejudecăți și manuale',
   fr: 'Nourri du regard clinique de psychiatres, MedCompass explore la dimension humaine de la médecine, au-delà des préjugés et des manuels',
 })) {
   const copy = TRANSLATIONS[language as keyof typeof TRANSLATIONS];
+  const expected = homeAudienceCopy[language as keyof typeof homeAudienceCopy];
+  assert.equal(copy.roleIntrospection, expected.title, `The ${language} home-page heading uses the requested fit question`);
+  assert.equal(copy.projectAudience, expected.audience, `The ${language} home-page audience includes students and everyone outside the medical field`);
   assert.equal(copy.projectPerspective, perspective, `The ${language} home-page introduction uses the requested clinical-insight wording`);
-  assert.equal('projectConnection' in copy, false, `The removed second paragraph is no longer kept in ${language} translations`);
+  assert.equal('projectConnection' in copy, false, `The obsolete connection paragraph is not restored in ${language} translations`);
+  const localizedRoleSelection = RoleSelectionView({
+    copy: { ...roleSelectionCopy, introspection: copy.roleIntrospection, audience: copy.projectAudience, perspective: copy.projectPerspective },
+    onSelectRole: () => undefined,
+    onOpenCredits: () => undefined,
+  });
+  const localizedRoleIntro = elementPropsByType(localizedRoleSelection, 'div').find((element) =>
+    elementPropsByType(element.children, 'h1').length === 1
+    && elementPropsByType(element.children, 'fieldset').length === 0,
+  );
+  assert.ok(localizedRoleIntro, `The ${language} home page retains one introduction`);
+  assert.deepEqual(elementPropsByType(localizedRoleIntro.children, 'h1').map((heading) => heading.children), [expected.title]);
+  assert.deepEqual(elementPropsByType(localizedRoleIntro.children, 'p').map((paragraph) => paragraph.children), [expected.audience, perspective],
+    `The ${language} home page renders exactly the audience and clinical-insight paragraphs in the requested order`);
 }
 assert.equal(roleFieldsets.length, 1, 'The identity choices must be grouped in one fieldset');
 assert.equal(roleLegends.length, 1, 'The identity choice group must have one accessible legend');

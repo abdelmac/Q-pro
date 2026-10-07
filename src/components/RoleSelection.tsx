@@ -10,6 +10,7 @@ export interface RoleSelectionCopy {
   title: string;
   description: string;
   introspection: string;
+  audience: string;
   perspective: string;
   curiousStage: string;
   studentStage: string;
@@ -75,7 +76,8 @@ export function RoleSelectionView({ copy, onSelectRole, onOpenCredits, onOpenWor
           <h1 className="font-display text-3xl font-semibold leading-tight tracking-tight text-ink-900 text-balance sm:text-5xl">
             {copy.introspection}
           </h1>
-          <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-ink-600">{copy.perspective}</p>
+          <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-ink-600">{copy.audience}</p>
+          <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-ink-600">{copy.perspective}</p>
         </div>
         <fieldset className="w-full max-w-5xl text-center">
           <legend className="w-full font-display text-xl font-semibold tracking-tight text-ink-900 sm:text-2xl">
@@ -139,6 +141,7 @@ export default function RoleSelection({ onSelectRole, onOpenCredits, onOpenWorld
         title: t.roleSelectionTitle,
         description: t.roleSelectionDescription,
         introspection: t.roleIntrospection,
+        audience: t.projectAudience,
         perspective: t.projectPerspective,
         curiousStage: t.curiousStage,
         studentStage: t.studentStage,

@@ -10,6 +10,20 @@ export async function verifyBrowserBranding({ page, fixtureDefinitions }) {
     ro: 'Pornind de la perspectiva clinică a psihiatrilor, MedCompass explorează latura umană a medicinei, dincolo de prejudecăți și manuale',
     fr: 'Nourri du regard clinique de psychiatres, MedCompass explore la dimension humaine de la médecine, au-delà des préjugés et des manuels',
   };
+  const homeAudienceCopy = {
+    en: {
+      title: 'What fits you?',
+      audience: 'Primarily designed for students, but open to everyone—including physicians, professors, and those outside the medical field—who want to discover whether a specialty aligns with their personality.',
+    },
+    ro: {
+      title: 'Ce vi se potrivește?',
+      audience: 'Conceput în primul rând pentru studenți, dar deschis tuturor — inclusiv medicilor, profesorilor și persoanelor din afara domeniului medical — care doresc să descopere dacă o specialitate se potrivește personalității lor.',
+    },
+    fr: {
+      title: 'Qu’est-ce qui vous correspond ?',
+      audience: 'Conçu avant tout pour les étudiants, mais ouvert à tous — médecins, professeurs et personnes extérieures au domaine médical compris — qui souhaitent découvrir si une spécialité correspond à leur personnalité.',
+    },
+  };
   await mkdir('browser-qa.local', { recursive: true });
 
   const chooseLanguage = async language => {
@@ -148,8 +162,10 @@ export async function verifyBrowserBranding({ page, fixtureDefinitions }) {
     await page.getByRole('heading', { name: copy.roleIntrospection, exact: true }).waitFor();
     const homeIntro = page.locator('main > div').filter({ has: page.getByRole('heading', { level: 1 }) });
     assert.equal(await homeIntro.count(), 1, `The ${language.code} home page has one introduction`);
-    assert.deepEqual(await homeIntro.locator('p').allTextContents(), [homeIntroductions[language.code]], `The ${language.code} home page renders only the new clinical-insight paragraph`);
-    assert.equal('projectConnection' in copy, false, `The ${language.code} second introductory paragraph is removed`);
+    const expectedIntro = homeAudienceCopy[language.code];
+    assert.deepEqual(await homeIntro.getByRole('heading', { level: 1 }).allTextContents(), [expectedIntro.title], `The ${language.code} home page uses the new fit question`);
+    assert.deepEqual(await homeIntro.locator('p').allTextContents(), [expectedIntro.audience, homeIntroductions[language.code]], `The ${language.code} home page renders the new audience paragraph before the preserved clinical-insight paragraph`);
+    assert.equal('projectConnection' in copy, false, `The ${language.code} obsolete connection paragraph is not restored`);
     for (const width of widths) {
       await page.setViewportSize({ width, height: width >= 768 ? 1000 : 812 });
       const logo = await checkLayout(`role branding ${language.code} ${width}px`);
@@ -172,16 +188,25 @@ export async function verifyBrowserBranding({ page, fixtureDefinitions }) {
     const creators = page.getByRole('region', { name: copy.creditsCreatorsTitle, exact: true });
     await creators.waitFor({ state: 'visible' });
     assert.deepEqual(await creators.getByRole('heading', { level: 3 }).allTextContents(), [
-      'Dr Andrei Cristian Bondar', 'MACHTA Abdelkader Saleh',
-    ], `Credits list Dr Bondar first, followed by Abdelkader, in ${language.code}`);
+      'Dr Andrei Cristian Bondar', 'Prof. Univ. Dr. Gabriela Marian', 'MACHTA Abdelkader Saleh',
+    ], `Credits list Dr Bondar first, followed by Professor Marian and Abdelkader, in ${language.code}`);
     const profileLink = creators.getByRole('link', { name: `${copy.creditsBondarProfile} (${copy.creditsProfileNewTab})`, exact: true });
     assert.equal(await creators.getByRole('listitem').first().getByRole('link').count(), 1, 'Dr Bondar’s first creator card retains his professional profile link');
     assert.equal(await profileLink.getAttribute('href'), 'https://evenimente-arpp.ro/speaker/sef-lucrari-univ-dr-andrei-cristian-bondar/');
     assert.equal(await profileLink.getAttribute('target'), '_blank', 'Profile link preserves the open app');
     assert.equal(await profileLink.getAttribute('rel'), 'noopener noreferrer', 'External profile link isolates its browsing context');
+    const marianProfileLink = creators.getByRole('link', { name: `${copy.creditsMarianProfile} (${copy.creditsProfileNewTab})`, exact: true });
+    assert.equal(await creators.getByRole('listitem').nth(1).getByRole('link').count(), 1, 'Professor Marian’s second card includes her professional profile link');
+    assert.equal(await marianProfileLink.getAttribute('href'), 'https://clinica.gmh.ro/medic/Gabriela-Marian', 'Professor Marian’s profile links to the supplied clinic source');
+    assert.equal(await marianProfileLink.getAttribute('target'), '_blank', 'Professor Marian’s profile preserves the open app');
+    assert.equal(await marianProfileLink.getAttribute('rel'), 'noopener noreferrer', 'Professor Marian’s profile isolates its browsing context');
+    await profileLink.focus();
+    await page.keyboard.press('Tab');
+    assert.equal(await marianProfileLink.evaluate(element => document.activeElement === element), true, 'Keyboard navigation reaches Professor Marian’s link immediately after Dr Bondar’s');
+    assert.match(await marianProfileLink.getAttribute('class') ?? '', /focus-visible:ring-2/, 'Professor Marian’s link retains a visible keyboard focus indicator');
     assert.deepEqual(await creators.getByRole('listitem').locator('p').allTextContents(), [
-      copy.creditsBondarAffiliation, copy.creditsMachtaAffiliation,
-    ], `Creator affiliations are translated and remain in Bondar-first order in ${language.code}`);
+      copy.creditsBondarAffiliation, copy.creditsMarianAffiliation, copy.creditsMachtaAffiliation,
+    ], `All three affiliations are translated and remain in Bondar–Marian–Abdelkader order in ${language.code}`);
     const university = page.getByRole('region', { name: copy.creditsUniversityTitle, exact: true });
     await university.waitFor({ state: 'visible' });
     const universityLogo = university.getByRole('img', { name: copy.creditsUniversityName, exact: true });
@@ -209,7 +234,24 @@ export async function verifyBrowserBranding({ page, fixtureDefinitions }) {
         const style = getComputedStyle(heading);
         return [style.fontSize, style.fontWeight, style.color];
       }));
-      assert.deepEqual(creatorStyles[0], creatorStyles[1], `Joint creators have equal prominence in ${language.code} at ${width}px`);
+      for (const style of creatorStyles) {
+        assert.deepEqual(style, creatorStyles[0], `All credited contributors have equal typographic prominence in ${language.code} at ${width}px`);
+      }
+      const cardPositions = await creators.getByRole('listitem').evaluateAll(cards => cards.map(card => {
+        const box = card.getBoundingClientRect();
+        return { left: box.left, right: box.right, top: box.top, bottom: box.bottom };
+      }));
+      const [bondarCard, marianCard, machtaCard] = cardPositions;
+      assert.equal(cardPositions.length, 3, 'Credits contain exactly the requested three contributor cards');
+      if (width >= 768) {
+        assert.ok(Math.abs(bondarCard.top - marianCard.top) <= 1 && bondarCard.right <= marianCard.left,
+          `Dr Bondar and Professor Marian are adjacent on the first row in ${language.code} at ${width}px`);
+        assert.ok(machtaCard.top >= Math.max(bondarCard.bottom, marianCard.bottom),
+          `Abdelkader follows the two medical contributors in ${language.code} at ${width}px`);
+      } else {
+        assert.ok(marianCard.top >= bondarCard.bottom && machtaCard.top >= marianCard.bottom,
+          `Mobile credits stack in Bondar–Marian–Abdelkader order in ${language.code} at ${width}px`);
+      }
       const universityDimensions = await universityLogo.evaluate(element => {
         const box = element.getBoundingClientRect();
         return { width: box.width, height: box.height, left: box.left, right: box.right,
@@ -233,5 +275,5 @@ export async function verifyBrowserBranding({ page, fixtureDefinitions }) {
   await chooseLanguage(LANGUAGES.find(language => language.code === 'en'));
   await page.setViewportSize({ width: 375, height: 812 });
   await page.getByRole('heading', { name: TRANSLATIONS.en.roleIntrospection, exact: true }).waitFor();
-  console.log('Branding: transparent vector lockups, unique gradients, 4x rendering, SVG/browser/home-screen icons, single-paragraph EN/FR/RO home introductions, Bondar-first credits with localized affiliations and the local university seal, role and credits pages at 320/375/768/1440px passed.');
+  console.log('Branding: transparent vector lockups, unique gradients, 4x rendering, SVG/browser/home-screen icons, fit-question headings and ordered audience/clinical-insight EN/FR/RO home introductions, Bondar–Marian–Abdelkader credits with localized affiliations, safe keyboard-accessible profile links, desktop adjacency/mobile order and the local university seal, role and credits pages at 320/375/768/1440px passed.');
 }
