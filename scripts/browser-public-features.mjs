@@ -187,7 +187,7 @@ export async function verifyBrowserPublicFeatures({ context, page, fixtureDefini
     assert.equal(publicDirect.code, '42501', 'Even an admin cannot bypass the disabled public endpoint');
     assert.equal(publicDirect.data, null);
     await page.locator('#dashboard-sidebar-desktop').getByRole('button', { name: 'Sign out', exact: true }).click();
-    await page.getByRole('heading', { name: 'Specialist & admin portal', exact: true }).waitFor();
+    await page.getByRole('heading', { name: 'Professor & admin sign in', exact: true }).waitFor();
     await page.getByRole('button', { name: 'Back', exact: true }).click();
 
     // Ordinary authenticated users with privileged-looking metadata remain ordinary.

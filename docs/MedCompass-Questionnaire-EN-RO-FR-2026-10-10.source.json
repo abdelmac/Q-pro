@@ -1,0 +1,2532 @@
+{
+  "title": "MedCompass questionnaire",
+  "date": "2026-10-10",
+  "languages": [
+    "en",
+    "ro",
+    "fr"
+  ],
+  "revision": "438cec22b3c92ee99772e263e18e38d4322fa0b4",
+  "sourceHashes": {
+    "src/data/questions.ts": "dc878123cfe41c3d193c4e1137e0331604a161f3a2208e2bbb2f7c86c40b197a",
+    "src/data/i18n.ts": "6b6c0003a2105bb9df1fb62dd807da98b28ab4a33a16bf20d68a50fd64526852",
+    "src/data/traits.ts": "6ba8bcff165711085c950202ba5e7477b5df09b48eb549f127dfec0f83506741",
+    "src/data/mapI18n.ts": "862b5f3168ce2e22dccf6133e8fbca3cd91b48ab6560d3e7d6e733c1bf1cceb5",
+    "src/lib/participantProfile.ts": "bd6ea7f5e7b1deb5424279ed4162e74ee8c823e74280dd8d0c83fcb056061660",
+    "src/App.tsx": "3e7adc32eedaf56219bd908454a9d95eecb800be6a168f873cede7e3258a536e",
+    "src/components/RoleSelection.tsx": "ffc0e926d890cc94ab81cc39734cdffd6fe6a4f888be9e263a6db74bbfe86ad9",
+    "src/components/ValuesStep.tsx": "788ac3bb128e27ea6bed4fd41a495b247aae10024707ddbaa097c405d27bc831",
+    "src/components/SpecialistPrompt.tsx": "81bc338c0a5a4496a8fd06b005ef0f901f3c7a6939e1e3aafb56fecfeb5b2455",
+    "src/components/ParticipantReflectionForm.tsx": "5cc92fd74cc717bbc4948a0363f41be768fa457f465b4bcc0cab9d983fef5fba",
+    "src/components/GeographyFields.tsx": "4eaa24a734cc701e7494f38c4a74fc1ce4c2412621de6d82c50cc9ef421fb230"
+  },
+  "ratings": [
+    {
+      "id": "T1",
+      "section": "thinking",
+      "text": {
+        "en": "You pay particular attention to \"why\" questions.",
+        "ro": "Acordați o atenție deosebită întrebărilor de tip „de ce”.",
+        "fr": "Vous accordez une attention particulière aux questions « pourquoi »."
+      },
+      "number": 1
+    },
+    {
+      "id": "T2",
+      "section": "thinking",
+      "text": {
+        "en": "You pay close attention to details.",
+        "ro": "Acordați o atenție deosebită detaliilor.",
+        "fr": "Vous prêtez une grande attention aux détails."
+      },
+      "number": 2
+    },
+    {
+      "id": "T3",
+      "section": "thinking",
+      "text": {
+        "en": "You prefer solving complex problems.",
+        "ro": "Preferați să rezolvați probleme complexe.",
+        "fr": "Vous préférez résoudre des problèmes complexes."
+      },
+      "number": 3
+    },
+    {
+      "id": "T4",
+      "section": "thinking",
+      "text": {
+        "en": "You are able to concentrate for prolonged periods.",
+        "ro": "Sunteți capabil să vă concentrați perioade lungi de timp.",
+        "fr": "Vous êtes capable de vous concentrer pendant de longues périodes."
+      },
+      "number": 4
+    },
+    {
+      "id": "T5",
+      "section": "thinking",
+      "text": {
+        "en": "You rely more on experience than on theory.",
+        "ro": "Vă bazați mai mult pe experiență decât pe teorie.",
+        "fr": "Vous vous fiez davantage à l'expérience qu'à la théorie."
+      },
+      "number": 5
+    },
+    {
+      "id": "T6",
+      "section": "thinking",
+      "text": {
+        "en": "You are satisfied with knowing \"a little about many things\".",
+        "ro": "Sunteți mulțumit să știți „puțin despre multe lucruri”.",
+        "fr": "Vous êtes satisfait de savoir « un peu sur beaucoup de choses »."
+      },
+      "number": 6
+    },
+    {
+      "id": "T7",
+      "section": "thinking",
+      "text": {
+        "en": "You feel uncomfortable when faced with vaguely defined problems.",
+        "ro": "Vă simțiți inconfortabil când vă confruntați cu probleme vag definite.",
+        "fr": "Vous vous sentez mal à l'aise face à des problèmes vaguement définis."
+      },
+      "number": 7
+    },
+    {
+      "id": "T8",
+      "section": "thinking",
+      "text": {
+        "en": "You think logically.",
+        "ro": "Gândiți logic.",
+        "fr": "Vous pensez logiquement."
+      },
+      "number": 8
+    },
+    {
+      "id": "T9",
+      "section": "thinking",
+      "text": {
+        "en": "You are objective.",
+        "ro": "Sunteți obiectiv.",
+        "fr": "Vous êtes objectif."
+      },
+      "number": 9
+    },
+    {
+      "id": "T10",
+      "section": "thinking",
+      "text": {
+        "en": "You have an aptitude for mathematics.",
+        "ro": "Aveți aptitudini pentru matematică.",
+        "fr": "Vous avez des aptitudes en mathématiques."
+      },
+      "number": 10
+    },
+    {
+      "id": "T11",
+      "section": "thinking",
+      "text": {
+        "en": "You are visually oriented.",
+        "ro": "Sunteți orientat vizual.",
+        "fr": "Vous êtes orienté visuellement."
+      },
+      "number": 11
+    },
+    {
+      "id": "T12",
+      "section": "thinking",
+      "text": {
+        "en": "You look for alternative possibilities.",
+        "ro": "Căutați posibilități alternative.",
+        "fr": "Vous cherchez des possibilités alternatives."
+      },
+      "number": 12
+    },
+    {
+      "id": "W1",
+      "section": "working",
+      "text": {
+        "en": "You get bored easily with repetitive activities.",
+        "ro": "Vă plictisiți ușor când desfășurați activități repetitive.",
+        "fr": "Vous vous ennuyez facilement avec les activités répétitives."
+      },
+      "number": 13
+    },
+    {
+      "id": "W2",
+      "section": "working",
+      "text": {
+        "en": "You enjoy doing research.",
+        "ro": "Vă face plăcere să faceți cercetare.",
+        "fr": "Vous aimez faire de la recherche."
+      },
+      "number": 14
+    },
+    {
+      "id": "W3",
+      "section": "working",
+      "text": {
+        "en": "You prefer a well-planned schedule.",
+        "ro": "Preferați un program bine planificat.",
+        "fr": "Vous préférez un emploi du temps bien planifié."
+      },
+      "number": 15
+    },
+    {
+      "id": "W4",
+      "section": "working",
+      "text": {
+        "en": "You are comfortable performing the same activity repeatedly.",
+        "ro": "Vă simțiți confortabil când repetați aceeași activitate.",
+        "fr": "Vous êtes à l'aise en répétant la même activité."
+      },
+      "number": 16
+    },
+    {
+      "id": "W5",
+      "section": "working",
+      "text": {
+        "en": "You easily accept interruptions to your schedule.",
+        "ro": "Acceptați ușor întreruperile programului dumneavoastră.",
+        "fr": "Vous acceptez facilement les interruptions de votre emploi du temps."
+      },
+      "number": 17
+    },
+    {
+      "id": "W6",
+      "section": "working",
+      "text": {
+        "en": "You are willing to work toward long-term results.",
+        "ro": "Sunteți dispus să munciți pentru rezultate pe termen lung.",
+        "fr": "Vous êtes prêt à travailler pour des résultats à long terme."
+      },
+      "number": 18
+    },
+    {
+      "id": "W7",
+      "section": "working",
+      "text": {
+        "en": "You are more of a thinker than a \"doer\".",
+        "ro": "Sunteți mai degrabă un gânditor decât un „om de acțiune”.",
+        "fr": "Vous êtes davantage un penseur qu'un « homme d'action »."
+      },
+      "number": 19
+    },
+    {
+      "id": "W8",
+      "section": "working",
+      "text": {
+        "en": "You are thorough and deliberate.",
+        "ro": "Sunteți minuțios și chibzuit.",
+        "fr": "Vous êtes minutieux et réfléchi."
+      },
+      "number": 20
+    },
+    {
+      "id": "W9",
+      "section": "working",
+      "text": {
+        "en": "You are persistent.",
+        "ro": "Sunteți perseverent.",
+        "fr": "Vous êtes persévérant."
+      },
+      "number": 21
+    },
+    {
+      "id": "W10",
+      "section": "working",
+      "text": {
+        "en": "You are more of a \"doer\" than a talker.",
+        "ro": "Sunteți mai degrabă un „om de acțiune” decât un vorbitor.",
+        "fr": "Vous êtes davantage un « homme d'action » qu'un bavard."
+      },
+      "number": 22
+    },
+    {
+      "id": "W11",
+      "section": "working",
+      "text": {
+        "en": "You approach problems through direct, concrete action.",
+        "ro": "Abordați problemele prin acțiune directă și concretă.",
+        "fr": "Vous abordez les problèmes par une action directe et concrète."
+      },
+      "number": 23
+    },
+    {
+      "id": "W12",
+      "section": "working",
+      "text": {
+        "en": "You adapt easily to change.",
+        "ro": "Vă adaptați ușor la schimbare.",
+        "fr": "Vous vous adaptez facilement au changement."
+      },
+      "number": 24
+    },
+    {
+      "id": "W13",
+      "section": "working",
+      "text": {
+        "en": "You tend to initiate activities.",
+        "ro": "Tindeți să inițiați activități.",
+        "fr": "Vous avez tendance à initier des activités."
+      },
+      "number": 25
+    },
+    {
+      "id": "I1",
+      "section": "interpersonal",
+      "text": {
+        "en": "You are comfortable with short-term relationships with patients.",
+        "ro": "Sunteți confortabil cu relațiile pe termen scurt cu pacienții.",
+        "fr": "Vous êtes à l'aise avec des relations à court terme avec les patients."
+      },
+      "number": 26
+    },
+    {
+      "id": "I2",
+      "section": "interpersonal",
+      "text": {
+        "en": "You are a good team player.",
+        "ro": "Lucrați bine în echipă.",
+        "fr": "Vous êtes un bon joueur d'équipe."
+      },
+      "number": 27
+    },
+    {
+      "id": "I3",
+      "section": "interpersonal",
+      "text": {
+        "en": "You feel energized by interacting with people.",
+        "ro": "Vă simțiți energizat când interacționați cu oamenii.",
+        "fr": "Vous vous sentez énergisé en interagissant avec les gens."
+      },
+      "number": 28
+    },
+    {
+      "id": "I4",
+      "section": "interpersonal",
+      "text": {
+        "en": "You are interested in people.",
+        "ro": "Sunteți interesat de oameni.",
+        "fr": "Vous êtes intéressé par les gens."
+      },
+      "number": 29
+    },
+    {
+      "id": "I5",
+      "section": "interpersonal",
+      "text": {
+        "en": "You have good listening skills and enjoy listening to others.",
+        "ro": "Aveți abilități bune de ascultare și vă place să îi ascultați pe ceilalți.",
+        "fr": "Vous avez de bonnes compétences d'écoute et aimez écouter les autres."
+      },
+      "number": 30
+    },
+    {
+      "id": "I6",
+      "section": "interpersonal",
+      "text": {
+        "en": "You communicate well.",
+        "ro": "Comunicați bine.",
+        "fr": "Vous communiquez bien."
+      },
+      "number": 31
+    },
+    {
+      "id": "I7",
+      "section": "interpersonal",
+      "text": {
+        "en": "You have leadership qualities.",
+        "ro": "Aveți calități de lider.",
+        "fr": "Vous avez des qualités de leader."
+      },
+      "number": 32
+    },
+    {
+      "id": "I8",
+      "section": "interpersonal",
+      "text": {
+        "en": "You enjoy organizing people.",
+        "ro": "Vă place să organizați oameni.",
+        "fr": "Vous aimez organiser les gens."
+      },
+      "number": 33
+    },
+    {
+      "id": "I9",
+      "section": "interpersonal",
+      "text": {
+        "en": "You enjoy developing long-term relationships with people.",
+        "ro": "Vă place să dezvoltați relații pe termen lung cu oamenii.",
+        "fr": "Vous aimez développer des relations à long terme avec les gens."
+      },
+      "number": 34
+    },
+    {
+      "id": "I10",
+      "section": "interpersonal",
+      "text": {
+        "en": "You find it difficult to say no to other people's requests.",
+        "ro": "Vă este greu să spuneți nu cererilor celorlalți.",
+        "fr": "Vous avez du mal à dire non aux demandes des autres."
+      },
+      "number": 35
+    },
+    {
+      "id": "I11",
+      "section": "interpersonal",
+      "text": {
+        "en": "You are warm and empathetic.",
+        "ro": "Sunteți cald și empatic.",
+        "fr": "Vous êtes chaleureux et empathique."
+      },
+      "number": 36
+    },
+    {
+      "id": "M1",
+      "section": "motivations",
+      "text": {
+        "en": "You enjoy caring for people.",
+        "ro": "Vă place să aveți grijă de oameni.",
+        "fr": "Vous aimez prendre soin des gens."
+      },
+      "number": 37
+    },
+    {
+      "id": "M2",
+      "section": "motivations",
+      "text": {
+        "en": "You want to help people.",
+        "ro": "Vreți să ajutați oamenii.",
+        "fr": "Vous voulez aider les gens."
+      },
+      "number": 38
+    },
+    {
+      "id": "M3",
+      "section": "motivations",
+      "text": {
+        "en": "You enjoy being an \"expert\" in your field.",
+        "ro": "Vă place să fiți un expert în domeniul dumneavoastră.",
+        "fr": "Vous aimez être un « expert » dans votre domaine."
+      },
+      "number": 39
+    },
+    {
+      "id": "M4",
+      "section": "motivations",
+      "text": {
+        "en": "You feel a need to see the results of your efforts quickly.",
+        "ro": "Simțiți nevoia să vedeți rapid rezultatele eforturilor dumneavoastră.",
+        "fr": "Vous ressentez le besoin de voir les résultats de vos efforts rapidement."
+      },
+      "number": 40
+    },
+    {
+      "id": "M5",
+      "section": "motivations",
+      "text": {
+        "en": "You want quick results.",
+        "ro": "Vreți rezultate rapide.",
+        "fr": "Vous voulez des résultats rapides."
+      },
+      "number": 41
+    },
+    {
+      "id": "M6",
+      "section": "motivations",
+      "text": {
+        "en": "You enjoy being involved in your patients' lives.",
+        "ro": "Vă place să fiți implicat în viața pacienților dumneavoastră.",
+        "fr": "Vous aimez être impliqué dans la vie de vos patients."
+      },
+      "number": 42
+    },
+    {
+      "id": "M7",
+      "section": "motivations",
+      "text": {
+        "en": "You are achievement-oriented.",
+        "ro": "Sunteți orientat spre performanță.",
+        "fr": "Vous êtes orienté vers la performance."
+      },
+      "number": 43
+    },
+    {
+      "id": "M8",
+      "section": "motivations",
+      "text": {
+        "en": "You prefer treating curable conditions.",
+        "ro": "Preferați să tratați afecțiuni vindecabile.",
+        "fr": "Vous préférez traiter des affections curables."
+      },
+      "number": 44
+    },
+    {
+      "id": "M9",
+      "section": "motivations",
+      "text": {
+        "en": "You find satisfaction in achieving small improvements.",
+        "ro": "Găsiți satisfacție în obținerea unor mici îmbunătățiri.",
+        "fr": "Vous trouvez de la satisfaction dans de petites améliorations."
+      },
+      "number": 45
+    },
+    {
+      "id": "M10",
+      "section": "motivations",
+      "text": {
+        "en": "You are interested in the basic sciences underlying medicine.",
+        "ro": "Sunteți interesat de științele fundamentale care stau la baza medicinei.",
+        "fr": "Vous êtes intéressé par les sciences fondamentales sous-jacentes à la médecine."
+      },
+      "number": 46
+    },
+    {
+      "id": "M11",
+      "section": "motivations",
+      "text": {
+        "en": "You are studious.",
+        "ro": "Sunteți studios.",
+        "fr": "Vous êtes studieux."
+      },
+      "number": 47
+    },
+    {
+      "id": "M12",
+      "section": "motivations",
+      "text": {
+        "en": "You seek the approval of others.",
+        "ro": "Căutați aprobarea celorlalți.",
+        "fr": "Vous recherchez l'approbation des autres."
+      },
+      "number": 48
+    },
+    {
+      "id": "P1",
+      "section": "personality",
+      "text": {
+        "en": "You feel a need to be in control of a situation.",
+        "ro": "Simțiți nevoia să controlați o situație.",
+        "fr": "Vous ressentez le besoin de contrôler une situation."
+      },
+      "number": 49
+    },
+    {
+      "id": "P2",
+      "section": "personality",
+      "text": {
+        "en": "You are relaxed.",
+        "ro": "Sunteți relaxat.",
+        "fr": "Vous êtes détendu."
+      },
+      "number": 50
+    },
+    {
+      "id": "P3",
+      "section": "personality",
+      "text": {
+        "en": "You are sociable.",
+        "ro": "Sunteți sociabil.",
+        "fr": "Vous êtes sociable."
+      },
+      "number": 51
+    },
+    {
+      "id": "P4",
+      "section": "personality",
+      "text": {
+        "en": "You act decisively.",
+        "ro": "Acționați decisiv.",
+        "fr": "Vous agissez avec décision."
+      },
+      "number": 52
+    },
+    {
+      "id": "P5",
+      "section": "personality",
+      "text": {
+        "en": "You are adventurous or enjoy challenges.",
+        "ro": "Sunteți aventuros sau vă plac provocările.",
+        "fr": "Vous êtes aventureux ou aimez les défis."
+      },
+      "number": 53
+    },
+    {
+      "id": "P6",
+      "section": "personality",
+      "text": {
+        "en": "You are comfortable with uncertainty.",
+        "ro": "Sunteți confortabil cu incertitudinea.",
+        "fr": "Vous êtes à l'aise avec l'incertitude."
+      },
+      "number": 54
+    },
+    {
+      "id": "P7",
+      "section": "personality",
+      "text": {
+        "en": "You are energetic.",
+        "ro": "Sunteți energic.",
+        "fr": "Vous êtes énergique."
+      },
+      "number": 55
+    },
+    {
+      "id": "P8",
+      "section": "personality",
+      "text": {
+        "en": "You are driven rather than laid-back.",
+        "ro": "Sunteți motivat, mai degrabă decât relaxat.",
+        "fr": "Vous êtes déterminé plutôt que détendu."
+      },
+      "number": 56
+    },
+    {
+      "id": "P9",
+      "section": "personality",
+      "text": {
+        "en": "You are optimistic.",
+        "ro": "Sunteți optimist.",
+        "fr": "Vous êtes optimiste."
+      },
+      "number": 57
+    },
+    {
+      "id": "P10",
+      "section": "personality",
+      "text": {
+        "en": "You can handle failure gracefully.",
+        "ro": "Puteți gestiona eșecul cu demnitate.",
+        "fr": "Vous savez gérer l'échec avec élégance."
+      },
+      "number": 58
+    },
+    {
+      "id": "P11",
+      "section": "personality",
+      "text": {
+        "en": "You are self-confident.",
+        "ro": "Sunteți încrezător în dumneavoastră.",
+        "fr": "Vous êtes sûr de vous."
+      },
+      "number": 59
+    },
+    {
+      "id": "P12",
+      "section": "personality",
+      "text": {
+        "en": "You are a perfectionist.",
+        "ro": "Sunteți perfecționist.",
+        "fr": "Vous êtes perfectionniste."
+      },
+      "number": 60
+    },
+    {
+      "id": "P13",
+      "section": "personality",
+      "text": {
+        "en": "You remain calm in a crisis situation.",
+        "ro": "Rămâneți calm într-o situație de criză.",
+        "fr": "Vous restez calme dans une situation de crise."
+      },
+      "number": 61
+    },
+    {
+      "id": "S1",
+      "section": "skills",
+      "text": {
+        "en": "You have good manual dexterity.",
+        "ro": "Aveți o dexteritate manuală bună.",
+        "fr": "Vous avez une bonne dextérité manuelle."
+      },
+      "number": 62
+    },
+    {
+      "id": "S2",
+      "section": "skills",
+      "text": {
+        "en": "You have good observational skills.",
+        "ro": "Aveți abilități bune de observație.",
+        "fr": "Vous avez de bonnes capacités d'observation."
+      },
+      "number": 63
+    },
+    {
+      "id": "S3",
+      "section": "skills",
+      "text": {
+        "en": "You are able to perform multiple activities simultaneously.",
+        "ro": "Sunteți capabil să desfășurați mai multe activități simultan.",
+        "fr": "Vous êtes capable d'effectuer plusieurs activités simultanément."
+      },
+      "number": 64
+    },
+    {
+      "id": "S4",
+      "section": "skills",
+      "text": {
+        "en": "You can coordinate different tasks.",
+        "ro": "Puteți coordona sarcini diferite.",
+        "fr": "Vous pouvez coordonner différentes tâches."
+      },
+      "number": 65
+    },
+    {
+      "id": "S5",
+      "section": "skills",
+      "text": {
+        "en": "You enjoy coordinating the care of patients and their families.",
+        "ro": "Vă place să coordonați îngrijirea pacienților și a familiilor lor.",
+        "fr": "Vous aimez coordonner les soins des patients et de leurs familles."
+      },
+      "number": 66
+    },
+    {
+      "id": "S6",
+      "section": "skills",
+      "text": {
+        "en": "You are a good coordinator.",
+        "ro": "Sunteți un bun coordonator.",
+        "fr": "Vous êtes un bon coordinateur."
+      },
+      "number": 67
+    },
+    {
+      "id": "S7",
+      "section": "skills",
+      "text": {
+        "en": "You enjoy gadgets and technology.",
+        "ro": "Vă plac gadgeturile și tehnologia.",
+        "fr": "Vous aimez les gadgets et la technologie."
+      },
+      "number": 68
+    },
+    {
+      "id": "S8",
+      "section": "skills",
+      "text": {
+        "en": "You have mechanical aptitude.",
+        "ro": "Aveți aptitudini mecanice.",
+        "fr": "Vous avez des aptitudes mécaniques."
+      },
+      "number": 69
+    },
+    {
+      "id": "S9",
+      "section": "skills",
+      "text": {
+        "en": "You enjoy teaching.",
+        "ro": "Vă place să predați.",
+        "fr": "Vous aimez enseigner."
+      },
+      "number": 70
+    },
+    {
+      "id": "V1",
+      "section": "values",
+      "text": {
+        "en": "You value having free time.",
+        "ro": "Prețuiți timpul liber.",
+        "fr": "Vous valorisez le temps libre."
+      },
+      "number": 71
+    },
+    {
+      "id": "V2",
+      "section": "values",
+      "text": {
+        "en": "You value independence.",
+        "ro": "Prețuiți independența.",
+        "fr": "Vous valorisez l'indépendance."
+      },
+      "number": 72
+    },
+    {
+      "id": "V3",
+      "section": "values",
+      "text": {
+        "en": "You have interests outside medicine.",
+        "ro": "Aveți interese în afara medicinei.",
+        "fr": "Vous avez des centres d'intérêt en dehors de la médecine."
+      },
+      "number": 73
+    },
+    {
+      "id": "V4",
+      "section": "values",
+      "text": {
+        "en": "You want to deal with all aspects of medicine.",
+        "ro": "Vreți să vă ocupați de toate aspectele medicinei.",
+        "fr": "Vous voulez traiter tous les aspects de la médecine."
+      },
+      "number": 74
+    },
+    {
+      "id": "V5",
+      "section": "values",
+      "text": {
+        "en": "You are willing to work long hours.",
+        "ro": "Sunteți dispus să munciți multe ore.",
+        "fr": "Vous êtes prêt à travailler de longues heures."
+      },
+      "number": 75
+    },
+    {
+      "id": "V6",
+      "section": "values",
+      "text": {
+        "en": "You value organization.",
+        "ro": "Prețuiți organizarea.",
+        "fr": "Vous valorisez l'organisation."
+      },
+      "number": 76
+    },
+    {
+      "id": "V7",
+      "section": "values",
+      "text": {
+        "en": "You want a good income.",
+        "ro": "Vreți un venit bun.",
+        "fr": "Vous voulez un bon revenu."
+      },
+      "number": 77
+    },
+    {
+      "id": "V8",
+      "section": "values",
+      "text": {
+        "en": "You identify with professional role models.",
+        "ro": "Vă identificați cu modele profesionale.",
+        "fr": "Vous vous identifiez à des modèles professionnels."
+      },
+      "number": 78
+    },
+    {
+      "id": "V9",
+      "section": "values",
+      "text": {
+        "en": "You are comfortable with mortality.",
+        "ro": "Sunteți confortabil cu mortalitatea.",
+        "fr": "Vous êtes à l'aise avec la mortalité."
+      },
+      "number": 79
+    },
+    {
+      "id": "V10",
+      "section": "values",
+      "text": {
+        "en": "You are tolerant of others.",
+        "ro": "Sunteți tolerant cu ceilalți.",
+        "fr": "Vous êtes tolérant envers les autres."
+      },
+      "number": 80
+    },
+    {
+      "id": "V11",
+      "section": "values",
+      "text": {
+        "en": "You value harmony.",
+        "ro": "Prețuiți armonia.",
+        "fr": "Vous valorisez l'harmonie."
+      },
+      "number": 81
+    }
+  ],
+  "pages": [
+    {
+      "title": "Questionnaire · English / Română / Français",
+      "description": "Exact application wording · Source snapshot: 10 October 2026",
+      "paragraphs": [
+        "This document contains all 81 current rating items, presented in the application’s section order, followed by its active participant prompts and answer options. The global numbers 1–81 are document references; IDs such as T1 and P13 are the stable application identifiers.",
+        "Question wording and translations are copied directly from the source code. They have not been rewritten, corrected or newly translated for this document. Explanatory headings and notes describe the current interface, not additional questions.",
+        "The rating scale remains 1–10. Students and medicine explorers complete the 81 ratings. Specialists may complete them or skip directly to the specialty interview. A contribution is stored for research only after the participant chooses the consent-and-save action.",
+        "The appendix includes participant role, specialist pathway, specialty selection, all 14 career-value choices, the optional student/explorer reflection, optional study year (1–6), five specialist interview questions and the conditional “why not” follow-up, plus optional geography fields.",
+        "Specialty and country dropdown catalogs are not reproduced: they are selection catalogs rather than questionnaire items, and the specialty catalog may be versioned separately. Deprecated experience/satisfaction questions and administration-only controls are not part of this questionnaire snapshot.",
+        "Source revision: 438cec22b3c92ee99772e263e18e38d4322fa0b4. Exact source-file SHA-256 hashes are included in the accompanying .source.json for reproducibility. This is a source snapshot, not a claim of questionnaire validation or a record of participant answers."
+      ],
+      "rows": [
+        {
+          "label": "1",
+          "text": {
+            "en": "Not at all like me",
+            "ro": "Deloc ca mine",
+            "fr": "Pas du tout moi"
+          }
+        },
+        {
+          "label": "10",
+          "text": {
+            "en": "Very much like me",
+            "ro": "Foarte mult ca mine",
+            "fr": "Tout à fait moi"
+          }
+        }
+      ]
+    },
+    {
+      "title": "Thinking Style / Stil de gândire / Style de pensée",
+      "description": "Items 1–8 of 81 · thinking · Scale 1–10",
+      "rows": [
+        {
+          "label": "1\nT1",
+          "text": {
+            "en": "You pay particular attention to \"why\" questions.",
+            "ro": "Acordați o atenție deosebită întrebărilor de tip „de ce”.",
+            "fr": "Vous accordez une attention particulière aux questions « pourquoi »."
+          },
+          "ratingId": "T1"
+        },
+        {
+          "label": "2\nT2",
+          "text": {
+            "en": "You pay close attention to details.",
+            "ro": "Acordați o atenție deosebită detaliilor.",
+            "fr": "Vous prêtez une grande attention aux détails."
+          },
+          "ratingId": "T2"
+        },
+        {
+          "label": "3\nT3",
+          "text": {
+            "en": "You prefer solving complex problems.",
+            "ro": "Preferați să rezolvați probleme complexe.",
+            "fr": "Vous préférez résoudre des problèmes complexes."
+          },
+          "ratingId": "T3"
+        },
+        {
+          "label": "4\nT4",
+          "text": {
+            "en": "You are able to concentrate for prolonged periods.",
+            "ro": "Sunteți capabil să vă concentrați perioade lungi de timp.",
+            "fr": "Vous êtes capable de vous concentrer pendant de longues périodes."
+          },
+          "ratingId": "T4"
+        },
+        {
+          "label": "5\nT5",
+          "text": {
+            "en": "You rely more on experience than on theory.",
+            "ro": "Vă bazați mai mult pe experiență decât pe teorie.",
+            "fr": "Vous vous fiez davantage à l'expérience qu'à la théorie."
+          },
+          "ratingId": "T5"
+        },
+        {
+          "label": "6\nT6",
+          "text": {
+            "en": "You are satisfied with knowing \"a little about many things\".",
+            "ro": "Sunteți mulțumit să știți „puțin despre multe lucruri”.",
+            "fr": "Vous êtes satisfait de savoir « un peu sur beaucoup de choses »."
+          },
+          "ratingId": "T6"
+        },
+        {
+          "label": "7\nT7",
+          "text": {
+            "en": "You feel uncomfortable when faced with vaguely defined problems.",
+            "ro": "Vă simțiți inconfortabil când vă confruntați cu probleme vag definite.",
+            "fr": "Vous vous sentez mal à l'aise face à des problèmes vaguement définis."
+          },
+          "ratingId": "T7"
+        },
+        {
+          "label": "8\nT8",
+          "text": {
+            "en": "You think logically.",
+            "ro": "Gândiți logic.",
+            "fr": "Vous pensez logiquement."
+          },
+          "ratingId": "T8"
+        }
+      ],
+      "note": "1–10: EN Not at all like me → Very much like me · RO Deloc ca mine → Foarte mult ca mine · FR Pas du tout moi → Tout à fait moi"
+    },
+    {
+      "title": "Thinking Style / Stil de gândire / Style de pensée",
+      "description": "Items 9–12 of 81 · thinking · Scale 1–10",
+      "rows": [
+        {
+          "label": "9\nT9",
+          "text": {
+            "en": "You are objective.",
+            "ro": "Sunteți obiectiv.",
+            "fr": "Vous êtes objectif."
+          },
+          "ratingId": "T9"
+        },
+        {
+          "label": "10\nT10",
+          "text": {
+            "en": "You have an aptitude for mathematics.",
+            "ro": "Aveți aptitudini pentru matematică.",
+            "fr": "Vous avez des aptitudes en mathématiques."
+          },
+          "ratingId": "T10"
+        },
+        {
+          "label": "11\nT11",
+          "text": {
+            "en": "You are visually oriented.",
+            "ro": "Sunteți orientat vizual.",
+            "fr": "Vous êtes orienté visuellement."
+          },
+          "ratingId": "T11"
+        },
+        {
+          "label": "12\nT12",
+          "text": {
+            "en": "You look for alternative possibilities.",
+            "ro": "Căutați posibilități alternative.",
+            "fr": "Vous cherchez des possibilités alternatives."
+          },
+          "ratingId": "T12"
+        }
+      ],
+      "note": "1–10: EN Not at all like me → Very much like me · RO Deloc ca mine → Foarte mult ca mine · FR Pas du tout moi → Tout à fait moi"
+    },
+    {
+      "title": "Working Style / Stil de lucru / Style de travail",
+      "description": "Items 13–20 of 81 · working · Scale 1–10",
+      "rows": [
+        {
+          "label": "13\nW1",
+          "text": {
+            "en": "You get bored easily with repetitive activities.",
+            "ro": "Vă plictisiți ușor când desfășurați activități repetitive.",
+            "fr": "Vous vous ennuyez facilement avec les activités répétitives."
+          },
+          "ratingId": "W1"
+        },
+        {
+          "label": "14\nW2",
+          "text": {
+            "en": "You enjoy doing research.",
+            "ro": "Vă face plăcere să faceți cercetare.",
+            "fr": "Vous aimez faire de la recherche."
+          },
+          "ratingId": "W2"
+        },
+        {
+          "label": "15\nW3",
+          "text": {
+            "en": "You prefer a well-planned schedule.",
+            "ro": "Preferați un program bine planificat.",
+            "fr": "Vous préférez un emploi du temps bien planifié."
+          },
+          "ratingId": "W3"
+        },
+        {
+          "label": "16\nW4",
+          "text": {
+            "en": "You are comfortable performing the same activity repeatedly.",
+            "ro": "Vă simțiți confortabil când repetați aceeași activitate.",
+            "fr": "Vous êtes à l'aise en répétant la même activité."
+          },
+          "ratingId": "W4"
+        },
+        {
+          "label": "17\nW5",
+          "text": {
+            "en": "You easily accept interruptions to your schedule.",
+            "ro": "Acceptați ușor întreruperile programului dumneavoastră.",
+            "fr": "Vous acceptez facilement les interruptions de votre emploi du temps."
+          },
+          "ratingId": "W5"
+        },
+        {
+          "label": "18\nW6",
+          "text": {
+            "en": "You are willing to work toward long-term results.",
+            "ro": "Sunteți dispus să munciți pentru rezultate pe termen lung.",
+            "fr": "Vous êtes prêt à travailler pour des résultats à long terme."
+          },
+          "ratingId": "W6"
+        },
+        {
+          "label": "19\nW7",
+          "text": {
+            "en": "You are more of a thinker than a \"doer\".",
+            "ro": "Sunteți mai degrabă un gânditor decât un „om de acțiune”.",
+            "fr": "Vous êtes davantage un penseur qu'un « homme d'action »."
+          },
+          "ratingId": "W7"
+        },
+        {
+          "label": "20\nW8",
+          "text": {
+            "en": "You are thorough and deliberate.",
+            "ro": "Sunteți minuțios și chibzuit.",
+            "fr": "Vous êtes minutieux et réfléchi."
+          },
+          "ratingId": "W8"
+        }
+      ],
+      "note": "1–10: EN Not at all like me → Very much like me · RO Deloc ca mine → Foarte mult ca mine · FR Pas du tout moi → Tout à fait moi"
+    },
+    {
+      "title": "Working Style / Stil de lucru / Style de travail",
+      "description": "Items 21–25 of 81 · working · Scale 1–10",
+      "rows": [
+        {
+          "label": "21\nW9",
+          "text": {
+            "en": "You are persistent.",
+            "ro": "Sunteți perseverent.",
+            "fr": "Vous êtes persévérant."
+          },
+          "ratingId": "W9"
+        },
+        {
+          "label": "22\nW10",
+          "text": {
+            "en": "You are more of a \"doer\" than a talker.",
+            "ro": "Sunteți mai degrabă un „om de acțiune” decât un vorbitor.",
+            "fr": "Vous êtes davantage un « homme d'action » qu'un bavard."
+          },
+          "ratingId": "W10"
+        },
+        {
+          "label": "23\nW11",
+          "text": {
+            "en": "You approach problems through direct, concrete action.",
+            "ro": "Abordați problemele prin acțiune directă și concretă.",
+            "fr": "Vous abordez les problèmes par une action directe et concrète."
+          },
+          "ratingId": "W11"
+        },
+        {
+          "label": "24\nW12",
+          "text": {
+            "en": "You adapt easily to change.",
+            "ro": "Vă adaptați ușor la schimbare.",
+            "fr": "Vous vous adaptez facilement au changement."
+          },
+          "ratingId": "W12"
+        },
+        {
+          "label": "25\nW13",
+          "text": {
+            "en": "You tend to initiate activities.",
+            "ro": "Tindeți să inițiați activități.",
+            "fr": "Vous avez tendance à initier des activités."
+          },
+          "ratingId": "W13"
+        }
+      ],
+      "note": "1–10: EN Not at all like me → Very much like me · RO Deloc ca mine → Foarte mult ca mine · FR Pas du tout moi → Tout à fait moi"
+    },
+    {
+      "title": "Interpersonal Skills / Abilități interpersonale / Compétences interpersonnelles",
+      "description": "Items 26–33 of 81 · interpersonal · Scale 1–10",
+      "rows": [
+        {
+          "label": "26\nI1",
+          "text": {
+            "en": "You are comfortable with short-term relationships with patients.",
+            "ro": "Sunteți confortabil cu relațiile pe termen scurt cu pacienții.",
+            "fr": "Vous êtes à l'aise avec des relations à court terme avec les patients."
+          },
+          "ratingId": "I1"
+        },
+        {
+          "label": "27\nI2",
+          "text": {
+            "en": "You are a good team player.",
+            "ro": "Lucrați bine în echipă.",
+            "fr": "Vous êtes un bon joueur d'équipe."
+          },
+          "ratingId": "I2"
+        },
+        {
+          "label": "28\nI3",
+          "text": {
+            "en": "You feel energized by interacting with people.",
+            "ro": "Vă simțiți energizat când interacționați cu oamenii.",
+            "fr": "Vous vous sentez énergisé en interagissant avec les gens."
+          },
+          "ratingId": "I3"
+        },
+        {
+          "label": "29\nI4",
+          "text": {
+            "en": "You are interested in people.",
+            "ro": "Sunteți interesat de oameni.",
+            "fr": "Vous êtes intéressé par les gens."
+          },
+          "ratingId": "I4"
+        },
+        {
+          "label": "30\nI5",
+          "text": {
+            "en": "You have good listening skills and enjoy listening to others.",
+            "ro": "Aveți abilități bune de ascultare și vă place să îi ascultați pe ceilalți.",
+            "fr": "Vous avez de bonnes compétences d'écoute et aimez écouter les autres."
+          },
+          "ratingId": "I5"
+        },
+        {
+          "label": "31\nI6",
+          "text": {
+            "en": "You communicate well.",
+            "ro": "Comunicați bine.",
+            "fr": "Vous communiquez bien."
+          },
+          "ratingId": "I6"
+        },
+        {
+          "label": "32\nI7",
+          "text": {
+            "en": "You have leadership qualities.",
+            "ro": "Aveți calități de lider.",
+            "fr": "Vous avez des qualités de leader."
+          },
+          "ratingId": "I7"
+        },
+        {
+          "label": "33\nI8",
+          "text": {
+            "en": "You enjoy organizing people.",
+            "ro": "Vă place să organizați oameni.",
+            "fr": "Vous aimez organiser les gens."
+          },
+          "ratingId": "I8"
+        }
+      ],
+      "note": "1–10: EN Not at all like me → Very much like me · RO Deloc ca mine → Foarte mult ca mine · FR Pas du tout moi → Tout à fait moi"
+    },
+    {
+      "title": "Interpersonal Skills / Abilități interpersonale / Compétences interpersonnelles",
+      "description": "Items 34–36 of 81 · interpersonal · Scale 1–10",
+      "rows": [
+        {
+          "label": "34\nI9",
+          "text": {
+            "en": "You enjoy developing long-term relationships with people.",
+            "ro": "Vă place să dezvoltați relații pe termen lung cu oamenii.",
+            "fr": "Vous aimez développer des relations à long terme avec les gens."
+          },
+          "ratingId": "I9"
+        },
+        {
+          "label": "35\nI10",
+          "text": {
+            "en": "You find it difficult to say no to other people's requests.",
+            "ro": "Vă este greu să spuneți nu cererilor celorlalți.",
+            "fr": "Vous avez du mal à dire non aux demandes des autres."
+          },
+          "ratingId": "I10"
+        },
+        {
+          "label": "36\nI11",
+          "text": {
+            "en": "You are warm and empathetic.",
+            "ro": "Sunteți cald și empatic.",
+            "fr": "Vous êtes chaleureux et empathique."
+          },
+          "ratingId": "I11"
+        }
+      ],
+      "note": "1–10: EN Not at all like me → Very much like me · RO Deloc ca mine → Foarte mult ca mine · FR Pas du tout moi → Tout à fait moi"
+    },
+    {
+      "title": "Motivations / Motivații / Motivations",
+      "description": "Items 37–44 of 81 · motivations · Scale 1–10",
+      "rows": [
+        {
+          "label": "37\nM1",
+          "text": {
+            "en": "You enjoy caring for people.",
+            "ro": "Vă place să aveți grijă de oameni.",
+            "fr": "Vous aimez prendre soin des gens."
+          },
+          "ratingId": "M1"
+        },
+        {
+          "label": "38\nM2",
+          "text": {
+            "en": "You want to help people.",
+            "ro": "Vreți să ajutați oamenii.",
+            "fr": "Vous voulez aider les gens."
+          },
+          "ratingId": "M2"
+        },
+        {
+          "label": "39\nM3",
+          "text": {
+            "en": "You enjoy being an \"expert\" in your field.",
+            "ro": "Vă place să fiți un expert în domeniul dumneavoastră.",
+            "fr": "Vous aimez être un « expert » dans votre domaine."
+          },
+          "ratingId": "M3"
+        },
+        {
+          "label": "40\nM4",
+          "text": {
+            "en": "You feel a need to see the results of your efforts quickly.",
+            "ro": "Simțiți nevoia să vedeți rapid rezultatele eforturilor dumneavoastră.",
+            "fr": "Vous ressentez le besoin de voir les résultats de vos efforts rapidement."
+          },
+          "ratingId": "M4"
+        },
+        {
+          "label": "41\nM5",
+          "text": {
+            "en": "You want quick results.",
+            "ro": "Vreți rezultate rapide.",
+            "fr": "Vous voulez des résultats rapides."
+          },
+          "ratingId": "M5"
+        },
+        {
+          "label": "42\nM6",
+          "text": {
+            "en": "You enjoy being involved in your patients' lives.",
+            "ro": "Vă place să fiți implicat în viața pacienților dumneavoastră.",
+            "fr": "Vous aimez être impliqué dans la vie de vos patients."
+          },
+          "ratingId": "M6"
+        },
+        {
+          "label": "43\nM7",
+          "text": {
+            "en": "You are achievement-oriented.",
+            "ro": "Sunteți orientat spre performanță.",
+            "fr": "Vous êtes orienté vers la performance."
+          },
+          "ratingId": "M7"
+        },
+        {
+          "label": "44\nM8",
+          "text": {
+            "en": "You prefer treating curable conditions.",
+            "ro": "Preferați să tratați afecțiuni vindecabile.",
+            "fr": "Vous préférez traiter des affections curables."
+          },
+          "ratingId": "M8"
+        }
+      ],
+      "note": "1–10: EN Not at all like me → Very much like me · RO Deloc ca mine → Foarte mult ca mine · FR Pas du tout moi → Tout à fait moi"
+    },
+    {
+      "title": "Motivations / Motivații / Motivations",
+      "description": "Items 45–48 of 81 · motivations · Scale 1–10",
+      "rows": [
+        {
+          "label": "45\nM9",
+          "text": {
+            "en": "You find satisfaction in achieving small improvements.",
+            "ro": "Găsiți satisfacție în obținerea unor mici îmbunătățiri.",
+            "fr": "Vous trouvez de la satisfaction dans de petites améliorations."
+          },
+          "ratingId": "M9"
+        },
+        {
+          "label": "46\nM10",
+          "text": {
+            "en": "You are interested in the basic sciences underlying medicine.",
+            "ro": "Sunteți interesat de științele fundamentale care stau la baza medicinei.",
+            "fr": "Vous êtes intéressé par les sciences fondamentales sous-jacentes à la médecine."
+          },
+          "ratingId": "M10"
+        },
+        {
+          "label": "47\nM11",
+          "text": {
+            "en": "You are studious.",
+            "ro": "Sunteți studios.",
+            "fr": "Vous êtes studieux."
+          },
+          "ratingId": "M11"
+        },
+        {
+          "label": "48\nM12",
+          "text": {
+            "en": "You seek the approval of others.",
+            "ro": "Căutați aprobarea celorlalți.",
+            "fr": "Vous recherchez l'approbation des autres."
+          },
+          "ratingId": "M12"
+        }
+      ],
+      "note": "1–10: EN Not at all like me → Very much like me · RO Deloc ca mine → Foarte mult ca mine · FR Pas du tout moi → Tout à fait moi"
+    },
+    {
+      "title": "Personality / Personalitate / Personnalité",
+      "description": "Items 49–56 of 81 · personality · Scale 1–10",
+      "rows": [
+        {
+          "label": "49\nP1",
+          "text": {
+            "en": "You feel a need to be in control of a situation.",
+            "ro": "Simțiți nevoia să controlați o situație.",
+            "fr": "Vous ressentez le besoin de contrôler une situation."
+          },
+          "ratingId": "P1"
+        },
+        {
+          "label": "50\nP2",
+          "text": {
+            "en": "You are relaxed.",
+            "ro": "Sunteți relaxat.",
+            "fr": "Vous êtes détendu."
+          },
+          "ratingId": "P2"
+        },
+        {
+          "label": "51\nP3",
+          "text": {
+            "en": "You are sociable.",
+            "ro": "Sunteți sociabil.",
+            "fr": "Vous êtes sociable."
+          },
+          "ratingId": "P3"
+        },
+        {
+          "label": "52\nP4",
+          "text": {
+            "en": "You act decisively.",
+            "ro": "Acționați decisiv.",
+            "fr": "Vous agissez avec décision."
+          },
+          "ratingId": "P4"
+        },
+        {
+          "label": "53\nP5",
+          "text": {
+            "en": "You are adventurous or enjoy challenges.",
+            "ro": "Sunteți aventuros sau vă plac provocările.",
+            "fr": "Vous êtes aventureux ou aimez les défis."
+          },
+          "ratingId": "P5"
+        },
+        {
+          "label": "54\nP6",
+          "text": {
+            "en": "You are comfortable with uncertainty.",
+            "ro": "Sunteți confortabil cu incertitudinea.",
+            "fr": "Vous êtes à l'aise avec l'incertitude."
+          },
+          "ratingId": "P6"
+        },
+        {
+          "label": "55\nP7",
+          "text": {
+            "en": "You are energetic.",
+            "ro": "Sunteți energic.",
+            "fr": "Vous êtes énergique."
+          },
+          "ratingId": "P7"
+        },
+        {
+          "label": "56\nP8",
+          "text": {
+            "en": "You are driven rather than laid-back.",
+            "ro": "Sunteți motivat, mai degrabă decât relaxat.",
+            "fr": "Vous êtes déterminé plutôt que détendu."
+          },
+          "ratingId": "P8"
+        }
+      ],
+      "note": "1–10: EN Not at all like me → Very much like me · RO Deloc ca mine → Foarte mult ca mine · FR Pas du tout moi → Tout à fait moi"
+    },
+    {
+      "title": "Personality / Personalitate / Personnalité",
+      "description": "Items 57–61 of 81 · personality · Scale 1–10",
+      "rows": [
+        {
+          "label": "57\nP9",
+          "text": {
+            "en": "You are optimistic.",
+            "ro": "Sunteți optimist.",
+            "fr": "Vous êtes optimiste."
+          },
+          "ratingId": "P9"
+        },
+        {
+          "label": "58\nP10",
+          "text": {
+            "en": "You can handle failure gracefully.",
+            "ro": "Puteți gestiona eșecul cu demnitate.",
+            "fr": "Vous savez gérer l'échec avec élégance."
+          },
+          "ratingId": "P10"
+        },
+        {
+          "label": "59\nP11",
+          "text": {
+            "en": "You are self-confident.",
+            "ro": "Sunteți încrezător în dumneavoastră.",
+            "fr": "Vous êtes sûr de vous."
+          },
+          "ratingId": "P11"
+        },
+        {
+          "label": "60\nP12",
+          "text": {
+            "en": "You are a perfectionist.",
+            "ro": "Sunteți perfecționist.",
+            "fr": "Vous êtes perfectionniste."
+          },
+          "ratingId": "P12"
+        },
+        {
+          "label": "61\nP13",
+          "text": {
+            "en": "You remain calm in a crisis situation.",
+            "ro": "Rămâneți calm într-o situație de criză.",
+            "fr": "Vous restez calme dans une situation de crise."
+          },
+          "ratingId": "P13"
+        }
+      ],
+      "note": "1–10: EN Not at all like me → Very much like me · RO Deloc ca mine → Foarte mult ca mine · FR Pas du tout moi → Tout à fait moi"
+    },
+    {
+      "title": "Special Skills and Interests / Abilități și interese speciale / Compétences et intérêts spéciaux",
+      "description": "Items 62–69 of 81 · skills · Scale 1–10",
+      "rows": [
+        {
+          "label": "62\nS1",
+          "text": {
+            "en": "You have good manual dexterity.",
+            "ro": "Aveți o dexteritate manuală bună.",
+            "fr": "Vous avez une bonne dextérité manuelle."
+          },
+          "ratingId": "S1"
+        },
+        {
+          "label": "63\nS2",
+          "text": {
+            "en": "You have good observational skills.",
+            "ro": "Aveți abilități bune de observație.",
+            "fr": "Vous avez de bonnes capacités d'observation."
+          },
+          "ratingId": "S2"
+        },
+        {
+          "label": "64\nS3",
+          "text": {
+            "en": "You are able to perform multiple activities simultaneously.",
+            "ro": "Sunteți capabil să desfășurați mai multe activități simultan.",
+            "fr": "Vous êtes capable d'effectuer plusieurs activités simultanément."
+          },
+          "ratingId": "S3"
+        },
+        {
+          "label": "65\nS4",
+          "text": {
+            "en": "You can coordinate different tasks.",
+            "ro": "Puteți coordona sarcini diferite.",
+            "fr": "Vous pouvez coordonner différentes tâches."
+          },
+          "ratingId": "S4"
+        },
+        {
+          "label": "66\nS5",
+          "text": {
+            "en": "You enjoy coordinating the care of patients and their families.",
+            "ro": "Vă place să coordonați îngrijirea pacienților și a familiilor lor.",
+            "fr": "Vous aimez coordonner les soins des patients et de leurs familles."
+          },
+          "ratingId": "S5"
+        },
+        {
+          "label": "67\nS6",
+          "text": {
+            "en": "You are a good coordinator.",
+            "ro": "Sunteți un bun coordonator.",
+            "fr": "Vous êtes un bon coordinateur."
+          },
+          "ratingId": "S6"
+        },
+        {
+          "label": "68\nS7",
+          "text": {
+            "en": "You enjoy gadgets and technology.",
+            "ro": "Vă plac gadgeturile și tehnologia.",
+            "fr": "Vous aimez les gadgets et la technologie."
+          },
+          "ratingId": "S7"
+        },
+        {
+          "label": "69\nS8",
+          "text": {
+            "en": "You have mechanical aptitude.",
+            "ro": "Aveți aptitudini mecanice.",
+            "fr": "Vous avez des aptitudes mécaniques."
+          },
+          "ratingId": "S8"
+        }
+      ],
+      "note": "1–10: EN Not at all like me → Very much like me · RO Deloc ca mine → Foarte mult ca mine · FR Pas du tout moi → Tout à fait moi"
+    },
+    {
+      "title": "Special Skills and Interests / Abilități și interese speciale / Compétences et intérêts spéciaux",
+      "description": "Items 70–70 of 81 · skills · Scale 1–10",
+      "rows": [
+        {
+          "label": "70\nS9",
+          "text": {
+            "en": "You enjoy teaching.",
+            "ro": "Vă place să predați.",
+            "fr": "Vous aimez enseigner."
+          },
+          "ratingId": "S9"
+        }
+      ],
+      "note": "1–10: EN Not at all like me → Very much like me · RO Deloc ca mine → Foarte mult ca mine · FR Pas du tout moi → Tout à fait moi"
+    },
+    {
+      "title": "Values and Lifestyle / Valori și stil de viață / Valeurs et mode de vie",
+      "description": "Items 71–78 of 81 · values · Scale 1–10",
+      "rows": [
+        {
+          "label": "71\nV1",
+          "text": {
+            "en": "You value having free time.",
+            "ro": "Prețuiți timpul liber.",
+            "fr": "Vous valorisez le temps libre."
+          },
+          "ratingId": "V1"
+        },
+        {
+          "label": "72\nV2",
+          "text": {
+            "en": "You value independence.",
+            "ro": "Prețuiți independența.",
+            "fr": "Vous valorisez l'indépendance."
+          },
+          "ratingId": "V2"
+        },
+        {
+          "label": "73\nV3",
+          "text": {
+            "en": "You have interests outside medicine.",
+            "ro": "Aveți interese în afara medicinei.",
+            "fr": "Vous avez des centres d'intérêt en dehors de la médecine."
+          },
+          "ratingId": "V3"
+        },
+        {
+          "label": "74\nV4",
+          "text": {
+            "en": "You want to deal with all aspects of medicine.",
+            "ro": "Vreți să vă ocupați de toate aspectele medicinei.",
+            "fr": "Vous voulez traiter tous les aspects de la médecine."
+          },
+          "ratingId": "V4"
+        },
+        {
+          "label": "75\nV5",
+          "text": {
+            "en": "You are willing to work long hours.",
+            "ro": "Sunteți dispus să munciți multe ore.",
+            "fr": "Vous êtes prêt à travailler de longues heures."
+          },
+          "ratingId": "V5"
+        },
+        {
+          "label": "76\nV6",
+          "text": {
+            "en": "You value organization.",
+            "ro": "Prețuiți organizarea.",
+            "fr": "Vous valorisez l'organisation."
+          },
+          "ratingId": "V6"
+        },
+        {
+          "label": "77\nV7",
+          "text": {
+            "en": "You want a good income.",
+            "ro": "Vreți un venit bun.",
+            "fr": "Vous voulez un bon revenu."
+          },
+          "ratingId": "V7"
+        },
+        {
+          "label": "78\nV8",
+          "text": {
+            "en": "You identify with professional role models.",
+            "ro": "Vă identificați cu modele profesionale.",
+            "fr": "Vous vous identifiez à des modèles professionnels."
+          },
+          "ratingId": "V8"
+        }
+      ],
+      "note": "1–10: EN Not at all like me → Very much like me · RO Deloc ca mine → Foarte mult ca mine · FR Pas du tout moi → Tout à fait moi"
+    },
+    {
+      "title": "Values and Lifestyle / Valori și stil de viață / Valeurs et mode de vie",
+      "description": "Items 79–81 of 81 · values · Scale 1–10",
+      "rows": [
+        {
+          "label": "79\nV9",
+          "text": {
+            "en": "You are comfortable with mortality.",
+            "ro": "Sunteți confortabil cu mortalitatea.",
+            "fr": "Vous êtes à l'aise avec la mortalité."
+          },
+          "ratingId": "V9"
+        },
+        {
+          "label": "80\nV10",
+          "text": {
+            "en": "You are tolerant of others.",
+            "ro": "Sunteți tolerant cu ceilalți.",
+            "fr": "Vous êtes tolérant envers les autres."
+          },
+          "ratingId": "V10"
+        },
+        {
+          "label": "81\nV11",
+          "text": {
+            "en": "You value harmony.",
+            "ro": "Prețuiți armonia.",
+            "fr": "Vous valorisez l'harmonie."
+          },
+          "ratingId": "V11"
+        }
+      ],
+      "note": "1–10: EN Not at all like me → Very much like me · RO Deloc ca mine → Foarte mult ca mine · FR Pas du tout moi → Tout à fait moi"
+    },
+    {
+      "title": "A · Participant identification",
+      "description": "Appendix · Active participant interface wording",
+      "rows": [
+        {
+          "label": "A1",
+          "sourceKey": "TRANSLATIONS.roleIntrospection",
+          "text": {
+            "en": "What fits you?",
+            "ro": "Ce vi se potrivește?",
+            "fr": "Qu’est-ce qui vous correspond ?"
+          }
+        },
+        {
+          "label": "A2",
+          "sourceKey": "TRANSLATIONS.roleSelectionTitle",
+          "text": {
+            "en": "First, tell us who you are",
+            "ro": "Mai întâi, spune-ne cine ești",
+            "fr": "D’abord, indiquez-nous qui vous êtes"
+          }
+        },
+        {
+          "label": "A3",
+          "sourceKey": "TRANSLATIONS.roleSelectionDescription",
+          "text": {
+            "en": "Choose your profile so the questionnaire follows the right path.",
+            "ro": "Alege profilul tău pentru ca chestionarul să urmeze parcursul potrivit.",
+            "fr": "Choisissez votre profil afin que le questionnaire suive le parcours adapté."
+          }
+        },
+        {
+          "label": "A4",
+          "sourceKey": "TRANSLATIONS.curiousMode",
+          "text": {
+            "en": "Exploring medicine",
+            "ro": "Explorez medicina",
+            "fr": "Je découvre la médecine"
+          }
+        },
+        {
+          "label": "A5",
+          "sourceKey": "TRANSLATIONS.curiousRoleDescription",
+          "text": {
+            "en": "I'm curious about medicine and not yet sure whether I want to study it.",
+            "ro": "Mă interesează medicina, dar nu știu încă dacă vreau să o studiez.",
+            "fr": "La médecine m’intéresse, mais je ne sais pas encore si je souhaite l’étudier."
+          }
+        },
+        {
+          "label": "A6",
+          "sourceKey": "TRANSLATIONS.studentMode",
+          "text": {
+            "en": "Student",
+            "ro": "Student",
+            "fr": "Étudiant"
+          }
+        },
+        {
+          "label": "A7",
+          "sourceKey": "TRANSLATIONS.studentRoleDescription",
+          "text": {
+            "en": "I am a medical student.",
+            "ro": "Sunt student sau studentă la medicină.",
+            "fr": "Je suis étudiant ou étudiante en médecine."
+          }
+        },
+        {
+          "label": "A8",
+          "sourceKey": "TRANSLATIONS.specialistMode",
+          "text": {
+            "en": "Specialist",
+            "ro": "Specialist",
+            "fr": "Spécialiste"
+          }
+        },
+        {
+          "label": "A9",
+          "sourceKey": "TRANSLATIONS.specialistRoleDescription",
+          "text": {
+            "en": "I am a doctor or medical specialist.",
+            "ro": "Sunt medic sau medic specialist.",
+            "fr": "Je suis médecin ou spécialiste."
+          }
+        }
+      ],
+      "note": "The first line is the homepage reflection prompt. One role is selected before starting. Display order: exploring medicine, student, specialist."
+    },
+    {
+      "title": "B · Specialist questionnaire pathway",
+      "description": "Appendix · Active participant interface wording",
+      "rows": [
+        {
+          "label": "A10",
+          "sourceKey": "TRANSLATIONS.specialistPathTitle",
+          "text": {
+            "en": "How would you like to contribute?",
+            "ro": "Cum dorești să contribui?",
+            "fr": "Comment souhaitez-vous contribuer ?"
+          }
+        },
+        {
+          "label": "A11",
+          "sourceKey": "TRANSLATIONS.specialistPathDescription",
+          "text": {
+            "en": "The 81-item questionnaire is optional for specialists. Complete it for quantitative calibration, or go directly to the five questions about your specialty.",
+            "ro": "Chestionarul cu 81 de itemi este opțional pentru specialiști. Completează-l pentru calibrarea cantitativă sau mergi direct la cele cinci întrebări despre specialitatea ta.",
+            "fr": "Le questionnaire de 81 items est facultatif pour les spécialistes. Remplissez-le pour contribuer à la calibration quantitative, ou allez directement aux cinq questions sur votre spécialité."
+          }
+        },
+        {
+          "label": "A12",
+          "sourceKey": "TRANSLATIONS.specialistPathAnswer",
+          "text": {
+            "en": "Answer the 81-item questionnaire",
+            "ro": "Răspund la cei 81 de itemi",
+            "fr": "Répondre aux 81 items"
+          }
+        },
+        {
+          "label": "A13",
+          "sourceKey": "TRANSLATIONS.specialistPathAnswerDescription",
+          "text": {
+            "en": "About 8 minutes · Includes your personal specialty matches and quantitative calibration data.",
+            "ro": "Aproximativ 8 minute · Include potrivirile tale de specialitate și date cantitative de calibrare.",
+            "fr": "Environ 8 minutes · Inclut vos résultats d’adéquation et des données quantitatives de calibration."
+          }
+        },
+        {
+          "label": "A14",
+          "sourceKey": "TRANSLATIONS.specialistPathSkip",
+          "text": {
+            "en": "Go directly to the specialist questions",
+            "ro": "Merg direct la întrebările pentru specialiști",
+            "fr": "Aller directement aux questions pour spécialistes"
+          }
+        },
+        {
+          "label": "A15",
+          "sourceKey": "TRANSLATIONS.specialistPathSkipDescription",
+          "text": {
+            "en": "About 3 minutes · Share a qualitative contribution without completing the questionnaire.",
+            "ro": "Aproximativ 3 minute · O contribuție calitativă, fără completarea chestionarului.",
+            "fr": "Environ 3 minutes · Partagez une contribution qualitative sans remplir le questionnaire."
+          }
+        },
+        {
+          "label": "A16",
+          "sourceKey": "TRANSLATIONS.specialistPathPrivacy",
+          "text": {
+            "en": "Whichever path you choose, data is stored only after you explicitly consent and submit. We do not ask for your name or email address.",
+            "ro": "Indiferent de opțiunea aleasă, datele sunt stocate numai după ce îți exprimi explicit consimțământul și le trimiți. Nu îți solicităm numele sau adresa de e-mail.",
+            "fr": "Quel que soit le parcours choisi, les données ne sont conservées qu’après votre consentement explicite et leur envoi. Nous ne demandons ni votre nom ni votre adresse e-mail."
+          }
+        }
+      ],
+      "note": "The specialist may skip all 81 ratings and career-value choices. The five-question specialty interview remains available."
+    },
+    {
+      "title": "C · Specialty selection and career values",
+      "description": "Appendix · Active participant interface wording",
+      "rows": [
+        {
+          "label": "A17",
+          "sourceKey": "TRANSLATIONS.specialtyTitle",
+          "text": {
+            "en": "Which specialty draws you in?",
+            "ro": "Ce specialitate te atrage?",
+            "fr": "Quelle spécialité vous attire ?"
+          }
+        },
+        {
+          "label": "A18",
+          "sourceKey": "TRANSLATIONS.specialtySubtitle",
+          "text": {
+            "en": "If a field already calls to you, pick it so you can see where it ranks. This choice does not change the score; skip it if nothing stands out yet.",
+            "ro": "Dacă un domeniu te atrage deja, alege-l pentru a vedea unde se clasează. Alegerea nu modifică scorul; omite pasul dacă nimic nu iese încă în evidență.",
+            "fr": "Si un domaine vous attire déjà, choisissez-le pour voir son rang. Ce choix ne modifie pas le score ; passez cette étape si rien ne se démarque encore."
+          }
+        },
+        {
+          "label": "A19",
+          "sourceKey": "TRANSLATIONS.specialtyOptional",
+          "text": {
+            "en": "Optional — pick one you're already drawn to.",
+            "ro": "Opțional — alege una care te atrage deja.",
+            "fr": "Optionnel — choisissez-en une qui vous attire déjà."
+          }
+        },
+        {
+          "label": "A20",
+          "sourceKey": "TRANSLATIONS.specialistSpecialtyTitle",
+          "text": {
+            "en": "What specialty do you practice?",
+            "ro": "Ce specialitate practici?",
+            "fr": "Quelle spécialité exercez-vous ?"
+          }
+        },
+        {
+          "label": "A21",
+          "sourceKey": "TRANSLATIONS.specialistSpecialtySubtitle",
+          "text": {
+            "en": "Tell us which specialty you currently practise so your reflections can be understood in the context of your experience.",
+            "ro": "Indică specialitatea în care profesezi în prezent, pentru a putea înțelege reflecțiile tale în contextul experienței tale.",
+            "fr": "Indiquez la spécialité que vous exercez aujourd’hui pour situer vos réflexions dans le contexte de votre expérience."
+          }
+        },
+        {
+          "label": "A22",
+          "sourceKey": "TRANSLATIONS.specialistSpecialtyRequired",
+          "text": {
+            "en": "Required — select the specialty you currently practice.",
+            "ro": "Obligatoriu — selectează specialitatea pe care o practici în prezent.",
+            "fr": "Obligatoire — sélectionnez la spécialité que vous exercez actuellement."
+          }
+        },
+        {
+          "label": "A23",
+          "sourceKey": "TRANSLATIONS.valuesTitle",
+          "text": {
+            "en": "What do you value most?",
+            "ro": "Ce prețuiești cel mai mult?",
+            "fr": "Qu'est-ce qui compte le plus pour vous ?"
+          }
+        },
+        {
+          "label": "A24",
+          "sourceKey": "TRANSLATIONS.valuesSubtitle",
+          "text": {
+            "en": "Choose up to four values that matter most to you in your career.",
+            "ro": "Alege până la patru valori care contează cel mai mult pentru tine în carieră.",
+            "fr": "Choisissez jusqu'à quatre valeurs qui comptent le plus pour votre carrière."
+          }
+        }
+      ],
+      "note": "Preferred specialty: optional for students/explorers and does not alter scores. Actual specialty: required for specialists. On the complete-questionnaire path, the current interface requires at least one selected career value and allows up to four."
+    },
+    {
+      "title": "D · Career-value options 1–7",
+      "description": "Appendix · Active participant interface wording",
+      "rows": [
+        {
+          "label": "A25",
+          "sourceKey": "VALUE_TRANSLATIONS.Sufficient free time",
+          "text": {
+            "en": "Sufficient free time",
+            "ro": "Timp liber suficient",
+            "fr": "Temps libre suffisant"
+          }
+        },
+        {
+          "label": "A26",
+          "sourceKey": "VALUE_TRANSLATIONS.Personal achievement",
+          "text": {
+            "en": "Personal achievement",
+            "ro": "Realizare personală",
+            "fr": "Accomplissement personnel"
+          }
+        },
+        {
+          "label": "A27",
+          "sourceKey": "VALUE_TRANSLATIONS.Prestige",
+          "text": {
+            "en": "Prestige",
+            "ro": "Prestigiu",
+            "fr": "Prestige"
+          }
+        },
+        {
+          "label": "A28",
+          "sourceKey": "VALUE_TRANSLATIONS.Decision-making",
+          "text": {
+            "en": "Decision-making",
+            "ro": "Luarea deciziilor",
+            "fr": "Prise de décision"
+          }
+        },
+        {
+          "label": "A29",
+          "sourceKey": "VALUE_TRANSLATIONS.Independence",
+          "text": {
+            "en": "Independence",
+            "ro": "Independență",
+            "fr": "Indépendance"
+          }
+        },
+        {
+          "label": "A30",
+          "sourceKey": "VALUE_TRANSLATIONS.Intellectual activity",
+          "text": {
+            "en": "Intellectual activity",
+            "ro": "Activitate intelectuală",
+            "fr": "Activité intellectuelle"
+          }
+        },
+        {
+          "label": "A31",
+          "sourceKey": "VALUE_TRANSLATIONS.Manual/hands-on activity",
+          "text": {
+            "en": "Manual / hands-on activity",
+            "ro": "Activitate manuală / practică",
+            "fr": "Activité manuelle / pratique"
+          }
+        }
+      ],
+      "note": "These are the exact value labels displayed by the application, including any existing spelling differences. Select 1–4 values to continue on the full questionnaire path."
+    },
+    {
+      "title": "D · Career-value options 8–14",
+      "description": "Appendix · Active participant interface wording",
+      "rows": [
+        {
+          "label": "A32",
+          "sourceKey": "VALUE_TRANSLATIONS.Working with people",
+          "text": {
+            "en": "Working with people",
+            "ro": "Lucrul cu oamenii",
+            "fr": "Travailler avec les gens"
+          }
+        },
+        {
+          "label": "A33",
+          "sourceKey": "VALUE_TRANSLATIONS.Job security",
+          "text": {
+            "en": "Job security",
+            "ro": "Securitatea locului de muncă",
+            "fr": "Sécurité de l'emploi"
+          }
+        },
+        {
+          "label": "A34",
+          "sourceKey": "VALUE_TRANSLATIONS.Variety in your work",
+          "text": {
+            "en": "Variety in your work",
+            "ro": "Varitate în muncă",
+            "fr": "Variété dans votre travail"
+          }
+        },
+        {
+          "label": "A35",
+          "sourceKey": "VALUE_TRANSLATIONS.Satisfactory income",
+          "text": {
+            "en": "Satisfactory income",
+            "ro": "Venit satisfăcător",
+            "fr": "Revenu satisfaisant"
+          }
+        },
+        {
+          "label": "A36",
+          "sourceKey": "VALUE_TRANSLATIONS.Creativity",
+          "text": {
+            "en": "Creativity",
+            "ro": "Creativitate",
+            "fr": "Créativité"
+          }
+        },
+        {
+          "label": "A37",
+          "sourceKey": "VALUE_TRANSLATIONS.Feedback from others",
+          "text": {
+            "en": "Feedback from others",
+            "ro": "Feedback de la alții",
+            "fr": "Retour des autres"
+          }
+        },
+        {
+          "label": "A38",
+          "sourceKey": "VALUE_TRANSLATIONS.Caring for people",
+          "text": {
+            "en": "Caring for people",
+            "ro": "Îngrijirea oamenilor",
+            "fr": "Prendre soin des gens"
+          }
+        }
+      ],
+      "note": "These are the exact value labels displayed by the application, including any existing spelling differences. Select 1–4 values to continue on the full questionnaire path."
+    },
+    {
+      "title": "E · Student and explorer perspectives",
+      "description": "Appendix · Active participant interface wording",
+      "rows": [
+        {
+          "label": "A39",
+          "sourceKey": "TRANSLATIONS.studentDataTitle",
+          "text": {
+            "en": "Share your perspective as a medical student",
+            "ro": "Împărtășește perspectiva ta de student la medicină",
+            "fr": "Partagez votre point de vue d’étudiant en médecine"
+          }
+        },
+        {
+          "label": "A40",
+          "sourceKey": "TRANSLATIONS.curiousDataTitle",
+          "text": {
+            "en": "Share your perspective on medicine",
+            "ro": "Împărtășește perspectiva ta asupra medicinei",
+            "fr": "Partagez votre point de vue sur la médecine"
+          }
+        },
+        {
+          "label": "A41",
+          "sourceKey": "TRANSLATIONS.participantMedicineView",
+          "text": {
+            "en": "What do you think about medicine?",
+            "ro": "Ce părere ai despre medicină?",
+            "fr": "Que pensez-vous de la médecine ?"
+          }
+        },
+        {
+          "label": "A42",
+          "sourceKey": "TRANSLATIONS.participantMedicineViewOptional",
+          "text": {
+            "en": "Optional",
+            "ro": "Opțional",
+            "fr": "Facultatif"
+          }
+        },
+        {
+          "label": "A43",
+          "sourceKey": "TRANSLATIONS.participantMedicineViewPlaceholder",
+          "text": {
+            "en": "Write your answer here…",
+            "ro": "Scrie răspunsul tău aici…",
+            "fr": "Écrivez votre réponse ici…"
+          }
+        },
+        {
+          "label": "A44",
+          "sourceKey": "TRANSLATIONS.participantMedicineViewPrivacy",
+          "text": {
+            "en": "Optional. If you answer, use 3 to 2,000 characters. Do not include names, contact details, or information that could identify you, a patient, or another person.",
+            "ro": "Opțional. Dacă răspunzi, folosește între 3 și 2.000 de caractere. Nu include nume, date de contact sau informații care te-ar putea identifica pe tine, un pacient ori o altă persoană.",
+            "fr": "Facultatif. Si vous répondez, utilisez entre 3 et 2 000 caractères. N’indiquez aucun nom, aucune coordonnée ni aucune information permettant de vous identifier, d’identifier un patient ou une autre personne."
+          }
+        }
+      ],
+      "note": "The written reflection is optional. If entered, its trimmed length must be 3–2,000 characters. It is not required to save a contribution."
+    },
+    {
+      "title": "F · Study year and saving choices",
+      "description": "Appendix · Active participant interface wording",
+      "rows": [
+        {
+          "label": "A45",
+          "sourceKey": "TRANSLATIONS.studentStudyYear",
+          "text": {
+            "en": "Year of study",
+            "ro": "Anul de studiu",
+            "fr": "Année d’études"
+          }
+        },
+        {
+          "label": "A46",
+          "sourceKey": "TRANSLATIONS.studentPreferNotToSay",
+          "text": {
+            "en": "Prefer not to say",
+            "ro": "Prefer să nu spun",
+            "fr": "Je préfère ne pas répondre"
+          }
+        },
+        {
+          "label": "A47",
+          "sourceKey": "TRANSLATIONS.studentYear(1)",
+          "text": {
+            "en": "Year 1",
+            "ro": "Anul 1",
+            "fr": "1e année"
+          }
+        },
+        {
+          "label": "A48",
+          "sourceKey": "TRANSLATIONS.studentYear(2)",
+          "text": {
+            "en": "Year 2",
+            "ro": "Anul 2",
+            "fr": "2e année"
+          }
+        },
+        {
+          "label": "A49",
+          "sourceKey": "TRANSLATIONS.studentYear(3)",
+          "text": {
+            "en": "Year 3",
+            "ro": "Anul 3",
+            "fr": "3e année"
+          }
+        },
+        {
+          "label": "A50",
+          "sourceKey": "TRANSLATIONS.studentYear(4)",
+          "text": {
+            "en": "Year 4",
+            "ro": "Anul 4",
+            "fr": "4e année"
+          }
+        },
+        {
+          "label": "A51",
+          "sourceKey": "TRANSLATIONS.studentYear(5)",
+          "text": {
+            "en": "Year 5",
+            "ro": "Anul 5",
+            "fr": "5e année"
+          }
+        },
+        {
+          "label": "A52",
+          "sourceKey": "TRANSLATIONS.studentYear(6)",
+          "text": {
+            "en": "Year 6",
+            "ro": "Anul 6",
+            "fr": "6e année"
+          }
+        },
+        {
+          "label": "A53",
+          "sourceKey": "TRANSLATIONS.studentContinue",
+          "text": {
+            "en": "Consent, save, and view results",
+            "ro": "Acceptă, salvează și vezi rezultatele",
+            "fr": "Consentir, enregistrer et voir les résultats"
+          }
+        },
+        {
+          "label": "A54",
+          "sourceKey": "TRANSLATIONS.studentSkip",
+          "text": {
+            "en": "Skip and view results",
+            "ro": "Omite și vezi rezultatele",
+            "fr": "Passer et voir les résultats"
+          }
+        }
+      ],
+      "note": "Study year is optional and appears only for medical students, not medicine explorers. Available numeric years are exactly 1–6."
+    },
+    {
+      "title": "G · Student and explorer research disclosure",
+      "description": "Appendix · Active participant interface wording",
+      "rows": [
+        {
+          "label": "A55",
+          "sourceKey": "TRANSLATIONS.studentDataDesc",
+          "text": {
+            "en": "If you choose to save, your participant type, 81 answers, selected values, preferred specialty, optional study year, browser-computed ranking and, if provided, your written view of medicine are stored without your name or email for research. Saving records your consent; you can skip this step.",
+            "ro": "Dacă alegi salvarea, tipul de participant, cele 81 de răspunsuri, valorile, specialitatea preferată, anul opțional, clasamentul calculat în browser și, dacă o furnizezi, opinia ta scrisă despre medicină sunt stocate fără nume sau e-mail pentru cercetare. Salvarea înregistrează consimțământul; poți omite acest pas.",
+            "fr": "Si vous choisissez l’enregistrement, votre type de participant, vos 81 réponses, vos valeurs, votre spécialité préférée, votre année facultative, le classement calculé dans le navigateur et, si vous le fournissez, votre avis écrit sur la médecine sont conservés sans nom ni e-mail pour la recherche. Enregistrer vaut consentement ; vous pouvez passer cette étape."
+          }
+        },
+        {
+          "label": "A56",
+          "sourceKey": "TRANSLATIONS.curiousDataDesc",
+          "text": {
+            "en": "If you choose to save, your participant type, 81 answers, selected values, preferred specialty, browser-computed ranking and, if provided, your written view of medicine are stored without your name or email for research. Saving records your consent; you can skip this step.",
+            "ro": "Dacă alegi salvarea, tipul de participant, cele 81 de răspunsuri, valorile, specialitatea preferată, clasamentul calculat în browser și, dacă o furnizezi, opinia ta scrisă despre medicină sunt stocate fără nume sau e-mail pentru cercetare. Salvarea înregistrează consimțământul; poți omite acest pas.",
+            "fr": "Si vous choisissez l’enregistrement, votre type de participant, vos 81 réponses, vos valeurs, votre spécialité préférée, le classement calculé dans le navigateur et, si vous le fournissez, votre avis écrit sur la médecine sont conservés sans nom ni e-mail pour la recherche. Enregistrer vaut consentement ; vous pouvez passer cette étape."
+          }
+        }
+      ],
+      "note": "The save and skip actions shown on the preceding page correspond to these disclosures. This is a text snapshot; no participant responses are included."
+    },
+    {
+      "title": "H · Specialist interview: questions 1–3",
+      "description": "Appendix · Active participant interface wording",
+      "rows": [
+        {
+          "label": "A57",
+          "sourceKey": "TRANSLATIONS.specialistPromptTitle",
+          "text": {
+            "en": "Tell us about your practice",
+            "ro": "Spune-ne despre experiența ta profesională",
+            "fr": "Parlez-nous de votre pratique"
+          }
+        },
+        {
+          "label": "A58",
+          "sourceKey": "TRANSLATIONS.specialistFreeTextPrivacy",
+          "text": {
+            "en": "Required fields. Do not include names, contact details, or any information that could identify a patient or another person.",
+            "ro": "Câmpuri obligatorii. Nu include nume, date de contact sau informații care ar putea identifica un pacient ori o altă persoană.",
+            "fr": "Champs obligatoires. N’indiquez aucun nom, aucune coordonnée ni aucune information permettant d’identifier un patient ou une autre personne."
+          }
+        },
+        {
+          "label": "A59",
+          "sourceKey": "TRANSLATIONS.specialistCurrentView",
+          "text": {
+            "en": "How do you see your specialty now?",
+            "ro": "Cum îți vezi specialitatea în prezent?",
+            "fr": "Comment voyez-vous votre spécialité aujourd’hui ?"
+          }
+        },
+        {
+          "label": "A60",
+          "sourceKey": "TRANSLATIONS.specialistCurrentViewPlaceholder",
+          "text": {
+            "en": "Describe how you currently view the work, its strengths, and its challenges.",
+            "ro": "Descrie cum vezi acum activitatea, punctele forte și dificultățile ei.",
+            "fr": "Décrivez votre vision actuelle du travail, de ses atouts et de ses difficultés."
+          }
+        },
+        {
+          "label": "A61",
+          "sourceKey": "TRANSLATIONS.specialistChangesOverYears",
+          "text": {
+            "en": "What has changed over the years?",
+            "ro": "Ce s-a schimbat de-a lungul anilor?",
+            "fr": "Qu’est-ce qui a changé au fil des années ?"
+          }
+        },
+        {
+          "label": "A62",
+          "sourceKey": "TRANSLATIONS.specialistChangesOverYearsPlaceholder",
+          "text": {
+            "en": "Describe how the specialty or your view of it has evolved.",
+            "ro": "Descrie cum a evoluat specialitatea sau perspectiva ta asupra ei.",
+            "fr": "Décrivez comment la spécialité ou votre regard sur elle a évolué."
+          }
+        },
+        {
+          "label": "A63",
+          "sourceKey": "TRANSLATIONS.specialistMostImportantQuality",
+          "text": {
+            "en": "What is the most important quality required for your specialty?",
+            "ro": "Care este cea mai importantă calitate necesară în specialitatea ta?",
+            "fr": "Quelle est la qualité la plus importante requise dans votre spécialité ?"
+          }
+        },
+        {
+          "label": "A64",
+          "sourceKey": "TRANSLATIONS.specialistMostImportantQualityPlaceholder",
+          "text": {
+            "en": "Name the quality and briefly explain why it matters.",
+            "ro": "Numește calitatea și explică pe scurt de ce este importantă.",
+            "fr": "Nommez cette qualité et expliquez brièvement pourquoi elle compte."
+          }
+        }
+      ],
+      "note": "Questions 1–3 require text to submit a specialist contribution: minimum 3 trimmed characters, maximum 2,000 characters each. Helper placeholders are shown after their corresponding prompts."
+    },
+    {
+      "title": "I · Specialist interview: questions 4–5",
+      "description": "Appendix · Active participant interface wording",
+      "rows": [
+        {
+          "label": "A65",
+          "sourceKey": "TRANSLATIONS.specialistWouldChooseAgain",
+          "text": {
+            "en": "Would you choose the same specialty again?",
+            "ro": "Ai alege aceeași specialitate din nou?",
+            "fr": "Choisiriez-vous à nouveau la même spécialité ?"
+          }
+        },
+        {
+          "label": "A66",
+          "sourceKey": "TRANSLATIONS.specialistYes",
+          "text": {
+            "en": "Yes",
+            "ro": "Da",
+            "fr": "Oui"
+          }
+        },
+        {
+          "label": "A67",
+          "sourceKey": "TRANSLATIONS.specialistNo",
+          "text": {
+            "en": "No",
+            "ro": "Nu",
+            "fr": "Non"
+          }
+        },
+        {
+          "label": "A68",
+          "sourceKey": "TRANSLATIONS.specialistWhyNotChooseAgain",
+          "text": {
+            "en": "Why would you not choose it again?",
+            "ro": "De ce nu ai alege-o din nou?",
+            "fr": "Pourquoi ne choisiriez-vous pas à nouveau cette spécialité ?"
+          }
+        },
+        {
+          "label": "A69",
+          "sourceKey": "TRANSLATIONS.specialistWhyNotChooseAgainPlaceholder",
+          "text": {
+            "en": "Briefly explain what would lead you to choose differently.",
+            "ro": "Explică pe scurt ce te-ar determina să alegi altfel.",
+            "fr": "Expliquez brièvement ce qui vous conduirait à choisir autrement."
+          }
+        },
+        {
+          "label": "A70",
+          "sourceKey": "TRANSLATIONS.specialistStudentSelfQuestion",
+          "text": {
+            "en": "What question do you think a student should ask themselves before choosing this specialty?",
+            "ro": "Ce întrebare crezi că ar trebui să își pună un student înainte de a alege această specialitate?",
+            "fr": "Quelle question un étudiant devrait-il se poser avant de choisir cette spécialité ?"
+          }
+        },
+        {
+          "label": "A71",
+          "sourceKey": "TRANSLATIONS.specialistStudentSelfQuestionPlaceholder",
+          "text": {
+            "en": "Write the most useful self-reflection question for a student.",
+            "ro": "Scrie cea mai utilă întrebare de reflecție pentru un student.",
+            "fr": "Écrivez la question de réflexion la plus utile pour un étudiant."
+          }
+        }
+      ],
+      "note": "Question 4 requires Yes or No. The “why not” textbox appears and is required only for No (3–2,000 characters). Question 5 requires 3–1,000 characters. The conditional textbox is not a sixth unconditional interview question."
+    },
+    {
+      "title": "J · Specialist research disclosure",
+      "description": "Appendix · Active participant interface wording",
+      "rows": [
+        {
+          "label": "A72",
+          "sourceKey": "TRANSLATIONS.specialistPromptDescCompleted",
+          "text": {
+            "en": "Answer these five questions about your specialty. By submitting, you consent to the storage of your specialty, 81 ratings, selected career values, and qualitative answers for research.",
+            "ro": "Răspunde la aceste cinci întrebări despre specialitatea ta. Prin trimitere, accepți stocarea pentru cercetare a specialității, a celor 81 de evaluări, a valorilor profesionale selectate și a răspunsurilor calitative.",
+            "fr": "Répondez à ces cinq questions sur votre spécialité. En envoyant, vous consentez à la conservation à des fins de recherche de votre spécialité, de vos 81 évaluations, des valeurs professionnelles sélectionnées et de vos réponses qualitatives."
+          }
+        },
+        {
+          "label": "A73",
+          "sourceKey": "TRANSLATIONS.specialistPromptDescSkipped",
+          "text": {
+            "en": "Answer these five questions about your specialty. By submitting, you consent to the storage of your specialty and qualitative answers for research. No questionnaire ratings or career values will be stored.",
+            "ro": "Răspunde la aceste cinci întrebări despre specialitatea ta. Prin trimitere, accepți stocarea pentru cercetare a specialității și a răspunsurilor calitative. Nu vor fi stocate evaluări din chestionar sau valori profesionale.",
+            "fr": "Répondez à ces cinq questions sur votre spécialité. En envoyant, vous consentez à la conservation de votre spécialité et de vos réponses qualitatives à des fins de recherche. Aucune évaluation du questionnaire ni valeur professionnelle ne sera conservée."
+          }
+        },
+        {
+          "label": "A74",
+          "sourceKey": "TRANSLATIONS.specialistSubmit",
+          "text": {
+            "en": "Consent and submit for research",
+            "ro": "Acceptă și trimite pentru cercetare",
+            "fr": "Consentir et soumettre pour la recherche"
+          }
+        }
+      ],
+      "note": "The displayed disclosure depends on whether the specialist completed or skipped the 81-item questionnaire. Partial ratings and career values are not submitted on the skipped path."
+    },
+    {
+      "title": "K · Optional geography",
+      "description": "Appendix · Active participant interface wording",
+      "rows": [
+        {
+          "label": "A75",
+          "sourceKey": "MAP_TRANSLATIONS.geographyTitle",
+          "text": {
+            "en": "Where are you joining us from?",
+            "ro": "De unde participi?",
+            "fr": "D’où participez-vous ?"
+          }
+        },
+        {
+          "label": "A76",
+          "sourceKey": "MAP_TRANSLATIONS.optional",
+          "text": {
+            "en": "Optional",
+            "ro": "Opțional",
+            "fr": "Facultatif"
+          }
+        },
+        {
+          "label": "A77",
+          "sourceKey": "MAP_TRANSLATIONS.country",
+          "text": {
+            "en": "Country or territory",
+            "ro": "Țară sau teritoriu",
+            "fr": "Pays ou territoire"
+          }
+        },
+        {
+          "label": "A78",
+          "sourceKey": "MAP_TRANSLATIONS.countryPlaceholder",
+          "text": {
+            "en": "Prefer not to share",
+            "ro": "Prefer să nu precizez",
+            "fr": "Je préfère ne pas partager"
+          }
+        },
+        {
+          "label": "A79",
+          "sourceKey": "MAP_TRANSLATIONS.region",
+          "text": {
+            "en": "Region / state",
+            "ro": "Regiune / stat",
+            "fr": "Région / État"
+          }
+        },
+        {
+          "label": "A80",
+          "sourceKey": "MAP_TRANSLATIONS.regionPlaceholder",
+          "text": {
+            "en": "Region or state only",
+            "ro": "Doar regiunea sau statul",
+            "fr": "Région ou État uniquement"
+          }
+        },
+        {
+          "label": "A81",
+          "sourceKey": "MAP_TRANSLATIONS.regionUnavailable",
+          "text": {
+            "en": "Choose a country first if you wish to add a region.",
+            "ro": "Alege mai întâi o țară dacă dorești să adaugi o regiune.",
+            "fr": "Choisissez d’abord un pays si vous souhaitez ajouter une région."
+          }
+        },
+        {
+          "label": "A82",
+          "sourceKey": "MAP_TRANSLATIONS.regionHelp",
+          "text": {
+            "en": "Do not enter a city, street, institution, name or contact details.",
+            "ro": "Nu introduce orașul, strada, instituția, nume sau date de contact.",
+            "fr": "N’indiquez ni ville, ni rue, ni établissement, ni nom, ni coordonnées."
+          }
+        }
+      ],
+      "note": "This widget appears only when the public-map feature is enabled. Country and region are optional; a country must be selected to enter a region. Region length is limited to 100 characters. Country choices are not expanded in this document."
+    },
+    {
+      "title": "L · Geography disclosure",
+      "description": "Appendix · Active participant interface wording",
+      "rows": [
+        {
+          "label": "A83",
+          "sourceKey": "MAP_TRANSLATIONS.geographyHelp",
+          "text": {
+            "en": "You may share your country and region for research and a public country-level participation map. Small groups stay hidden. Your region will not be shown publicly. We do not ask for your address or use GPS to locate you.",
+            "ro": "Poți oferi țara și regiunea pentru cercetare și o hartă publică a participării pe țări. Grupurile mici rămân ascunse. Regiunea ta nu va fi afișată public. Nu solicităm adresa și nu folosim GPS-ul pentru a te localiza.",
+            "fr": "Vous pouvez partager votre pays et votre région pour la recherche et une carte publique de participation par pays. Les petits groupes restent masqués. Votre région ne sera pas affichée publiquement. Nous ne demandons pas votre adresse et n’utilisons pas le GPS pour vous localiser."
+          }
+        }
+      ],
+      "note": "Geography fields can appear on both the student/explorer contribution form and the specialist contribution form. No live map settings or participant geography were read to generate this source snapshot."
+    }
+  ]
+}

@@ -152,7 +152,7 @@ export async function verifyBrowserDashboardMap({ context, page, fixtureDefiniti
       const signOutSidebar = await openSidebar(mobile);
       setProfile({ authorized: false });
       await signOutSidebar.getByRole('button', { name: 'Sign out', exact: true }).click();
-      await page.getByRole('heading', { level: 1, name: 'Specialist & admin portal', exact: true }).waitFor();
+      await page.getByRole('heading', { level: 1, name: 'Professor & admin sign in', exact: true }).waitFor();
       assert.equal(await map.count(), 0, 'Signing out removes the embedded map and its filtered content');
       assert.equal(await page.locator('[data-dashboard-sidebar]').count(), 0, 'Signing out removes administrative navigation');
       await page.getByRole('button', { name: 'Back', exact: true }).click();
@@ -164,11 +164,11 @@ export async function verifyBrowserDashboardMap({ context, page, fixtureDefiniti
       setProfile({ authorized: true, role: 'researcher', can_edit: false, can_publish: false });
       await signIn();
       await page.getByRole('button', { name: 'Dashboard', exact: true }).click();
-      await page.getByRole('heading', { level: 1, name: 'Specialist cohort', exact: true }).waitFor();
+      await page.getByRole('heading', { level: 1, name: 'Overview', exact: true }).waitFor();
       await page.waitForLoadState('networkidle');
       await noOverflow(`Researcher ${mobile ? 'mobile' : 'desktop'} cohort`);
       const sidebar = await openSidebar(mobile);
-      assert.deepEqual(await sidebar.locator('[data-dashboard-view]').evaluateAll(buttons => buttons.map(button => button.dataset.dashboardView)), ['specialists', 'students', 'analytics', 'map', 'algorithm']);
+      assert.deepEqual(await sidebar.locator('[data-dashboard-view]').evaluateAll(buttons => buttons.map(button => button.dataset.dashboardView)), ['overview', 'specialists', 'students', 'analytics', 'map']);
       assert.equal(await page.locator('[data-dashboard-view="public-features"]').count(), 0, 'Researchers cannot change public visibility');
       assert.equal(await page.locator('[data-public-map-toolbar]').count(), 0, 'Read-only researchers have no quick write action');
       await sidebar.locator('[data-dashboard-view="map"]').click();
@@ -177,7 +177,7 @@ export async function verifyBrowserDashboardMap({ context, page, fixtureDefiniti
       const researcherSidebar = await openSidebar(mobile);
       assert.equal(await page.locator('[data-public-features-settings]').count(), 0, 'Read-only researchers have no inline visibility control');
       await researcherSidebar.getByRole('button', { name: 'Sign out', exact: true }).click();
-      await page.getByRole('heading', { level: 1, name: 'Specialist & admin portal', exact: true }).waitFor();
+      await page.getByRole('heading', { level: 1, name: 'Professor & admin sign in', exact: true }).waitFor();
       await page.getByRole('button', { name: 'Back', exact: true }).click();
     }
     setProfile({ authorized: false });

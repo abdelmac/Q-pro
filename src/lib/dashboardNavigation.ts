@@ -3,15 +3,17 @@ import {
   BarChart3,
   Globe2,
   GraduationCap,
+  LayoutDashboard,
   Settings2,
   Stethoscope,
   type LucideIcon,
 } from 'lucide-react';
 import type { Language } from '@/data/i18n';
 import { PUBLIC_FEATURES_TRANSLATIONS } from '@/data/publicFeaturesI18n';
+import { PROFESSOR_PORTAL_COPY } from '@/data/professorPortalI18n';
 
 export type CohortView = 'specialists' | 'students';
-export type DashboardView = CohortView | 'analytics' | 'algorithm' | 'map' | 'configuration' | 'public-features';
+export type DashboardView = CohortView | 'overview' | 'analytics' | 'algorithm' | 'map' | 'configuration' | 'public-features';
 
 export interface DashboardNavItem {
   id: DashboardView;
@@ -57,7 +59,7 @@ export function participantRoleSupportsStudyYear(value: string): boolean {
   return value !== 'curious';
 }
 
-export function getDashboardNavItems(canEdit: boolean, lang: Language): DashboardNavItem[] {
+export function getDashboardNavItems(canEdit: boolean, lang: Language, professorWorkspace = false): DashboardNavItem[] {
   const items: DashboardNavItem[] = [
     {
       id: 'specialists',
@@ -73,17 +75,20 @@ export function getDashboardNavItems(canEdit: boolean, lang: Language): Dashboar
     },
     {
       id: 'analytics',
-      label: lang === 'fr' ? 'Analyses de recherche' : lang === 'ro' ? 'Analize de cercetare' : 'Research analyses',
+      label: professorWorkspace ? PROFESSOR_PORTAL_COPY[lang].analytics : lang === 'fr' ? 'Analyses de recherche' : lang === 'ro' ? 'Analize de cercetare' : 'Research analyses',
       section: 'data',
       icon: BarChart3,
     },
-    {
+  ];
+
+  if (!professorWorkspace) {
+    items.push({
       id: 'algorithm',
       label: lang === 'fr' ? 'Comprendre l’algorithme' : lang === 'ro' ? 'Cum funcționează algoritmul' : 'How the algorithm works',
       section: 'method',
       icon: GitCompare,
-    },
-  ];
+    });
+  }
 
   items.push({
       id: 'map',
@@ -91,7 +96,15 @@ export function getDashboardNavItems(canEdit: boolean, lang: Language): Dashboar
       section: 'data',
       icon: Globe2,
   });
-  if (canEdit) {
+  if (professorWorkspace) {
+    items.unshift({
+      id: 'overview',
+      label: PROFESSOR_PORTAL_COPY[lang].overview,
+      section: 'data',
+      icon: LayoutDashboard,
+    });
+  }
+  if (canEdit && !professorWorkspace) {
     items.push({
       id: 'configuration',
       label: lang === 'ro' ? 'Configurare' : 'Configuration',

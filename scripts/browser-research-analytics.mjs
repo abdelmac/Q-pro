@@ -187,7 +187,7 @@ export async function verifyBrowserResearchAnalytics({ context, page, fixtureDef
     await page.setViewportSize({ width: 1440, height: 1000 });
     setProfile({ authorized: false });
     await page.locator('#dashboard-sidebar-desktop').getByRole('button', { name: 'Sign out', exact: true }).click();
-    await page.getByRole('heading', { name: 'Specialist & admin portal', exact: true }).waitFor();
+    await page.getByRole('heading', { name: 'Professor & admin sign in', exact: true }).waitFor();
     assert.equal(await panel.count(), 0, 'Sign-out removes private analytics results and controls');
     await page.getByRole('button', { name: 'Back', exact: true }).click();
     console.log('Research analytics browser checks passed: named-cohort CRUD, server-side filter parameters, denominators, comparison warning, reproducible export, refresh/filter invalidation, cancellation/late responses, denied exports, result deletion and mobile layout.');

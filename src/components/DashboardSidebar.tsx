@@ -4,6 +4,7 @@ import {
   X,
 } from 'lucide-react';
 import type { Language } from '@/data/i18n';
+import { PROFESSOR_PORTAL_COPY } from '@/data/professorPortalI18n';
 import {
   getDashboardNavItems,
   type DashboardNavItem,
@@ -19,6 +20,7 @@ interface DashboardSidebarProps {
   lang: Language;
   displayName: string;
   portalRole: string;
+  professorWorkspace?: boolean;
   showClose?: boolean;
   onClose?: () => void;
   onSelectView: (view: DashboardView) => void;
@@ -36,6 +38,7 @@ export default function DashboardSidebar({
   lang,
   displayName,
   portalRole,
+  professorWorkspace = false,
   showClose = false,
   onClose,
   onSelectView,
@@ -44,13 +47,13 @@ export default function DashboardSidebar({
 }: DashboardSidebarProps) {
   const french = lang === 'fr';
   const romanian = lang === 'ro';
-  const items = getDashboardNavItems(canEdit, lang);
+  const items = getDashboardNavItems(canEdit, lang, professorWorkspace);
   const roleLabels: Record<string, string> = {
     researcher: french ? 'Chercheur' : romanian ? 'Cercetător' : 'Researcher',
     doctor: french ? 'Médecin' : romanian ? 'Medic' : 'Doctor',
     professor: french ? 'Professeur' : romanian ? 'Profesor' : 'Professor',
   };
-  const displayedRole = roleLabels[portalRole] ?? portalRole;
+  const displayedRole = professorWorkspace ? PROFESSOR_PORTAL_COPY[lang].researchAccess : roleLabels[portalRole] ?? portalRole;
   const sectionLabels: Record<DashboardNavItem['section'], string> = {
     data: french ? 'Données de recherche' : romanian ? 'Date de cercetare' : 'Research data',
     method: french ? 'Méthode' : romanian ? 'Metodă' : 'Method',
@@ -69,7 +72,7 @@ export default function DashboardSidebar({
           <div className="min-w-0 flex-1">
             <BrandLogo className="w-full max-w-52" tone="inverse" />
             <p className="mt-3 text-xs text-brand-200">
-              {french ? 'Portail de recherche' : romanian ? 'Portal de cercetare' : 'Research portal'}
+              {professorWorkspace ? PROFESSOR_PORTAL_COPY[lang].portalTitle : french ? 'Portail de recherche' : romanian ? 'Portal de cercetare' : 'Research portal'}
             </p>
           </div>
           {showClose && (

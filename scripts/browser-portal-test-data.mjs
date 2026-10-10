@@ -226,7 +226,7 @@ export async function verifyBrowserPortalTestData({ context, page, catalog, mapC
     await page.setViewportSize({ width: 1440, height: 1000 });
     setProfile({ authorized: false });
     await page.locator('#dashboard-sidebar-desktop').getByRole('button', { name: 'Sign out', exact: true }).click();
-    await page.getByRole('heading', { level: 1, name: 'Specialist & admin portal', exact: true }).waitFor();
+    await page.getByRole('heading', { level: 1, name: 'Professor & admin sign in', exact: true }).waitFor();
     assert.equal(await panel.count(), 0, 'Sign-out clears the entire synthetic view');
     assert.ok(datasetReads >= 3);
     console.log('Portal test dataset browser checks passed: create5/5/5, isolated lists/details/analysis/export/map, reload, fail-closed outage, exact deletion and recreation, logout.');

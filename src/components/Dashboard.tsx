@@ -24,6 +24,7 @@ import AlgorithmExplanation from '@/components/AlgorithmExplanation';
 import CalibrationAnalysis from '@/components/CalibrationAnalysis';
 import DashboardSidebar from '@/components/DashboardSidebar';
 import {
+  getDashboardNavItems,
   isCohortView,
   participantRoleLabel,
   participantRoleSupportsStudyYear,
@@ -44,6 +45,10 @@ import { filterTestSpecialists, filterTestStudents, hasCompleteTestInterview, ma
 import BrandLogo from './BrandLogo';
 import PublicFeaturesSettings from './PublicFeaturesSettings';
 import ResearchAnalytics from './ResearchAnalytics';
+import ProfessorOverview from './ProfessorOverview';
+import PortalPasswordSettings from './PortalPasswordSettings';
+import { PROFESSOR_PORTAL_COPY } from '@/data/professorPortalI18n';
+import { isProfessorWorkspace, parsePortalProfile, type PortalProfile } from '@/lib/portalAccess';
 import {
   ArrowLeft,
   BarChart3,
@@ -58,6 +63,7 @@ import {
   Menu,
   Microscope,
   RefreshCw,
+  ShieldCheck,
   Stethoscope,
   Users,
 } from 'lucide-react';
@@ -112,13 +118,6 @@ interface DashboardCounts {
   specialistsComplete: number;
 }
 
-interface PortalProfile {
-  display_name: string | null;
-  portal_role: 'researcher' | 'doctor' | 'professor';
-  can_edit: boolean;
-  can_publish: boolean;
-}
-
 const EMPTY_COUNTS: DashboardCounts = {
   students: 0,
   curious: 0,
@@ -126,20 +125,6 @@ const EMPTY_COUNTS: DashboardCounts = {
   studentsWithYear: 0,
   specialistsComplete: 0,
 };
-
-function parsePortalProfile(value: unknown): PortalProfile | null {
-  if (!value || Array.isArray(value) || typeof value !== 'object') return null;
-  const record = value as Record<string, unknown>;
-  if (record.authorized !== true && record.is_researcher !== true) return null;
-  const role = record.portal_role ?? record.role;
-  if (role !== 'researcher' && role !== 'doctor' && role !== 'professor') return null;
-  return {
-    display_name: typeof record.display_name === 'string' ? record.display_name : null,
-    portal_role: role,
-    can_edit: record.can_edit === true || record.can_edit_catalog === true,
-    can_publish: record.can_publish === true || record.can_publish_catalog === true,
-  };
-}
 
 const CHOICE_LABELS: Record<string, Record<string, string>> = {
   fr: {
@@ -194,12 +179,14 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
   const { specialties: liveSpecialties, version: liveCatalogVersion, refresh: refreshCatalog } = useSpecialtyCatalog();
   const french = lang === 'fr';
   const romanian = lang === 'ro';
+  const professorCopy = PROFESSOR_PORTAL_COPY[lang];
   const locale = french ? 'fr-FR' : romanian ? 'ro-RO' : 'en-GB';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [accessState, setAccessState] = useState<AccessState>('checking');
   const [authIdentity, setAuthIdentity] = useState<string | null>(null);
   const [portalProfile, setPortalProfile] = useState<PortalProfile | null>(null);
+  const professorWorkspace = isProfessorWorkspace(portalProfile);
   const [students, setStudents] = useState<StudentListRow[]>([]);
   const [specialists, setSpecialists] = useState<SpecialistListRow[]>([]);
   const [view, setView] = useState<DashboardView>('specialists');
@@ -221,6 +208,8 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
   useScrollToPageTop(getDashboardNavigationScrollKey(accessState, view));
   const [activeTotal, setActiveTotal] = useState(0);
   const [counts, setCounts] = useState<DashboardCounts>(EMPTY_COUNTS);
+  const [overviewCountsReady, setOverviewCountsReady] = useState(false);
+  const [exportsOpen, setExportsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [detailLoadingId, setDetailLoadingId] = useState<string | null>(null);
   const [detailedResponse, setDetailedResponse] = useState<DetailedResponse | null>(null);
@@ -240,6 +229,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
   const dataAbort = useRef(new AbortController());
   const identityRef = useRef<string | null>(null);
   const administrativeIdentityRef = useRef<string | null>(null);
+  const verifiedWorkspaceRef = useRef<string | null>(null);
   const onTestAccessLost = useCallback(() => {
     loadRequest.current++;
     detailRequest.current++;
@@ -248,6 +238,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
     dataAbort.current.abort();
     identityRef.current = null;
     administrativeIdentityRef.current = null;
+    verifiedWorkspaceRef.current = null;
     setAuthIdentity(null);
     setPortalProfile(null);
     setAccessState('signed_out');
@@ -306,13 +297,14 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
     setStudents([]);
     setSpecialists([]);
     setCounts(EMPTY_COUNTS);
+    setOverviewCountsReady(false);
     setActiveTotal(0);
     setLoadedSource('');
     return () => { dataAbort.current.abort(); };
   }, [sourceKey, resetPageAndAnalysis]);
 
   const loadData = useCallback(async () => {
-    if (!isCohortView(view)) {
+    if (!isCohortView(view) && view !== 'overview') {
       setLoading(false);
       return;
     }
@@ -340,6 +332,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
     setLoadedSource(sourceKey);
     setLoading(true);
     setError(null);
+    if (view === 'overview') setOverviewCountsReady(false);
     if (view === 'specialists') setSpecialists([]);
     else if (view === 'students') setStudents([]);
     const rangeStart = page * PAGE_SIZE;
@@ -361,7 +354,21 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
     ]);
 
     try {
-      if (view === 'specialists') {
+      if (view === 'overview') {
+        // The landing page needs only aggregate HEAD counts, never response bodies.
+        const countResults = await globalCounts;
+        if (requestId !== loadRequest.current || activeSource.current !== sourceKey) return;
+        const queryError = countResults.find(({ error: countError }) => countError)?.error;
+        if (queryError) throw queryError;
+        setCounts({
+          students: countResults[0].count ?? 0,
+          specialists: countResults[1].count ?? 0,
+          studentsWithYear: countResults[2].count ?? 0,
+          specialistsComplete: countResults[3].count ?? 0,
+          curious: countResults[4].count ?? 0,
+        });
+        setOverviewCountsReady(true);
+      } else if (view === 'specialists') {
         let query = supabase
           .from('specialist_responses')
           .select('id, actual_specialty, questionnaire_completed, submission_schema_version, current_specialty_view, specialty_changes_over_years, most_important_specialty_quality, would_choose_again_code, would_not_choose_again_reason, student_self_question, years_of_experience, career_satisfaction, intention_to_change_code, voluntary_choice_code, language, created_at', { count: 'exact' })
@@ -513,6 +520,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
       if (!expectedIdentity) {
         identityRef.current = null;
         administrativeIdentityRef.current = null;
+        verifiedWorkspaceRef.current = null;
         setAuthIdentity(null);
         loadRequest.current += 1;
         detailRequest.current += 1;
@@ -526,6 +534,8 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
         setExporting(null);
         setActiveTotal(0);
         setCounts(EMPTY_COUNTS);
+        setOverviewCountsReady(false);
+        setExportsOpen(false);
         setPage(0);
         setView('specialists');
         setViewHistory([]);
@@ -542,7 +552,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
       if (accessError || !profile) {
         setError(accessError
           ? formatSupabaseError(accessError, lang)
-          : 'This account is not authorized to access research data.');
+          : PROFESSOR_PORTAL_COPY[lang].unauthorized);
         await client.auth.signOut();
         setAccessState('signed_out');
         return;
@@ -554,6 +564,48 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
         return;
       }
       administrativeIdentityRef.current = isAdministrator ? expectedIdentity : null;
+      const workspaceKey = `${expectedIdentity}:${profile.portal_role}`;
+      if (verifiedWorkspaceRef.current !== workspaceKey) {
+        // Apply defaults once per account/role, not on language or session revalidation.
+        // Never carry another identity's filters, details or export state into this workspace.
+        verifiedWorkspaceRef.current = workspaceKey;
+        const researchWorkspace = isProfessorWorkspace(profile);
+        dataAbort.current.abort();
+        loadRequest.current++;
+        detailRequest.current++;
+        analysisRequest.current++;
+        exportRequest.current++;
+        setView(researchWorkspace ? 'overview' : 'specialists');
+        setViewHistory([]);
+        setSidebarOpen(false);
+        setYearFilter('all');
+        setParticipantRoleFilter('all');
+        setStudentSpecialtyFilter('all');
+        setSpecialtyFilter('all');
+        setQuestionnaireFilter('all');
+        setCompletenessFilter('all');
+        setChooseAgainFilter('all');
+        setLanguageFilter('all');
+        setDataVersionFilter(researchWorkspace ? 'all' : 'current');
+        setDateFrom('');
+        setDateTo('');
+        setPage(0);
+        setStudents([]);
+        setSpecialists([]);
+        setCounts(EMPTY_COUNTS);
+        setOverviewCountsReady(false);
+        setActiveTotal(0);
+        setDetailedResponse(null);
+        setDetailLoadingId(null);
+        setAnalysisRows(null);
+        setAnalysisLoading(false);
+        setExporting(null);
+        setExportsOpen(false);
+        setLoadedSource('');
+        setDetailSource('');
+        setAnalysisSource('');
+        setError(null);
+      }
       setPortalProfile(profile);
       setAccessState('authorized');
     };
@@ -569,7 +621,10 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
       if (event !== 'SIGNED_OUT' && event !== 'SIGNED_IN' && event !== 'USER_UPDATED') return;
       verification++;
       const identity = event === 'SIGNED_OUT' ? null : session?.user.id ?? null;
-      if (identityRef.current !== identity) administrativeIdentityRef.current = null;
+      if (identityRef.current !== identity) {
+        administrativeIdentityRef.current = null;
+        verifiedWorkspaceRef.current = null;
+      }
       identityRef.current = identity;
       setAuthIdentity(identity);
       // Cancel the old identity's results synchronously, before React commits revalidation.
@@ -596,7 +651,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
   }, [lang, onTestAccessLost]);
 
   useEffect(() => {
-    if (accessState === 'authorized' && isCohortView(view)) void loadData();
+    if (accessState === 'authorized' && (isCohortView(view) || view === 'overview')) void loadData();
   }, [accessState, loadData, view]);
 
   const closeMobileSidebar = useCallback(() => {
@@ -946,6 +1001,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
   };
 
   const resetFilters = () => {
+    const defaultVersion = professorWorkspace ? 'all' : 'current';
     const alreadyReset = yearFilter === 'all'
       && participantRoleFilter === 'all'
       && studentSpecialtyFilter === 'all'
@@ -954,7 +1010,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
       && completenessFilter === 'all'
       && chooseAgainFilter === 'all'
       && languageFilter === 'all'
-      && dataVersionFilter === 'current'
+      && dataVersionFilter === defaultVersion
       && dateFrom === ''
       && dateTo === ''
       && page === 0;
@@ -967,7 +1023,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
     setCompletenessFilter('all');
     setChooseAgainFilter('all');
     setLanguageFilter('all');
-    setDataVersionFilter('current');
+    setDataVersionFilter(defaultVersion);
     setDateFrom('');
     setDateTo('');
     resetPageAndAnalysis();
@@ -1023,7 +1079,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
       void refreshCatalog();
       return;
     }
-    if (!isCohortView(view)) return;
+    if (!isCohortView(view) && view !== 'overview') return;
     analysisRequest.current += 1;
     setAnalysisRows(null);
     setAnalysisLoading(false);
@@ -1031,10 +1087,11 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
   };
 
   const selectDashboardView = (nextView: DashboardView) => {
-    if ((nextView === 'public-features' || nextView === 'configuration') && !portalProfile?.can_edit) return;
+    if (!getDashboardNavItems(portalProfile?.can_edit ?? false, lang, professorWorkspace).some(item => item.id === nextView)) return;
     if (sidebarOpen) closeMobileSidebar();
     if (view === nextView) return;
     setError(null);
+    setExportsOpen(false);
     setViewHistory((history) => pushDashboardViewHistory(history, view, nextView));
     setView(nextView);
     resetPageAndAnalysis();
@@ -1056,6 +1113,10 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
   };
 
   const viewCopy: Record<DashboardView, { title: string; description: string }> = {
+    overview: {
+      title: professorCopy.overview,
+      description: professorCopy.overviewDescription,
+    },
     'public-features': {
       title: PUBLIC_FEATURES_TRANSLATIONS[lang].title,
       description: PUBLIC_FEATURES_TRANSLATIONS[lang].description,
@@ -1105,6 +1166,18 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
           : 'Descriptions, clinical summaries, and target profiles under governed publication.',
     },
   };
+  if (professorWorkspace) {
+    viewCopy.students = { title: professorCopy.studentsCard, description: professorCopy.studentsDescription };
+    viewCopy.specialists = { title: professorCopy.specialistsCard, description: professorCopy.specialistsDescription };
+    viewCopy.analytics = { title: professorCopy.analytics, description: professorCopy.analyticsDescription };
+    viewCopy.map = { title: professorCopy.mapCard, description: `${professorCopy.mapDescription} ${professorCopy.mapNotice}` };
+  }
+
+  const additionalExportButtons = <>
+    <ExportButton icon={<Download className="h-4 w-4" />} label={french ? 'CSV long' : 'Long CSV'} busy={exporting === 'long'} disabled={exporting !== null} onClick={() => void exportData('long')} />
+    <ExportButton icon={<BarChart3 className="h-4 w-4" />} label={french ? 'CSV analytique' : 'Analytic CSV'} busy={exporting === 'analytic'} disabled={exporting !== null} onClick={() => void exportData('analytic')} />
+    <ExportButton icon={<FileJson className="h-4 w-4" />} label="JSON" busy={exporting === 'json'} disabled={exporting !== null} onClick={() => void exportData('json')} />
+  </>;
 
   const calibrationSummary = useMemo(() => analysisRows
     && analysisSource === sourceKey && !testBlocked
@@ -1116,24 +1189,24 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
       <form onSubmit={signIn} className="w-full max-w-md p-8 rounded-2xl bg-white border border-ink-100 shadow-soft">
         <button type="button" onClick={() => void leaveDashboard()} disabled={loading || accessState === 'checking_access'} className="mb-8 inline-flex min-h-11 items-center gap-2 rounded-full px-3 text-sm text-ink-500 hover:bg-ink-100 hover:text-ink-900 disabled:cursor-not-allowed disabled:opacity-40"><ArrowLeft className="w-4 h-4" />{french ? 'Retour' : romanian ? 'Înapoi' : 'Back'}</button>
         <BrandLogo className="mb-6 w-56" />
-        <h1 className="font-display text-3xl font-semibold text-ink-900 mb-2">{french ? 'Portail spécialistes & administration' : 'Specialist & admin portal'}</h1>
-        <p className="text-sm text-ink-500 mb-6">{french ? 'Connectez-vous avec un compte Supabase autorisé pour consulter les cohortes et, selon votre rôle, calibrer le catalogue.' : 'Sign in with an authorized Supabase account to review cohorts and, according to your role, calibrate the catalog.'}</p>
+        <h1 className="font-display text-3xl font-semibold text-ink-900 mb-2">{professorCopy.loginTitle}</h1>
+        <p className="text-sm text-ink-500 mb-6">{professorCopy.loginDescription}</p>
         <label className="mb-3 block">
           <span className="mb-1.5 block text-xs font-semibold text-ink-600">Email</span>
           <input required disabled={accessState !== 'signed_out'} type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="email@example.com" autoComplete="username" className="w-full rounded-xl border border-ink-200 px-4 py-3 text-sm focus:border-brand-500 focus:outline-none disabled:opacity-60" />
         </label>
         <label className="block">
-          <span className="mb-1.5 block text-xs font-semibold text-ink-600">{french ? 'Mot de passe' : 'Password'}</span>
+          <span className="mb-1.5 block text-xs font-semibold text-ink-600">{professorCopy.password}</span>
           <input required disabled={accessState !== 'signed_out'} type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" className="w-full rounded-xl border border-ink-200 px-4 py-3 text-sm focus:border-brand-500 focus:outline-none disabled:opacity-60" />
         </label>
         {error && <p className="mt-4 text-sm text-red-700">{error}</p>}
-        <button disabled={loading || accessState !== 'signed_out'} className="mt-6 w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-brand-800 text-white font-semibold text-sm hover:bg-brand-900 disabled:opacity-40"><LogIn className="w-4 h-4" />{loading || accessState !== 'signed_out' ? (french ? 'Vérification…' : 'Checking access...') : (french ? 'Se connecter' : 'Sign in')}</button>
+        <button disabled={loading || accessState !== 'signed_out'} className="mt-6 w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-brand-800 text-white font-semibold text-sm hover:bg-brand-900 disabled:opacity-40"><LogIn className="w-4 h-4" />{loading || accessState !== 'signed_out' ? professorCopy.checking : professorCopy.signIn}</button>
       </form>
     </main>
   );
 
   return (
-    <main className="min-h-screen bg-accent-50">
+    <main data-dashboard-workspace={professorWorkspace ? 'professor' : 'administration'} className="min-h-screen bg-accent-50">
       <div className="flex min-h-screen">
         <DashboardSidebar
           id="dashboard-sidebar-desktop"
@@ -1143,6 +1216,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
           lang={lang}
           displayName={portalProfile?.display_name ?? (french ? 'Compte autorisé' : romanian ? 'Cont autorizat' : 'Authorized account')}
           portalRole={portalProfile?.portal_role ?? ''}
+          professorWorkspace={professorWorkspace}
           onSelectView={selectDashboardView}
           onBack={() => void leaveDashboard()}
           onSignOut={() => void signOutDashboard()}
@@ -1171,6 +1245,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
               lang={lang}
               displayName={portalProfile?.display_name ?? (french ? 'Compte autorisé' : romanian ? 'Cont autorizat' : 'Authorized account')}
               portalRole={portalProfile?.portal_role ?? ''}
+              professorWorkspace={professorWorkspace}
               showClose
               onClose={closeMobileSidebar}
               onSelectView={selectDashboardView}
@@ -1212,7 +1287,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
                   </button>
                   <div className="min-w-0">
                     <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-700">
-                      {french ? 'Portail spécialistes & administration' : romanian ? 'Portal pentru specialiști și administrare' : 'Specialist & admin portal'}
+                      {professorWorkspace ? professorCopy.portalTitle : french ? 'Portail spécialistes & administration' : romanian ? 'Portal pentru specialiști și administrare' : 'Specialist & admin portal'}
                     </p>
                     <h1 className="mt-2 font-display text-3xl font-semibold tracking-tight text-ink-900">{viewCopy[view].title}</h1>
                     <p className="mt-1 max-w-3xl text-sm leading-6 text-ink-500">{viewCopy[view].description}</p>
@@ -1241,9 +1316,22 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
         />}
         {canManageTestData && <PortalTestDataPanel lang={lang} manager={testManager} />}
         {error && <p className="mb-5 rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-700">{error}</p>}
+        {professorWorkspace && view === 'overview' && <div data-professor-access className="mb-5 flex items-start gap-3 rounded-2xl border border-brand-100 bg-brand-50 p-4 text-sm text-brand-900">
+          <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
+          <div><p className="font-semibold">{professorCopy.researchAccess}</p><p className="mt-1 text-xs leading-relaxed">{professorCopy.accessNotice}</p></div>
+        </div>}
         {!testBlocked && <>
 
-        {isCohortView(view) && <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5">
+        {view === 'overview' && professorWorkspace && <ProfessorOverview
+          lang={lang}
+          counts={overviewCountsReady && loadedSource === sourceKey ? visibleCounts : null}
+          loading={loading}
+          onSelectView={selectDashboardView}
+          onOpenExports={(cohort) => { selectDashboardView(cohort); setExportsOpen(true); }}
+        />}
+        {view === 'overview' && professorWorkspace && authIdentity && <PortalPasswordSettings key={authIdentity} identity={authIdentity} />}
+
+        {isCohortView(view) && !professorWorkspace && <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5">
           <Stat label={french ? 'Spécialistes' : 'Specialists'} value={visibleCounts.specialists} icon={<Stethoscope className="h-5 w-5" />} />
           <Stat label={french ? 'Entretiens actuels complets' : 'Complete current interviews'} value={visibleCounts.specialistsComplete} icon={<CheckCircle2 className="h-5 w-5" />} />
           <Stat label={french ? 'Étudiants' : romanian ? 'Studenți' : 'Students'} value={visibleCounts.students} icon={<Users className="h-5 w-5" />} />
@@ -1251,19 +1339,21 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
           <Stat label={french ? 'Étudiants avec année' : romanian ? 'Studenți cu anul declarat' : 'Students with study year'} value={visibleCounts.studentsWithYear} icon={<GraduationCap className="h-5 w-5" />} />
         </div>}
 
-        {isCohortView(view) && <details data-dashboard-exports className="mb-4 rounded-2xl border border-ink-100 bg-white p-4">
+        {isCohortView(view) && <details data-dashboard-exports open={exportsOpen} onToggle={event => setExportsOpen(event.currentTarget.open)} className="mb-4 rounded-2xl border border-ink-100 bg-white p-4">
           <summary className="min-h-11 cursor-pointer content-center text-sm font-semibold text-ink-700">{french ? 'Exporter les données filtrées' : romanian ? 'Exportă datele filtrate' : 'Export filtered data'}</summary>
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            {!testMode && <p className="mr-auto text-xs text-ink-500">{french ? 'Exports interactifs : 1 000 soumissions maximum. Analyses complètes dans Analyses de recherche.' : romanian ? 'Exporturi interactive: maximum 1.000 de trimiteri. Analize complete în Analize de cercetare.' : 'Interactive exports: up to 1,000 submissions. Full analyses under Research analyses.'}</p>}
+            {!testMode && <p className="mr-auto text-xs text-ink-500">{professorWorkspace ? professorCopy.exportLimit : french ? 'Exports interactifs : 1 000 soumissions maximum. Analyses complètes dans Analyses de recherche.' : romanian ? 'Exporturi interactive: maximum 1.000 de trimiteri. Analize complete în Analize de cercetare.' : 'Interactive exports: up to 1,000 submissions. Full analyses under Research analyses.'}</p>}
             {exporting && <button type="button" className="min-h-11 rounded-lg border px-3 text-sm" onClick={() => { exportRequest.current++; dataAbort.current.abort(); dataAbort.current = new AbortController(); setExporting(null); }}>{french ? 'Annuler l’export' : romanian ? 'Anulează exportul' : 'Cancel export'}</button>}
-            <ExportButton icon={<Download className="h-4 w-4" />} label={french ? 'CSV large' : 'Wide CSV'} busy={exporting === 'raw'} disabled={exporting !== null} onClick={() => void exportData('raw')} />
-            <ExportButton icon={<Download className="h-4 w-4" />} label={french ? 'CSV long' : 'Long CSV'} busy={exporting === 'long'} disabled={exporting !== null} onClick={() => void exportData('long')} />
-            <ExportButton icon={<BarChart3 className="h-4 w-4" />} label={french ? 'CSV analytique' : 'Analytic CSV'} busy={exporting === 'analytic'} disabled={exporting !== null} onClick={() => void exportData('analytic')} />
-            <ExportButton icon={<FileJson className="h-4 w-4" />} label="JSON" busy={exporting === 'json'} disabled={exporting !== null} onClick={() => void exportData('json')} />
+            <ExportButton icon={<Download className="h-4 w-4" />} label={professorWorkspace ? professorCopy.spreadsheet : french ? 'CSV large' : 'Wide CSV'} busy={exporting === 'raw'} disabled={exporting !== null} onClick={() => void exportData('raw')} />
+            {!professorWorkspace && additionalExportButtons}
           </div>
+          {professorWorkspace && <details data-professor-other-formats className="mt-3 border-t border-ink-100 pt-2">
+            <summary className="min-h-11 cursor-pointer content-center text-sm font-semibold text-ink-600">{professorCopy.otherFormats}</summary>
+            <div className="mt-2 flex flex-wrap gap-2">{additionalExportButtons}</div>
+          </details>}
         </details>}
 
-        {view === 'algorithm' && (
+        {view === 'algorithm' && !professorWorkspace && (
           <AlgorithmExplanation
             lang={lang}
             catalogRevision={catalogVersion.revision}
@@ -1275,7 +1365,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
         {view === 'analytics' && <ResearchAnalytics testMode={testMode} refreshToken={mapRefreshKey} />}
 
         {view === 'configuration' && testMode && <p data-test-configuration-locked className="rounded-xl border border-amber-300 bg-amber-50 p-5 text-sm text-amber-950">{testCopy.locked}</p>}
-        {view === 'configuration' && portalProfile && !testMode && (
+        {view === 'configuration' && portalProfile?.can_edit && !testMode && (
           <SpecialtyConfigurationEditor french={french} portalProfile={portalProfile} onPublished={() => void refreshCatalog()} />
         )}
 
@@ -1365,7 +1455,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
           </details>
         </section>}
 
-        {view === 'specialists' && (
+        {view === 'specialists' && !professorWorkspace && (
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-brand-200 bg-brand-50/60 p-4">
             <div>
               <p className="font-semibold text-ink-900">{french ? 'Calibration avec la cohorte filtrée' : 'Calibration using the filtered cohort'}</p>

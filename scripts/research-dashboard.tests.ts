@@ -2,6 +2,9 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import AlgorithmExplanation from '../src/components/AlgorithmExplanation';
 import DashboardSidebar from '../src/components/DashboardSidebar';
+import ProfessorOverview from '../src/components/ProfessorOverview';
+import { PROFESSOR_PORTAL_COPY } from '../src/data/professorPortalI18n';
+import { isProfessorWorkspace, parsePortalProfile } from '../src/lib/portalAccess';
 import PageBackButton from '../src/components/PageBackButton';
 import ParticipantReflectionForm, {
   PARTICIPANT_MEDICINE_VIEW_MAX_LENGTH,
@@ -330,10 +333,58 @@ assert.equal(
 );
 
 const readOnlyDashboardItems = getDashboardNavItems(false, 'en');
+for (const invalid of [null, [], true, {}, { authorized: false }, { authorized: true, role: 'admin' },
+  { authorized: false, is_researcher: true, role: 'researcher' },
+  { authorized: true, role: 'researcher', portal_role: 'professor' },
+  { user_metadata: { authorized: true, role: 'professor', can_edit: true } }]) {
+  assert.equal(parsePortalProfile(invalid), null, 'Untrusted, denied, malformed or conflicting profiles fail closed');
+}
+const researchProfile = parsePortalProfile({ authorized: true, role: 'researcher', can_edit: true, can_publish: true, can_edit_catalog: true });
+assert.deepEqual(researchProfile, { display_name: null, portal_role: 'researcher', can_edit: false, can_publish: false });
+assert.equal(isProfessorWorkspace(researchProfile), true);
+assert.equal(isProfessorWorkspace(null), false);
+for (const role of ['doctor', 'professor'] as const) {
+  const administrativeProfile = parsePortalProfile({ authorized: true, portal_role: role, can_edit: true, can_publish: true, display_name: 'Synthetic administrator' });
+  assert.equal(administrativeProfile?.can_edit, true);
+  assert.equal(administrativeProfile?.can_publish, role === 'professor');
+  assert.equal(isProfessorWorkspace(administrativeProfile), false, 'Existing editor roles keep the management dashboard');
+  assert.equal(parsePortalProfile({ authorized: true, role, can_edit: false, can_edit_catalog: true })?.can_edit, false, 'Explicit server denial wins over compatibility aliases');
+}
+assert.equal(parsePortalProfile({ is_researcher: true, role: 'doctor', can_edit_catalog: true })?.can_edit, true, 'Legacy server aliases remain accepted only when canonical flags are absent');
+assert.equal(parsePortalProfile({ authorized: true, role: 'professor', can_edit: false, can_publish: true })?.can_publish, false, 'Publishing requires edit permission');
+for (const language of ['en', 'fr', 'ro'] as const) {
+  const professorNavigation = getDashboardNavItems(false, language, true);
+  assert.deepEqual(professorNavigation.map(item => item.id), ['overview', 'specialists', 'students', 'analytics', 'map'], 'The professor portal keeps a short participant/statistics/map menu without the algorithm guide');
+  assert.equal(professorNavigation.find(item => item.id === 'analytics')?.label, { en: 'Statistics', fr: 'Statistiques', ro: 'Statistici' }[language], 'The professor menu uses a short statistics label in each language');
+  assert.equal(getDashboardNavItems(true, language, true).some(item => item.section === 'administration'), false, 'Professor workspace never exposes administrative destinations even with an inconsistent edit flag');
+  assert.equal(getDashboardNavItems(true, language, true).some(item => item.id === 'algorithm' || item.section === 'method'), false, 'Inconsistent edit flags cannot bring the algorithm guide back into the professor workspace');
+  assert.equal(getDashboardNavItems(true, language).some(item => item.id === 'algorithm'), true, 'The administrative portal retains its algorithm guide in every language');
+  for (const canEdit of [false, true]) {
+    const professorSidebar = DashboardSidebar({ activeView: 'overview', canEdit, professorWorkspace: true, lang: language, displayName: 'Synthetic professor', portalRole: 'researcher', onSelectView: () => undefined, onBack: () => undefined, onSignOut: () => undefined });
+    const professorButtons = elementPropsByType(professorSidebar, 'button').filter(button => button['data-dashboard-view'] !== undefined);
+    assert.deepEqual(professorButtons.map(button => button['data-dashboard-view']), ['overview', 'specialists', 'students', 'analytics', 'map'], 'The rendered professor menu has no hidden algorithm or administrative control');
+  }
+  const selectedViews: DashboardView[] = [];
+  const exports: string[] = [];
+  const overview = ProfessorOverview({ lang: language, counts: { students: 11, curious: 1, specialists: 2 }, loading: false, onSelectView: view => selectedViews.push(view), onOpenExports: view => exports.push(view) });
+  const stats = elementPropsByType(overview, 'dd');
+  assert.deepEqual(stats.map(stat => [stat['data-professor-count'], stat.children]), [['total', '14'], ['students', '11'], ['curious', '1'], ['specialists', '2']]);
+  const actions = elementPropsByType(overview, 'button');
+  for (const action of actions) (action.onClick as () => void)();
+  assert.deepEqual(selectedViews, ['students', 'specialists', 'map']);
+  assert.deepEqual(exports, ['students', 'specialists']);
+  const copy = PROFESSOR_PORTAL_COPY[language];
+  assert.ok(elementTextContent(overview).includes(copy.countsNotice), 'Overview distinguishes saved submissions from unique visitors');
+  assert.ok(elementTextContent(overview).includes(copy.exportSafety), 'Overview explains research export confidentiality');
+  const unavailable = ProfessorOverview({ lang: language, counts: null, loading: false, onSelectView: () => undefined, onOpenExports: () => undefined });
+  assert.ok(elementPropsByType(unavailable, 'dd').every(stat => stat.children === '—'), 'Unavailable counts are not misrepresented as zero');
+  const loading = ProfessorOverview({ lang: language, counts: { students: 11, curious: 1, specialists: 2 }, loading: true, onSelectView: () => undefined, onOpenExports: () => undefined });
+  assert.ok(elementPropsByType(loading, 'dd').every(stat => stat.children === '—'), 'Reloading overview does not show stale counts');
+}
 assert.deepEqual(
   readOnlyDashboardItems.map(({ id }) => id),
   ['specialists', 'students', 'analytics', 'algorithm', 'map'],
-  'Every authorized portal account must see both cohorts followed by the algorithm guide',
+  'The existing non-professor workspace must preserve both cohorts and the algorithm guide',
 );
 assert.deepEqual(
   readOnlyDashboardItems.map(({ section }) => section),
@@ -392,7 +443,7 @@ assert.equal(
 for (const cohortView of ['specialists', 'students'] as const) {
   assert.equal(isCohortView(cohortView), true, `${cohortView} must be recognized as a cohort view`);
 }
-for (const staticView of ['algorithm', 'map', 'configuration'] as const) {
+for (const staticView of ['overview', 'algorithm', 'map', 'configuration'] as const) {
   assert.equal(
     isCohortView(staticView),
     false,
@@ -1880,6 +1931,8 @@ console.log(JSON.stringify({
   multilingualSpecialtyNarratives: true,
   navigationScrollPolicy: true,
   dashboardSidebarNavigation: true,
+  professorWorkspaceRoleParsing: true,
+  professorOverviewNavigationAndCounts: true,
   dashboardPreviousViewHistory: true,
   algorithmExplanation: true,
   participantRoleSelection: true,

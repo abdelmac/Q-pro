@@ -1,0 +1,38 @@
+{
+  "date": "2026-10-10",
+  "languages": [
+    "en",
+    "ro",
+    "fr"
+  ],
+  "sourceRevision": "438cec22b3c92ee99772e263e18e38d4322fa0b4",
+  "sourceHashes": {
+    "src/data/questions.ts": "dc878123cfe41c3d193c4e1137e0331604a161f3a2208e2bbb2f7c86c40b197a",
+    "src/data/i18n.ts": "6b6c0003a2105bb9df1fb62dd807da98b28ab4a33a16bf20d68a50fd64526852",
+    "src/data/traits.ts": "6ba8bcff165711085c950202ba5e7477b5df09b48eb549f127dfec0f83506741",
+    "src/data/mapI18n.ts": "862b5f3168ce2e22dccf6133e8fbca3cd91b48ab6560d3e7d6e733c1bf1cceb5",
+    "src/lib/participantProfile.ts": "bd6ea7f5e7b1deb5424279ed4162e74ee8c823e74280dd8d0c83fcb056061660",
+    "src/App.tsx": "3e7adc32eedaf56219bd908454a9d95eecb800be6a168f873cede7e3258a536e",
+    "src/components/RoleSelection.tsx": "ffc0e926d890cc94ab81cc39734cdffd6fe6a4f888be9e263a6db74bbfe86ad9",
+    "src/components/ValuesStep.tsx": "788ac3bb128e27ea6bed4fd41a495b247aae10024707ddbaa097c405d27bc831",
+    "src/components/SpecialistPrompt.tsx": "81bc338c0a5a4496a8fd06b005ef0f901f3c7a6939e1e3aafb56fecfeb5b2455",
+    "src/components/ParticipantReflectionForm.tsx": "5cc92fd74cc717bbc4948a0363f41be768fa457f465b4bcc0cab9d983fef5fba",
+    "src/components/GeographyFields.tsx": "4eaa24a734cc701e7494f38c4a74fc1ce4c2412621de6d82c50cc9ef421fb230"
+  },
+  "ratingItemsPerLanguage": 81,
+  "ratingSections": 7,
+  "careerValueOptions": 14,
+  "appendixRows": 83,
+  "pdfPages": 28,
+  "pdfBytes": 484223,
+  "exactTextVerified": true,
+  "layoutOverflow": false,
+  "networkRequests": 0,
+  "docx": {
+    "path": "C:\\project\\Q titu student specialty project\\web\\Q-pro\\docs\\MedCompass-Questionnaire-EN-RO-FR-2026-10-10.docx",
+    "size": 22361,
+    "sha256": "55e2bebacb0604e75927afcf1b8d70caba1ea069b1dae113d688d576b8e911c1",
+    "zip_entries": 9,
+    "xml_parts": 9
+  }
+}

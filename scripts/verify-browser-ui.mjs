@@ -14,6 +14,7 @@ import { verifyBrowserMapAuthorization } from './browser-map-authorization.mjs';
 import { verifyBrowserBranding } from './browser-branding.mjs';
 import { verifyBrowserRomanianQuestions } from './browser-romanian-questions.mjs';
 import { verifyBrowserHomeNavigation } from './browser-home-navigation.mjs';
+import { verifyBrowserProfessorPortal } from './browser-professor-portal.mjs';
 
 const testDirectory = await mkdtemp(join(tmpdir(), 'q-pro-browser-tests-'));
 let server;
@@ -21,7 +22,7 @@ let browser;
 try {
   const fixtureModule = join(testDirectory, 'fixtures.mjs');
   await build({
-    stdin: { contents: `export { SPECIALTIES } from './src/data/specialties'; export { TRANSLATIONS, LANGUAGES, QUESTION_TRANSLATIONS } from './src/data/i18n'; export { MAP_TRANSLATIONS } from './src/data/mapI18n'; export { LOCAL_PROGRESS_COPY } from './src/data/localProgressI18n'; export { ALL_QUESTION_IDS, RATING_SECTIONS } from './src/data/questions';`, resolveDir: process.cwd(), loader: 'ts' },
+    stdin: { contents: `export { SPECIALTIES } from './src/data/specialties'; export { TRANSLATIONS, LANGUAGES, QUESTION_TRANSLATIONS } from './src/data/i18n'; export { MAP_TRANSLATIONS } from './src/data/mapI18n'; export { LOCAL_PROGRESS_COPY } from './src/data/localProgressI18n'; export { ALL_QUESTION_IDS, RATING_SECTIONS } from './src/data/questions'; export { DATA_VERSIONS } from './src/lib/researchVersions'; export { VALUE_OPTIONS } from './src/data/traits'; export { PROFESSOR_PORTAL_COPY } from './src/data/professorPortalI18n';`, resolveDir: process.cwd(), loader: 'ts' },
     outfile: fixtureModule, bundle: true, platform: 'node', format: 'esm', tsconfig: 'tsconfig.app.json', logLevel: 'silent',
   });
   const fixtureDefinitions = await import(pathToFileURL(fixtureModule).href);
@@ -102,10 +103,14 @@ try {
     await page.locator('header button').last().click();
     await page.getByRole('button', { name: `${language.flag} ${language.label}`, exact: true }).click();
   };
-  await page.goto('http://127.0.0.1:4179/', { waitUntil: 'networkidle' });
-  await verifyBrowserBranding({ page, fixtureDefinitions });
+  if (!process.argv.includes('--professor-only')) {
+    await page.goto('http://127.0.0.1:4179/', { waitUntil: 'networkidle' });
+    await verifyBrowserBranding({ page, fixtureDefinitions });
+  }
 
-  if (process.argv.includes('--branding-only')) {
+  if (process.argv.includes('--professor-only')) {
+    await verifyBrowserProfessorPortal({ browser, fixtureDefinitions, mapFixture, catalog });
+  } else if (process.argv.includes('--branding-only')) {
     assert.deepEqual(pageErrors, [], 'Branding-only checks have no browser runtime errors');
     assert.equal(requests.some(request => request.rpc.startsWith('submit_')), false, 'Branding-only checks do not submit research data');
     console.log('Branding-only browser checks passed. All backend endpoints were mocked; no production requests.');
@@ -230,6 +235,7 @@ try {
   await desktop.close();
   await verifyBrowserResearchFlows({ page, context, catalog, fixtureDefinitions, submissionMocks, requests });
   await verifyBrowserMapAuthorization({ context, fixtureDefinitions, mapFixture, catalog });
+  await verifyBrowserProfessorPortal({ browser, fixtureDefinitions, mapFixture, catalog });
   assert.deepEqual(pageErrors, []);
   console.log('Browser checks passed: responsive three-language public map, administrator-only filters, optional geography, memory-only questionnaire progress, targeted legacy cleanup, offline consent synchronization and payload-specific receipts. All research endpoints were mocked; no production submissions.');
   }
