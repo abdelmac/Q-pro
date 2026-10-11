@@ -6,6 +6,11 @@ const LOCAL_ORIGIN = 'http://127.0.0.1:4179';
 const SYNTHETIC_PASSWORD = 'Synthetic-fixture-only-not-a-real-password';
 const RESEARCH_USER_ID = 'b7611111-1111-4111-8111-111111111111';
 const OTHER_USER_ID = 'b7622222-2222-4222-8222-222222222222';
+const REMOVED_ACCESS_NOTICES = [
+  'You can read and download saved responses. Website settings are managed by the administrator.',
+  'Vous pouvez lire et télécharger les réponses enregistrées. Les réglages du site sont réservés à l’administrateur.',
+  'Puteți citi și descărca răspunsurile salvate. Setările site-ului sunt gestionate de administrator.',
+];
 
 function sessionFixture(id) {
   const now = Math.floor(Date.now() / 1000);
@@ -85,10 +90,10 @@ function filterRows(rows, search) {
 }
 
 /** Fresh contexts, no production sessions, only local GET assets and mocked APIs. */
-export async function verifyBrowserProfessorPortal({ browser, fixtureDefinitions, mapFixture, catalog, liveStaticSmoke = false, expectedMainAsset }) {
+export async function verifyBrowserProfessorPortal({ browser, fixtureDefinitions, catalog, liveStaticSmoke = false, expectedMainAsset }) {
   const origin = liveStaticSmoke ? 'https://www.medcompass-web.com' : LOCAL_ORIGIN;
   const screenshotPrefix = liveStaticSmoke ? 'professor-live' : 'professor';
-  const { TRANSLATIONS, LANGUAGES, MAP_TRANSLATIONS, PROFESSOR_PORTAL_COPY } = fixtureDefinitions;
+  const { TRANSLATIONS, LANGUAGES, PROFESSOR_PORTAL_COPY } = fixtureDefinitions;
   const fixtures = researchFixtures(fixtureDefinitions, catalog);
   await mkdir('browser-qa.local', { recursive: true });
 
@@ -153,10 +158,6 @@ export async function verifyBrowserProfessorPortal({ browser, fixtureDefinitions
         if (rpc === 'current_user_portal_profile') return reply(profile);
         if (rpc === 'get_portal_test_dataset' && profile.role !== 'researcher') return reply(null);
         if (rpc === 'get_public_feature_settings' && profile.role !== 'researcher') return reply({ public_map_enabled: false });
-        if (rpc === 'get_private_participation_map_stats') {
-          assert.ok(request.headers().authorization?.startsWith('Bearer '));
-          return reply(mapFixture(request.postDataJSON()));
-        }
         if (['student_responses', 'specialist_responses'].includes(rpc)) {
           assert.ok(['GET', 'HEAD'].includes(request.method()), 'The professor workspace never mutates submissions');
           assert.ok(request.headers().authorization?.startsWith('Bearer '));
@@ -196,6 +197,13 @@ export async function verifyBrowserProfessorPortal({ browser, fixtureDefinitions
         await page.waitForLoadState('networkidle');
       };
       const waitRows = count => page.waitForFunction(expected => document.querySelectorAll('tbody tr').length === expected, count);
+      const assertParticipantOnlyWorkspace = async () => {
+        assert.equal(await page.locator('[data-dashboard-view="algorithm"], [data-dashboard-view="analytics"], [data-dashboard-view="map"], [data-professor-action="map"], [data-algorithm-explanation], [data-research-analytics], [data-participation-map]').count(), 0, 'The professor workspace has no algorithm, statistics or map destination, card or content, including hidden markup');
+        assert.equal(await page.locator('[data-professor-access]').count(), 0, 'The professor research-access banner is removed, not merely hidden');
+        const content = await page.locator('body').textContent();
+        for (const notice of REMOVED_ACCESS_NOTICES) assert.equal(content.includes(notice), false, 'The removed access explanation is absent from rendered and hidden content in every language');
+        assert.equal(calls.some(call => /participation_map_stats$|research_cohort_summary|(?:list|save|delete|create|get)_research_/.test(call.rpc)), false, 'Professor navigation never requests map aggregates or research analytics');
+      };
       const signIn = async () => {
         await page.locator('input[type="email"]').fill(session.user.email);
         await page.locator('input[type="password"]').fill(currentPassword);
@@ -233,10 +241,10 @@ export async function verifyBrowserProfessorPortal({ browser, fixtureDefinitions
         assert.equal(calls.filter(call => ['student_responses', 'specialist_responses'].includes(call.rpc)).every(call => call.method === 'HEAD'), true, 'Overview reads counts, never loads raw participant answers');
         const menu = await sidebar();
         const destinations = await menu.locator('[data-dashboard-view]').evaluateAll(buttons => buttons.map(button => button.dataset.dashboardView));
-        assert.deepEqual(destinations, ['overview', 'specialists', 'students', 'analytics', 'map'], 'Professor navigation is restricted to the simple overview, participants, statistics and map menu');
-        assert.equal((await menu.locator('[data-dashboard-view="analytics"]').textContent()).trim(), { en: 'Statistics', fr: 'Statistiques', ro: 'Statistici' }[language]);
+        assert.deepEqual(destinations, ['overview', 'specialists', 'students'], 'Professor navigation contains only the overview and participant groups');
         assert.equal(destinations.some(view => ['algorithm', 'configuration', 'public-features'].includes(view)), false);
-        assert.equal(await page.locator('[data-dashboard-view="algorithm"], [data-algorithm-explanation]').count(), 0, 'The professor workspace has no algorithm destination or explanation, including hidden markup');
+        assert.deepEqual(await overview.locator('[data-professor-action]').evaluateAll(buttons => buttons.map(button => button.dataset.professorAction)), ['students', 'specialists'], 'Overview links only to the two participant groups');
+        await assertParticipantOnlyWorkspace();
         if (mobile) await menu.getByRole('button', { name: language === 'fr' ? 'Fermer le menu' : language === 'ro' ? 'Închide meniul' : 'Close menu', exact: true }).click();
         assert.equal(await page.locator('[data-public-map-toolbar], [data-public-features-settings], [data-portal-test-panel]').count(), 0);
         await noOverflow(`professor overview ${language}/${width}`);
@@ -271,32 +279,15 @@ export async function verifyBrowserProfessorPortal({ browser, fixtureDefinitions
         assert.equal(await page.locator('tbody tr').count(), 12, 'All eleven students plus the explorer are accessible by default, including seven legacy rows');
         assert.equal(await page.locator('[data-dashboard-version-summary]').textContent(), language === 'fr' ? 'Toutes les versions' : language === 'ro' ? 'Toate versiunile' : 'All versions');
         await noOverflow(`professor student table ${language}/${width}`);
-        await selectView('map');
-        const map = page.locator('[data-participation-map]');
-        await map.getByRole('button', { name: MAP_TRANSLATIONS[language].all, exact: true }).waitFor();
-        await map.getByRole('button', { name: /^(Romania|Roumanie|România) ≈ 35$/ }).waitFor();
-        assert.ok(calls.some(call => call.rpc === 'get_private_participation_map_stats'), 'Professor map uses authenticated private endpoint even while public map is hidden');
-        assert.equal(await page.locator('[data-public-features-settings]').count(), 0);
-        await noOverflow(`professor private map ${language}/${width}`);
-        await page.screenshot({ path: `browser-qa.local/${screenshotPrefix}-map-${language}-${width}.png`, fullPage: true });
+        await assertParticipantOnlyWorkspace();
+        await page.screenshot({ path: `browser-qa.local/${screenshotPrefix}-students-${language}-${width}.png`, fullPage: true });
+        await selectView('specialists');
+        await waitRows(2);
+        await assertParticipantOnlyWorkspace();
+        await noOverflow(`professor specialist table ${language}/${width}`);
+        await page.screenshot({ path: `browser-qa.local/${screenshotPrefix}-specialists-${language}-${width}.png`, fullPage: true });
 
         if (!liveStaticSmoke && language === 'en' && width === 1440) {
-          // Exercise all six administrator-grade private map filters.
-          const filters = map.locator('aside:visible');
-          await map.getByRole('button', { name: MAP_TRANSLATIONS.en.specialists, exact: true }).first().click();
-          await filters.getByLabel(MAP_TRANSLATIONS.en.country, { exact: true }).selectOption('RO');
-          await filters.getByLabel(MAP_TRANSLATIONS.en.language, { exact: true }).selectOption('ro');
-          await filters.getByLabel(MAP_TRANSLATIONS.en.monthFrom, { exact: true }).fill('2026-01');
-          await filters.getByLabel(MAP_TRANSLATIONS.en.monthTo, { exact: true }).fill('2026-08');
-          await filters.getByLabel(MAP_TRANSLATIONS.en.version, { exact: true }).selectOption('current');
-          await Promise.all([
-            page.waitForResponse(response => response.url().endsWith('/get_private_participation_map_stats') && response.request().postDataJSON().p_data_version === 'current'),
-            filters.getByRole('button', { name: MAP_TRANSLATIONS.en.applyFilters, exact: true }).click(),
-          ]);
-          assert.deepEqual(calls.filter(call => call.rpc === 'get_private_participation_map_stats').at(-1).args, {
-            p_respondent_type: 'specialist', p_country_code: 'RO', p_language: 'ro', p_month_from: '2026-01-01', p_month_to: '2026-08-01', p_data_version: 'current',
-          });
-
           await selectView('students');
           await page.getByLabel('Audience', { exact: true }).selectOption('student');
           await waitRows(11);
@@ -393,6 +384,7 @@ export async function verifyBrowserProfessorPortal({ browser, fixtureDefinitions
           await page.waitForLoadState('networkidle');
           assert.equal(await page.getByRole('dialog').count(), 0, 'Prior identity detail response stays discarded');
           await page.locator('[data-professor-overview]').waitFor();
+          await assertParticipantOnlyWorkspace();
 
           // Administrator permissions and landing defaults remain distinct.
           await signOut();
@@ -403,6 +395,8 @@ export async function verifyBrowserProfessorPortal({ browser, fixtureDefinitions
           assert.equal(await page.locator('#dashboard-sidebar-desktop [data-dashboard-view="configuration"]').count(), 1);
           assert.equal(await page.locator('#dashboard-sidebar-desktop [data-dashboard-view="public-features"]').count(), 1);
           assert.equal(await page.locator('#dashboard-sidebar-desktop [data-dashboard-view="algorithm"]').count(), 1, 'Administrators retain the algorithm tab');
+          assert.equal(await page.locator('#dashboard-sidebar-desktop [data-dashboard-view="analytics"]').count(), 1, 'Administrators retain the research analytics tab');
+          assert.equal(await page.locator('#dashboard-sidebar-desktop [data-dashboard-view="map"]').count(), 1, 'Administrators retain the participation map tab');
           assert.equal(await page.locator('[data-professor-overview]').count(), 0);
           await selectView('algorithm');
           await page.locator('[data-algorithm-explanation]').waitFor();
@@ -413,7 +407,7 @@ export async function verifyBrowserProfessorPortal({ browser, fixtureDefinitions
         assert.equal(calls.some(call => call.rpc.startsWith('submit_')), false, 'Professor verification never submits participant data');
         assert.equal(documentRequests, 1, 'The isolated verification session never reloads a questionnaire');
         if (liveStaticSmoke) console.log(`Blocked non-asset GET requests: ${JSON.stringify(blockedNonAssetGets)}. Only allowlisted static GETs reached the site.`);
-        console.log(`Professor portal ${language}/${width}: shared login, all-version records, private map, logout and layout passed.`);
+        console.log(`Professor portal ${language}/${width}: shared login, participant-only navigation, no map/statistics requests, all-version records, logout and layout passed.`);
       } catch (error) {
         console.error('Synthetic request summary:', calls.map(({ rpc, method, search }) => ({ rpc, method, search })));
         console.error(`Professor portal failure ${language}/${width}:`, await page.locator('body').innerText());

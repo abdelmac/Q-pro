@@ -97,7 +97,7 @@ export async function verifyBrowserMapAuthorization({ context, fixtureDefinition
     assert.ok(profileCalls >= 6, 'Dashboard and private-map access is verified by the server profile');
     assert.ok(mapCalls.some(args => args.p_respondent_type === 'specialist'));
     assert.deepEqual(errors, []);
-    console.log('Map authorization browser checks passed: no public filters for any role, fail-closed visibility, admin-only settings, authorized researcher private maps, logout clearing.');
+    console.log('Map authorization browser checks passed: no public filters for any role, fail-closed visibility, admin-only settings and private map navigation, professor participant-only navigation, logout clearing.');
   } finally {
     await page.close();
     await context.unroute(authPattern, authHandler);

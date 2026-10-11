@@ -354,15 +354,16 @@ assert.equal(parsePortalProfile({ is_researcher: true, role: 'doctor', can_edit_
 assert.equal(parsePortalProfile({ authorized: true, role: 'professor', can_edit: false, can_publish: true })?.can_publish, false, 'Publishing requires edit permission');
 for (const language of ['en', 'fr', 'ro'] as const) {
   const professorNavigation = getDashboardNavItems(false, language, true);
-  assert.deepEqual(professorNavigation.map(item => item.id), ['overview', 'specialists', 'students', 'analytics', 'map'], 'The professor portal keeps a short participant/statistics/map menu without the algorithm guide');
-  assert.equal(professorNavigation.find(item => item.id === 'analytics')?.label, { en: 'Statistics', fr: 'Statistiques', ro: 'Statistici' }[language], 'The professor menu uses a short statistics label in each language');
+  assert.deepEqual(professorNavigation.map(item => item.id), ['overview', 'specialists', 'students'], 'The professor portal only exposes its overview and participant groups');
   assert.equal(getDashboardNavItems(true, language, true).some(item => item.section === 'administration'), false, 'Professor workspace never exposes administrative destinations even with an inconsistent edit flag');
-  assert.equal(getDashboardNavItems(true, language, true).some(item => item.id === 'algorithm' || item.section === 'method'), false, 'Inconsistent edit flags cannot bring the algorithm guide back into the professor workspace');
-  assert.equal(getDashboardNavItems(true, language).some(item => item.id === 'algorithm'), true, 'The administrative portal retains its algorithm guide in every language');
+  assert.equal(getDashboardNavItems(true, language, true).some(item => ['algorithm', 'analytics', 'map'].includes(item.id) || item.section === 'method'), false, 'Inconsistent edit flags cannot expose algorithm, statistics or map tabs in the professor workspace');
+  for (const id of ['algorithm', 'analytics', 'map']) {
+    assert.equal(getDashboardNavItems(true, language).some(item => item.id === id), true, `The administrative portal retains ${id} in every language`);
+  }
   for (const canEdit of [false, true]) {
     const professorSidebar = DashboardSidebar({ activeView: 'overview', canEdit, professorWorkspace: true, lang: language, displayName: 'Synthetic professor', portalRole: 'researcher', onSelectView: () => undefined, onBack: () => undefined, onSignOut: () => undefined });
     const professorButtons = elementPropsByType(professorSidebar, 'button').filter(button => button['data-dashboard-view'] !== undefined);
-    assert.deepEqual(professorButtons.map(button => button['data-dashboard-view']), ['overview', 'specialists', 'students', 'analytics', 'map'], 'The rendered professor menu has no hidden algorithm or administrative control');
+    assert.deepEqual(professorButtons.map(button => button['data-dashboard-view']), ['overview', 'specialists', 'students'], 'The rendered professor menu has no hidden algorithm, statistics, map or administrative control');
   }
   const selectedViews: DashboardView[] = [];
   const exports: string[] = [];
@@ -371,7 +372,7 @@ for (const language of ['en', 'fr', 'ro'] as const) {
   assert.deepEqual(stats.map(stat => [stat['data-professor-count'], stat.children]), [['total', '14'], ['students', '11'], ['curious', '1'], ['specialists', '2']]);
   const actions = elementPropsByType(overview, 'button');
   for (const action of actions) (action.onClick as () => void)();
-  assert.deepEqual(selectedViews, ['students', 'specialists', 'map']);
+  assert.deepEqual(selectedViews, ['students', 'specialists'], 'Overview shortcuts cannot restore removed professor tabs');
   assert.deepEqual(exports, ['students', 'specialists']);
   const copy = PROFESSOR_PORTAL_COPY[language];
   assert.ok(elementTextContent(overview).includes(copy.countsNotice), 'Overview distinguishes saved submissions from unique visitors');
@@ -938,7 +939,11 @@ for (const language of ['en', 'ro', 'fr'] as const) {
 }
 const revisedQuestionWording = {
   en: {
-    P8: 'You are driven rather than laid-back.',
+    I2: 'You work well in a team.',
+    M3: 'You enjoy being an expert in your field.',
+    M7: 'You are performance-oriented.',
+    P8: 'You are motivated rather than relaxed.',
+    P10: 'You can handle failure with dignity.',
     P13: 'You remain calm in a crisis situation.',
     V9: 'You are comfortable with mortality.',
   },
@@ -948,16 +953,24 @@ const revisedQuestionWording = {
     V9: 'Sunteți confortabil cu mortalitatea.',
   },
   fr: {
-    P8: 'Vous êtes déterminé plutôt que détendu.',
+    W10: 'Vous êtes plutôt une personne d’action que de paroles.',
+    I2: 'Vous travaillez bien en équipe.',
+    I3: 'Vous vous sentez plein d’énergie lorsque vous interagissez avec les autres.',
+    M3: 'Vous aimez être un expert dans votre domaine.',
+    M9: 'Vous trouvez de la satisfaction à obtenir de petites améliorations.',
+    P8: 'Vous êtes motivé plutôt que détendu.',
+    P10: 'Vous pouvez faire face à l\'échec avec dignité.',
+    V4: 'Vous voulez vous occuper de tous les aspects de la médecine.',
     P13: 'Vous restez calme dans une situation de crise.',
     V9: 'Vous êtes à l\'aise avec la mortalité.',
   },
 };
-// Baselines captured before the approved P8/P13/V9 wording changes on 5 October 2026.
+// Baselines from 37f73fa4 (before the 11 October Romanian-reference alignment).
+// Exact approved revisions above are excluded; all other wording stays protected.
 const unchangedQuestionTranslations = {
-  en: '9c83036675836b589021e6094a9f3ba74d030045d915830e2e5ac83c9a2e92bd',
+  en: '3689d89e617d3e4c0e834dde7af3be4bc1183203b037512be4c13206876dfb65',
   ro: '35e8d416aecd32e9a250bc7e44ad126285ee21cc5a6fe076978decc48899b5fa',
-  fr: 'f258fa1dfbb29cc14b3fd61b6df7816b6db76463b6935113bbec7ba6aca53bc4',
+  fr: '3ea7fbe711a4bc6431896bb8af48c702e33a56652c3326fe2bd1f804d1e96dae',
 };
 for (const language of ['en', 'ro', 'fr'] as const) {
   for (const [id, text] of Object.entries(revisedQuestionWording[language])) {
@@ -966,10 +979,13 @@ for (const language of ['en', 'ro', 'fr'] as const) {
   }
   const unchangedQuestions = Object.fromEntries(Object.entries(QUESTION_TRANSLATIONS[language])
     .filter(([id]) => !(id in revisedQuestionWording[language])));
-  assert.equal(Object.keys(unchangedQuestions).length, 78);
+  assert.equal(Object.keys(unchangedQuestions).length, 81 - Object.keys(revisedQuestionWording[language]).length);
   assert.equal(createHash('sha256').update(JSON.stringify(unchangedQuestions)).digest('hex'),
-    unchangedQuestionTranslations[language], `The wording revision must leave the other 78 ${language} items unchanged`);
+    unchangedQuestionTranslations[language], `The wording revision must leave other ${language} items unchanged`);
 }
+assert.equal(createHash('sha256').update(JSON.stringify(QUESTION_TRANSLATIONS.ro)).digest('hex'),
+  '69054219a35f1aa5f9818ac82db459ae9d6d417b837b1933d23292be7743a628',
+  'All 81 Romanian reference questions must remain unchanged');
 for (const { id, text } of RATING_SECTIONS.flatMap((section) => section.questions)) {
   assert.equal(QUESTION_TRANSLATIONS.en[id], text,
     `${id} canonical English and localized English must use the same wording`);

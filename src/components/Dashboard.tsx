@@ -63,7 +63,6 @@ import {
   Menu,
   Microscope,
   RefreshCw,
-  ShieldCheck,
   Stethoscope,
   Users,
 } from 'lucide-react';
@@ -1169,8 +1168,6 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
   if (professorWorkspace) {
     viewCopy.students = { title: professorCopy.studentsCard, description: professorCopy.studentsDescription };
     viewCopy.specialists = { title: professorCopy.specialistsCard, description: professorCopy.specialistsDescription };
-    viewCopy.analytics = { title: professorCopy.analytics, description: professorCopy.analyticsDescription };
-    viewCopy.map = { title: professorCopy.mapCard, description: `${professorCopy.mapDescription} ${professorCopy.mapNotice}` };
   }
 
   const additionalExportButtons = <>
@@ -1316,10 +1313,6 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
         />}
         {canManageTestData && <PortalTestDataPanel lang={lang} manager={testManager} />}
         {error && <p className="mb-5 rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-700">{error}</p>}
-        {professorWorkspace && view === 'overview' && <div data-professor-access className="mb-5 flex items-start gap-3 rounded-2xl border border-brand-100 bg-brand-50 p-4 text-sm text-brand-900">
-          <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
-          <div><p className="font-semibold">{professorCopy.researchAccess}</p><p className="mt-1 text-xs leading-relaxed">{professorCopy.accessNotice}</p></div>
-        </div>}
         {!testBlocked && <>
 
         {view === 'overview' && professorWorkspace && <ProfessorOverview
@@ -1362,14 +1355,14 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
           />
         )}
 
-        {view === 'analytics' && <ResearchAnalytics testMode={testMode} refreshToken={mapRefreshKey} />}
+        {view === 'analytics' && !professorWorkspace && <ResearchAnalytics testMode={testMode} refreshToken={mapRefreshKey} />}
 
         {view === 'configuration' && testMode && <p data-test-configuration-locked className="rounded-xl border border-amber-300 bg-amber-50 p-5 text-sm text-amber-950">{testCopy.locked}</p>}
         {view === 'configuration' && portalProfile?.can_edit && !testMode && (
           <SpecialtyConfigurationEditor french={french} portalProfile={portalProfile} onPublished={() => void refreshCatalog()} />
         )}
 
-        {view === 'map' && portalProfile && (
+        {view === 'map' && !professorWorkspace && portalProfile && (
           <>
             <Suspense fallback={<div role="status" className="flex items-center gap-2 rounded-2xl bg-white p-6 text-sm text-brand-800"><Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />{MAP_TRANSLATIONS[lang].loading}</div>}>
               <ParticipationMap embedded onBack={goToPreviousDashboardPage} refreshKey={mapRefreshKey} testDataset={testMode ? testDataset ?? undefined : undefined} />

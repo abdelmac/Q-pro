@@ -158,9 +158,10 @@ export async function verifyBrowserDashboardMap({ context, page, fixtureDefiniti
       await page.getByRole('button', { name: 'Back', exact: true }).click();
     }
 
-    // A legitimate researcher can inspect the private map, but cannot edit public features.
+    // The professor/researcher workspace contains participant data, not the map or statistics.
     for (const mobile of [true, false]) {
       await page.setViewportSize({ width: mobile ? 375 : 1440, height: 900 });
+      const requestsBeforeResearcher = mapCalls.length;
       setProfile({ authorized: true, role: 'researcher', can_edit: false, can_publish: false });
       await signIn();
       await page.getByRole('button', { name: 'Dashboard', exact: true }).click();
@@ -168,20 +169,18 @@ export async function verifyBrowserDashboardMap({ context, page, fixtureDefiniti
       await page.waitForLoadState('networkidle');
       await noOverflow(`Researcher ${mobile ? 'mobile' : 'desktop'} cohort`);
       const sidebar = await openSidebar(mobile);
-      assert.deepEqual(await sidebar.locator('[data-dashboard-view]').evaluateAll(buttons => buttons.map(button => button.dataset.dashboardView)), ['overview', 'specialists', 'students', 'analytics', 'map']);
+      assert.deepEqual(await sidebar.locator('[data-dashboard-view]').evaluateAll(buttons => buttons.map(button => button.dataset.dashboardView)), ['overview', 'specialists', 'students']);
       assert.equal(await page.locator('[data-dashboard-view="public-features"]').count(), 0, 'Researchers cannot change public visibility');
       assert.equal(await page.locator('[data-public-map-toolbar]').count(), 0, 'Read-only researchers have no quick write action');
-      await sidebar.locator('[data-dashboard-view="map"]').click();
-      await map.getByRole('button', { name: copy.all, exact: true }).waitFor();
-      await map.getByRole('button', { name: /^Romania ≈ 35$/ }).waitFor();
-      const researcherSidebar = await openSidebar(mobile);
+      assert.equal(await page.locator('[data-dashboard-view="map"], [data-dashboard-view="analytics"], [data-professor-action="map"], [data-participation-map], [data-research-analytics]').count(), 0, 'The professor portal has no map or statistics destinations, cards or hidden content');
+      assert.equal(mapCalls.length, requestsBeforeResearcher, 'Entering the professor portal never queries participation aggregates');
       assert.equal(await page.locator('[data-public-features-settings]').count(), 0, 'Read-only researchers have no inline visibility control');
-      await researcherSidebar.getByRole('button', { name: 'Sign out', exact: true }).click();
+      await sidebar.getByRole('button', { name: 'Sign out', exact: true }).click();
       await page.getByRole('heading', { level: 1, name: 'Professor & admin sign in', exact: true }).waitFor();
       await page.getByRole('button', { name: 'Back', exact: true }).click();
     }
     setProfile({ authorized: false });
-    console.log('Dashboard map browser checks passed: authorized private routes, six filters, invalid dates/reset, applied-filter Refresh, tab history, sign-out, researcher access and settings exclusion.');
+    console.log('Dashboard map browser checks passed: administrator private routes, six filters, invalid dates/reset, applied-filter Refresh, tab history, sign-out, researcher map/statistics and settings exclusion.');
   } catch (error) {
     console.error('Dashboard map failure layout:', { viewport: page.viewportSize(), ...await page.evaluate(() => ({ innerWidth, innerHeight, scrollY, documentWidth: document.documentElement.scrollWidth })) });
     await page.screenshot({ path: 'browser-qa.local/dashboard-map-failure.png' });

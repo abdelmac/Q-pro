@@ -1,4 +1,4 @@
-import { ArrowRight, Download, Globe2, GraduationCap, ShieldCheck, Stethoscope } from 'lucide-react';
+import { ArrowRight, Download, GraduationCap, ShieldCheck, Stethoscope } from 'lucide-react';
 import type { Language } from '@/data/i18n';
 import { PROFESSOR_PORTAL_COPY } from '@/data/professorPortalI18n';
 import type { DashboardView } from '@/lib/dashboardNavigation';
@@ -17,7 +17,6 @@ export default function ProfessorOverview({ lang, counts, loading, onSelectView,
   const cards = [
     { view: 'students' as const, title: copy.studentsCard, description: copy.studentsDescription, icon: GraduationCap },
     { view: 'specialists' as const, title: copy.specialistsCard, description: copy.specialistsDescription, icon: Stethoscope },
-    { view: 'map' as const, title: copy.mapCard, description: copy.mapDescription, icon: Globe2 },
   ];
   const statistics = [
     { id: 'total', label: copy.total, count: counts ? counts.students + counts.curious + counts.specialists : null },
@@ -37,7 +36,7 @@ export default function ProfessorOverview({ lang, counts, loading, onSelectView,
       <p className="mt-3 text-xs leading-relaxed text-ink-500">{copy.countsNotice}</p>
     </div>
 
-    <div className="grid gap-4 xl:grid-cols-3">
+    <div className="grid gap-4 xl:grid-cols-2">
       {cards.map(({ view, title, description, icon: Icon }) => <button
         key={view} type="button" data-professor-action={view} onClick={() => onSelectView(view)}
         className="flex min-h-44 flex-col items-start rounded-2xl border border-ink-100 bg-white p-6 text-left shadow-soft transition hover:border-brand-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"

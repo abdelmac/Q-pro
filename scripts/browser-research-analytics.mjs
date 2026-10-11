@@ -81,7 +81,7 @@ export async function verifyBrowserResearchAnalytics({ context, page, fixtureDef
   const execute = () => panel.getByRole('button', { name: 'Run / refresh analysis', exact: true }).click();
   try {
     await page.setViewportSize({ width: 1440, height: 1000 });
-    setProfile({ authorized: true, role: 'researcher', can_edit: false, can_publish: false });
+    setProfile({ authorized: true, role: 'doctor', can_edit: true, can_publish: false });
     await signIn();
     await page.getByRole('button', { name: 'Dashboard', exact: true }).click();
     await selectView('analytics');

@@ -10,10 +10,7 @@ interface ProfessorPortalStrings {
   portalTitle: string;
   overview: string;
   overviewDescription: string;
-  analytics: string;
-  analyticsDescription: string;
   researchAccess: string;
-  accessNotice: string;
   countsNotice: string;
   total: string;
   students: string;
@@ -23,9 +20,6 @@ interface ProfessorPortalStrings {
   studentsDescription: string;
   specialistsCard: string;
   specialistsDescription: string;
-  mapCard: string;
-  mapDescription: string;
-  mapNotice: string;
   open: string;
   exportsTitle: string;
   exportsDescription: string;
@@ -46,20 +40,14 @@ export const PROFESSOR_PORTAL_COPY: Record<Language, ProfessorPortalStrings> = {
     unauthorized: 'This account is not authorized to access research data.',
     portalTitle: 'Professor portal',
     overview: 'Overview',
-    overviewDescription: 'Read responses, view the map or download data.',
-    analytics: 'Statistics',
-    analyticsDescription: 'Compare groups and explore questionnaire answers.',
+    overviewDescription: 'Read questionnaire responses and download data.',
     researchAccess: 'Research access',
-    accessNotice: 'You can read responses, download data and save analyses. Website settings are managed by the administrator.',
     countsNotice: 'Saved responses, not unique people. Unsaved questionnaires are not counted. All versions are included by default.',
     total: 'Saved submissions', students: 'Medical students', explorers: 'Medicine explorers', specialists: 'Specialists',
     studentsCard: 'Students & explorers',
     studentsDescription: 'Read answers, views of medicine and specialty preferences. Filter by participant type.',
     specialistsCard: 'Specialists',
     specialistsDescription: 'Read specialists’ experiences and answers, including those who skipped the questionnaire.',
-    mapCard: 'Participation map',
-    mapDescription: 'See where participants are from. Filter by group, country, language or date.',
-    mapNotice: 'Map counts protect privacy and may be delayed, so they can differ from response totals.',
     open: 'Open',
     exportsTitle: 'Download data',
     exportsDescription: 'Choose a group below, filter the responses, then download a CSV spreadsheet.',
@@ -77,20 +65,14 @@ export const PROFESSOR_PORTAL_COPY: Record<Language, ProfessorPortalStrings> = {
     unauthorized: 'Ce compte n’est pas autorisé à accéder aux données de recherche.',
     portalTitle: 'Portail du professeur',
     overview: 'Vue d’ensemble',
-    overviewDescription: 'Consultez les réponses, la carte ou téléchargez les données.',
-    analytics: 'Statistiques',
-    analyticsDescription: 'Comparez les groupes et explorez les réponses au questionnaire.',
+    overviewDescription: 'Consultez les réponses au questionnaire et téléchargez les données.',
     researchAccess: 'Accès recherche',
-    accessNotice: 'Vous pouvez lire les réponses, télécharger les données et enregistrer des analyses. Les réglages du site sont réservés à l’administrateur.',
     countsNotice: 'Réponses enregistrées, pas personnes uniques. Les questionnaires non enregistrés ne sont pas comptés. Toutes les versions sont incluses par défaut.',
     total: 'Contributions enregistrées', students: 'Étudiants en médecine', explorers: 'Explorateurs de la médecine', specialists: 'Spécialistes',
     studentsCard: 'Étudiants & explorateurs',
     studentsDescription: 'Lisez les réponses, les regards sur la médecine et les préférences de spécialité. Filtrez par public.',
     specialistsCard: 'Spécialistes',
     specialistsDescription: 'Lisez les expériences et les réponses des spécialistes, même s’ils n’ont pas rempli le questionnaire.',
-    mapCard: 'Carte de participation',
-    mapDescription: 'Découvrez d’où viennent les participants. Filtrez par public, pays, langue ou date.',
-    mapNotice: 'La carte protège la confidentialité et peut être mise à jour avec un délai : ses effectifs peuvent différer du total des réponses.',
     open: 'Ouvrir',
     exportsTitle: 'Télécharger les données',
     exportsDescription: 'Choisissez un groupe ci-dessous, filtrez les réponses, puis téléchargez un tableau CSV.',
@@ -108,20 +90,14 @@ export const PROFESSOR_PORTAL_COPY: Record<Language, ProfessorPortalStrings> = {
     unauthorized: 'Acest cont nu este autorizat să acceseze datele de cercetare.',
     portalTitle: 'Portalul profesorului',
     overview: 'Prezentare generală',
-    overviewDescription: 'Citiți răspunsurile, consultați harta sau descărcați datele.',
-    analytics: 'Statistici',
-    analyticsDescription: 'Comparați grupurile și explorați răspunsurile la chestionar.',
+    overviewDescription: 'Citiți răspunsurile la chestionar și descărcați datele.',
     researchAccess: 'Acces pentru cercetare',
-    accessNotice: 'Puteți citi răspunsurile, descărca datele și salva analize. Setările site-ului sunt gestionate de administrator.',
     countsNotice: 'Sunt numărate răspunsurile salvate, nu persoanele unice. Chestionarele nesalvate nu sunt incluse. Toate versiunile sunt incluse implicit.',
     total: 'Contribuții salvate', students: 'Studenți la medicină', explorers: 'Persoane care explorează medicina', specialists: 'Specialiști',
     studentsCard: 'Studenți și exploratori',
     studentsDescription: 'Citiți răspunsurile, opiniile despre medicină și preferințele de specialitate. Filtrați după tipul participantului.',
     specialistsCard: 'Specialiști',
     specialistsDescription: 'Citiți experiențele și răspunsurile specialiștilor, inclusiv ale celor care au omis chestionarul.',
-    mapCard: 'Harta participării',
-    mapDescription: 'Vedeți de unde provin participanții. Filtrați după grup, țară, limbă sau dată.',
-    mapNotice: 'Harta protejează confidențialitatea și poate fi actualizată cu întârziere, astfel că numerele pot diferi de totalul răspunsurilor.',
     open: 'Deschideți',
     exportsTitle: 'Descărcați datele',
     exportsDescription: 'Alegeți un grup de mai jos, filtrați răspunsurile, apoi descărcați un tabel CSV.',

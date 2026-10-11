@@ -73,29 +73,26 @@ export function getDashboardNavItems(canEdit: boolean, lang: Language, professor
       section: 'data',
       icon: GraduationCap,
     },
-    {
-      id: 'analytics',
-      label: professorWorkspace ? PROFESSOR_PORTAL_COPY[lang].analytics : lang === 'fr' ? 'Analyses de recherche' : lang === 'ro' ? 'Analize de cercetare' : 'Research analyses',
-      section: 'data',
-      icon: BarChart3,
-    },
   ];
 
   if (!professorWorkspace) {
     items.push({
+      id: 'analytics',
+      label: lang === 'fr' ? 'Analyses de recherche' : lang === 'ro' ? 'Analize de cercetare' : 'Research analyses',
+      section: 'data',
+      icon: BarChart3,
+    }, {
       id: 'algorithm',
       label: lang === 'fr' ? 'Comprendre l’algorithme' : lang === 'ro' ? 'Cum funcționează algoritmul' : 'How the algorithm works',
       section: 'method',
       icon: GitCompare,
-    });
-  }
-
-  items.push({
+    }, {
       id: 'map',
       label: lang === 'fr' ? 'Carte de participation' : lang === 'ro' ? 'Harta participării' : 'Participation map',
       section: 'data',
       icon: Globe2,
-  });
+    });
+  }
   if (professorWorkspace) {
     items.unshift({
       id: 'overview',
