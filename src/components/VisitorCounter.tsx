@@ -35,18 +35,12 @@ export default function VisitorCounter() {
           {status === 'ready' && count ? new Intl.NumberFormat(locale).format(count.total) : '—'}
         </span>
       </div>
-      {status === 'ready' && count ? <p className="mt-2 text-xs text-ink-500">
-        {copy.since} <time dateTime={count.started_at}>{new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeZone: 'Europe/Paris' }).format(new Date(count.started_at))}</time>
-      </p> : <div className="mt-1 flex flex-wrap items-center justify-center gap-x-2 text-xs text-ink-500">
+      {status !== 'ready' && <div className="mt-1 flex flex-wrap items-center justify-center gap-x-2 text-xs text-ink-500">
         <span role="status">{status === 'error' ? copy.unavailable : copy.loading}</span>
         {status === 'error' && <button data-visitor-retry type="button" onClick={() => setAttempt(value => value + 1)} className="min-h-11 rounded-lg px-2 font-semibold text-brand-700 underline underline-offset-2 hover:text-brand-900 focus-visible:ring-2 focus-visible:ring-brand-500">
           {copy.retry}
         </button>}
       </div>}
-      <details className="mt-1 text-xs text-ink-500">
-        <summary className="mx-auto w-fit cursor-pointer rounded-lg px-2 py-3 underline decoration-ink-200 underline-offset-2 focus-visible:ring-2 focus-visible:ring-brand-500">{copy.details}</summary>
-        <p className="mt-1 rounded-xl border border-ink-100 bg-white p-4 text-left leading-relaxed">{copy.explanation}</p>
-      </details>
     </section>
   );
 }

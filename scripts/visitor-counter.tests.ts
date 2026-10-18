@@ -166,10 +166,9 @@ assert.equal(VISITOR_COUNTER_COPY.en.label, 'Recorded visits');
 assert.equal(VISITOR_COUNTER_COPY.fr.label, 'Visites enregistrées');
 assert.equal(VISITOR_COUNTER_COPY.ro.label, 'Vizite înregistrate');
 for (const copy of Object.values(VISITOR_COUNTER_COPY)) {
-  assert.ok(copy.explanation.includes('24'));
-  assert.ok(copy.explanation.includes('Do Not Track'));
-  assert.ok(copy.explanation.includes('Global Privacy Control'));
-  assert.ok(copy.since && copy.unavailable && copy.retry && copy.loading);
+  assert.deepEqual(Object.keys(copy).sort(), ['label', 'loading', 'retry', 'unavailable'],
+    'Only the counter label and operational states remain; date and explanatory copy are removed in every language');
+  assert.ok(copy.label && copy.unavailable && copy.retry && copy.loading);
 }
 
 console.log(JSON.stringify({ visitorCounter: 'passed', productionOnly: true, privacySignals: true, strictModeDeduplication: true, refreshDeduplication: true, sessionLifetimeHours: 24, memoryFallback: true, malformedRepliesRejected: true, retryIdempotency: true, finiteTimeout: true, noQuestionnaireStorage: true, languages: ['en', 'fr', 'ro'] }));

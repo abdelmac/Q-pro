@@ -114,7 +114,7 @@ export async function verifyBrowserVisitorCounter({ browser, fixtureDefinitions,
     assert.ok(dimensions.scroll <= dimensions.width + 1, `${label}: no horizontal overflow ${JSON.stringify(dimensions)}`);
   }
 
-  // Full localized component, expandable explanation, role choice and back navigation.
+  // Ready state contains only the localized label and number; navigation remains intact.
   for (const width of [320, 375, 1440]) {
     const fixture = await openFixture({ width });
     const { page } = fixture;
@@ -123,21 +123,20 @@ export async function verifyBrowserVisitorCounter({ browser, fixtureDefinitions,
       const copy = VISITOR_COUNTER_COPY[language.code];
       await chooseLanguage(page, language);
       await expectCount(page, 12346, language.code);
-      assert.equal(await page.locator('[data-visitor-counter]').getAttribute('aria-label'), copy.label);
-      assert.equal(await page.locator('[data-visitor-counter] time').getAttribute('datetime'), startedAt);
-      assert.equal(await page.locator('[data-visitor-counter] time').innerText(), new Intl.DateTimeFormat(locale[language.code], { dateStyle: 'medium', timeZone: 'Europe/Paris' }).format(new Date(startedAt)));
-      assert.equal(await page.locator('[data-visitor-counter] details').getAttribute('open'), null, 'Detailed counting explanation is collapsed initially');
-      await page.locator('[data-visitor-counter] summary').click();
-      await page.getByText(copy.explanation, { exact: true }).waitFor();
-      await noOverflow(page, `Counter ${language.code} ${width}px expanded`);
-      await page.locator('[data-visitor-counter] summary').click();
+      const counter = page.locator('[data-visitor-counter]');
+      assert.equal(await counter.getAttribute('aria-label'), copy.label);
+      assert.equal(await counter.locator('time, details, summary, p, button').count(), 0,
+        'The ready counter contains no date, explanation, disclosure or extra control, including hidden markup');
+      const displayed = (await counter.textContent()).replace(/\s+/gu, '');
+      const expected = `${copy.label}${new Intl.NumberFormat(locale[language.code]).format(12346)}`.replace(/\s+/gu, '');
+      assert.equal(displayed, expected, 'The ready counter displays only its translated label and number');
       assert.deepEqual(await page.locator('[data-participant-role]').evaluateAll(elements => elements.map(element => element.dataset.participantRole)), ['curious', 'student', 'specialist']);
       await page.locator('[data-participant-role="student"]').click();
       await page.getByRole('button', { name: TRANSLATIONS[language.code].startButton, exact: true }).waitFor();
       await page.locator('[data-navigation-back]').click();
       await expectCount(page, 12346, language.code);
       assert.equal(fixture.writeRequests().length, 1, 'Language changes and returning home reuse one registration');
-      await noOverflow(page, `Counter ${language.code} ${width}px collapsed`);
+      await noOverflow(page, `Counter ${language.code} ${width}px`);
       if (language.code === 'fr' || (language.code === 'en' && width === 375)) {
         await page.screenshot({ path: `browser-qa.local/visitor-counter-${language.code}-${width}.png`, fullPage: true, animations: 'disabled' });
       }
@@ -241,5 +240,5 @@ export async function verifyBrowserVisitorCounter({ browser, fixtureDefinitions,
   assert.equal(retry.writeRequests()[0].args.p_visit_id, retry.writeRequests()[1].args.p_visit_id, 'Retry does not generate another visit identity');
   await retry.close();
 
-  console.log(`Visitor counter browser checks passed (${completedCases} isolated contexts): EN/RO/FR at 320/375/1440px; anonymous registration/reload deduplication; privacy and automation opt-outs; storage restrictions; expiry; loading, malformed responses, failures and retries; no questionnaire submissions or live backend requests.`);
+  console.log(`Visitor counter browser checks passed (${completedCases} isolated contexts): label and number only, no date or details, EN/RO/FR at 320/375/1440px; anonymous registration/reload deduplication; privacy and automation opt-outs; storage restrictions; expiry; loading, malformed responses, failures and retries; no questionnaire submissions or live backend requests.`);
 }
