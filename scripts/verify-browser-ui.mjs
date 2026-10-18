@@ -83,6 +83,7 @@ try {
     const rpc = url.pathname.split('/').at(-1);
     const args = route.request().postDataJSON() ?? {};
     requests.push({ rpc, args });
+    if (rpc === 'get_site_visit_count') return route.fulfill({ json: { total: 12345, started_at: '2026-10-18T00:00:00Z' } });
     if (rpc === 'get_public_features') return route.fulfill({ json: { public_map_enabled: true }, headers: { 'Cache-Control': 'no-store' } });
     if (rpc === 'get_participation_map_stats') return route.fulfill({ json: mapFixture(args) });
     if (rpc === 'get_active_specialty_catalog') return route.fulfill({ json: catalog });

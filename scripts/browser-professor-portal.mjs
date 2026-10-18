@@ -154,6 +154,7 @@ export async function verifyBrowserProfessorPortal({ browser, fixtureDefinitions
         }
         if (url.pathname === '/auth/v1/logout') return route.fulfill({ status: 204, body: '' });
         if (rpc === 'get_public_features') return reply({ public_map_enabled: false });
+        if (rpc === 'get_site_visit_count') return reply({ total: 12345, started_at: '2026-10-18T00:00:00Z' });
         if (rpc === 'get_active_specialty_catalog') return reply(catalog);
         if (rpc === 'current_user_portal_profile') return reply(profile);
         if (rpc === 'get_portal_test_dataset' && profile.role !== 'researcher') return reply(null);

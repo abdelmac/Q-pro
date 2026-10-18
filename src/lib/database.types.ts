@@ -211,6 +211,8 @@ export type Database = {
         Returns: string
       }
       get_public_features: { Args: never; Returns: Json }
+      get_site_visit_count: { Args: never; Returns: Json }
+      register_site_visit: { Args: { p_visit_id: string }; Returns: Json }
       set_public_map_enabled: { Args: { p_enabled: boolean }; Returns: Json }
       get_private_participation_map_stats: {
         Args: { p_respondent_type?: string; p_country_code?: string | null; p_language?: string; p_month_from?: string | null; p_month_to?: string | null; p_data_version?: string }

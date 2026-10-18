@@ -16,6 +16,8 @@
     "test:map": "node scripts/verify-participation-map.mjs",
     "test:portal-data": "node scripts/verify-portal-test-data.mjs",
     "test:browser": "node scripts/verify-browser-ui.mjs",
+    "test:visitors": "node scripts/verify-visitor-counter.mjs",
+    "test:visitors:browser": "node scripts/verify-visitor-counter-browser.mjs",
     "test:pwa": "node scripts/verify-pwa.mjs",
     "research:export": "node scripts/research-operator.mjs",
     "test:research-operator": "node scripts/research-operator.tests.mjs",

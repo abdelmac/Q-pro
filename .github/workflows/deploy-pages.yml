@@ -36,6 +36,7 @@ jobs:
         run: |
           npm run test:dashboard
           npm run test:research-operator
+          npm run test:visitors
 
       - name: Validate multilingual specialty content
         run: npm run test:specialty-content
@@ -55,7 +56,9 @@ jobs:
           # Synthetic host: every request is intercepted by the browser suite.
           VITE_SUPABASE_URL: https://browser-fixture.supabase.co
           VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_browser_fixture
-        run: npm run test:browser
+        run: |
+          npm run test:browser
+          npm run test:visitors:browser
 
       - name: Check offline shell and private cache isolation
         run: npm run test:pwa

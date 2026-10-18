@@ -1,9 +1,11 @@
 import { ArrowRight, Compass, Globe2, GraduationCap, Heart, Stethoscope } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { useLanguage } from '@/lib/LanguageContext';
 import type { ParticipantRole } from '@/lib/participantProfile';
 import LanguageSwitcher from './LanguageSwitcher';
 import BrandLogo from './BrandLogo';
 import PageHomeButton from './PageHomeButton';
+import VisitorCounter from './VisitorCounter';
 
 export interface RoleSelectionCopy {
   appName: string;
@@ -31,9 +33,10 @@ interface RoleSelectionViewProps {
   onSelectRole: (role: ParticipantRole) => void;
   onOpenCredits: () => void;
   onOpenWorldMap?: () => void;
+  visitorCounter?: ReactNode;
 }
 
-export function RoleSelectionView({ copy, onSelectRole, onOpenCredits, onOpenWorldMap }: RoleSelectionViewProps) {
+export function RoleSelectionView({ copy, onSelectRole, onOpenCredits, onOpenWorldMap, visitorCounter }: RoleSelectionViewProps) {
   const choices = [
     {
       role: 'curious' as const,
@@ -78,6 +81,7 @@ export function RoleSelectionView({ copy, onSelectRole, onOpenCredits, onOpenWor
           </h1>
           <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-ink-600">{copy.audience}</p>
           <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-ink-600">{copy.perspective}</p>
+          {visitorCounter}
         </div>
         <fieldset className="w-full max-w-5xl text-center">
           <legend className="w-full font-display text-xl font-semibold tracking-tight text-ink-900 sm:text-2xl">
@@ -128,7 +132,7 @@ export function RoleSelectionView({ copy, onSelectRole, onOpenCredits, onOpenWor
   );
 }
 
-export default function RoleSelection({ onSelectRole, onOpenCredits, onOpenWorldMap }: Omit<RoleSelectionViewProps, 'copy'>) {
+export default function RoleSelection({ onSelectRole, onOpenCredits, onOpenWorldMap }: Omit<RoleSelectionViewProps, 'copy' | 'visitorCounter'>) {
   const { t } = useLanguage();
 
   return (
@@ -136,6 +140,7 @@ export default function RoleSelection({ onSelectRole, onOpenCredits, onOpenWorld
       onSelectRole={onSelectRole}
       onOpenCredits={onOpenCredits}
       onOpenWorldMap={onOpenWorldMap}
+      visitorCounter={<VisitorCounter />}
       copy={{
         appName: t.appName,
         title: t.roleSelectionTitle,
