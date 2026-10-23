@@ -202,6 +202,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      community_status: { Args: never; Returns: Json }
+      community_profile: { Args: never; Returns: Json }
+      community_save_profile: { Args: { p_role: string; p_specialty: string | null; p_country_code: string | null; p_map_consent: boolean; p_terms_version: string }; Returns: Json }
+      community_list_comments: { Args: { p_after?: string | null; p_limit?: number; p_specialty?: string | null }; Returns: Json }
+      community_my_comments: { Args: never; Returns: Json }
+      community_submit_comment: { Args: { p_id: string; p_body: string; p_language: string; p_consent: boolean; p_consent_version: string }; Returns: Json }
+      community_withdraw_comment: { Args: { p_id: string }; Returns: boolean }
+      community_withdraw_map_consent: { Args: never; Returns: boolean }
+      community_report_comment: { Args: { p_id: string; p_reason: string }; Returns: boolean }
+      community_admin_members: { Args: { p_after?: string | null; p_limit?: number }; Returns: Json }
+      community_admin_review_member: { Args: { p_id: string; p_verified: boolean; p_suspended: boolean; p_note: string }; Returns: boolean }
+      community_admin_comments: { Args: { p_after?: string | null; p_limit?: number; p_status?: string }; Returns: Json }
+      community_admin_review_comment: { Args: { p_id: string; p_approve: boolean; p_note: string }; Returns: boolean }
+      community_map: { Args: never; Returns: Json }
       submit_student_response_v7: {
         Args: Database['public']['Functions']['submit_student_response_v6']['Args'] & { p_scoring_context: Json }
         Returns: string

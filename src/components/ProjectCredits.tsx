@@ -26,7 +26,7 @@ export default function ProjectCredits({ onBack, onHome }: { onBack: () => void;
           <h2 id="credits-creators-title" className="font-display text-xl font-semibold text-ink-900">{t.creditsCreatorsTitle}</h2>
           <ul className="mt-4 grid gap-4 sm:grid-cols-2">
             <li className="min-w-0 rounded-2xl border border-brand-100 bg-white p-6">
-              <h3 className="font-display text-xl font-semibold leading-snug text-ink-900">Dr Andrei Cristian Bondar</h3>
+              <h3 className="font-display text-xl font-semibold leading-snug text-ink-900">Dr Andrei Cristian Bondar — Psychiatry MD, PhD</h3>
               <p className="mt-2 text-sm leading-relaxed text-ink-500">{t.creditsBondarAffiliation}</p>
               <a
                 href="https://evenimente-arpp.ro/speaker/sef-lucrari-univ-dr-andrei-cristian-bondar/"

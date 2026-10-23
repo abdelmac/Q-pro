@@ -14,6 +14,8 @@ export const APP_PHASES = [
   'comparison',
   'credits',
   'participation-map',
+  'account',
+  'community',
 ] as const;
 
 export type AppPhase = (typeof APP_PHASES)[number];

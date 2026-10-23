@@ -307,6 +307,79 @@ Include an explicit, encrypted inventory of scheduled jobs: name, schedule, comm
 - **Scoring/configuration:** select or publish an authorized, audited version through the established catalog workflow. Do not rewrite the historical model attached to already accepted submissions. Analysis runs are descriptive and cannot promote themselves.
 - **Mobile:** halt a problematic rollout and distribute an owner-signed corrective version; do not assume store installations instantly revert when the website rolls back.
 
+## Community accounts and specialist perspectives
+
+Prepared locally on **21 October 2026**. This is not a production release: the live website, Auth configuration, subscriptions and production database have not been changed for this feature. Chat is deliberately deferred. The owner is considering a higher monthly budget but has not approved any paid upgrade.
+
+### Access and data separation
+
+- Guests keep the questionnaire and specialty explorer. The new Specialist perspectives tab requires a confirmed email, a current Auth session and an active community profile.
+- Community membership is not staff access. Selecting Specialist physician does not grant verification or dashboard permissions. Only existing doctor/professor administrators may verify members and moderate messages; the research-only professor account has no moderation tab or RPC permission.
+- Each new message needs explicit publication consent, professional verification and independent message approval. Other members see only specialty, text, language and the message identifier. Administrators retain account/email attribution. No old questionnaire narrative is copied or automatically published.
+- Authors can withdraw messages and remove country/map consent even during community suspension or a server-side community shutdown. Withdrawal stops future API publication; it cannot erase another person's screenshot or an already downloaded page. Account deletion and retention requests need an operator procedure before launch; there is no self-service account deletion button in this release.
+- Questionnaire drafts remain in memory. Sign-in sessions can persist on the device until sign-out. Community messages and moderation data are never put in the research offline queue or service-worker/HTTP cache.
+
+Migration `20261021155950_community_members_and_moderated_comments.sql` creates a separate `community` schema with `settings`, `members`, `comments`, `reports` and `audit`. Existing research tables are unchanged and have no new Auth foreign key. RLS is enabled, direct table access is revoked, and public invoker RPCs call restricted definer functions with an empty search path. Those functions check confirmed, non-anonymous, non-banned users against a live `auth.sessions` row and existing staff roles. Do not add `community` to the API's exposed schemas or grant broad private-schema access.
+
+Feeds/moderation use bounded UUID-cursor pages. Submission IDs are idempotent; account row locks serialize submission/moderation changes. Per-member submission limits are 5 per rolling 24 hours, 20 pending/approved and 100 lifetime; reports are limited to 20 and changed profiles to 30 per rolling 24 hours. No-op saves and country opt-out remain available after the profile cap. The audit log records decisions, not automatically copied comment bodies. These application limits complement, rather than replace, Auth rate limits and operational abuse monitoring.
+
+Country sharing is optional and has a separate consent. It is a separate layer on the public map, never added to research participant totals. Both the existing public-map switch and community server switch must be on. Only country groups of at least 10 consenting eligible members appear, rounded down to multiples of 5; there are no person pins, precise locations, filters or exact overall total. Repeated live snapshots can still be differenced: this is suppression/rounding, not differential privacy or an absolute anonymity guarantee. Reassess before collecting more detailed geography.
+
+### Set up confirmation and recovery email
+
+Recommended starting provider: **Resend Free**. Its current transactional allowance is 3,000 emails/month with a 100/day limit; monitor both and keep optional overages disabled until spending is authorized. Confirm current limits before launch. [Resend pricing](https://resend.com/pricing).
+
+1. Create the provider account yourself and secure it with MFA. In Resend, add **`auth.medcompass-web.com`** as the sending domain; the `auth` subdomain is a proposal for isolated account email, not an existing verified service.
+2. In **Cloudflare → medcompass-web.com → DNS**, add only the exact domain-verification/sending records that Resend provides. Preserve the website's apex/`www` records and existing mail records. Do not invent DNS values, replace nameservers, or add a second conflicting SPF policy. Wait for Resend to show Verified. Keep open/click tracking disabled for account emails. [Verified domains and subdomains](https://resend.com/docs/dashboard/domains/introduction).
+3. Create a restricted sending API key for that domain if the provider supports it. Enter it **directly in Supabase's server-side SMTP settings**, not in chat, Git, CI logs, the browser or any `VITE_` variable. Store a recovery copy in the owner's password manager.
+4. Configure the following in **Supabase → Authentication → Email/SMTP settings**. [Official Resend SMTP integration](https://resend.com/docs/send-with-supabase-smtp).
+
+| Setting | Value |
+| --- | --- |
+| Host | `smtp.resend.com` |
+| Port | `465` |
+| Username | `resend` |
+| Password | The private Resend sending key, entered directly |
+| Sender name | `MedCompass` |
+| Sender email | `noreply@auth.medcompass-web.com`, only after domain verification |
+
+The sender is not automatically a monitored support inbox. Choose and publish a real support/privacy contact before registration opens. Supabase's built-in email service is for testing and only sends to authorized project-team addresses; it is not the public-signup fallback. [Supabase SMTP requirements](https://supabase.com/docs/guides/auth/auth-smtp).
+
+### Production launch checklist
+
+Do not run a whole-project `supabase config push` using the repository's old local/example settings. Review each hosted Auth setting deliberately.
+
+1. Complete an encrypted, recoverable production backup and isolated restore check using the procedure above. This release has no broad backup waiver.
+2. Review consent translations, age/minor participation, lawful basis, retention, verified deletion requests, specialist verification evidence and moderation ownership. App users must have a reachable support/privacy contact. Do not collect patient documents as verification evidence.
+3. Configure and test SMTP and the exact production callback URLs. Proposed Site URL is `https://medcompass-web.com/`. The app generates `https://medcompass-web.com/?community=account` for confirmation and the same URL with `&recovery=1` for recovery. Review exact corresponding `www` URLs only if that origin remains supported, or first configure a reviewed canonical redirect. Never allow arbitrary preview hosts. Templates must preserve the requested redirect; verify the actual received email, not just a dashboard success message. [Supabase redirect configuration](https://supabase.com/docs/guides/auth/redirect-urls).
+4. Keep email confirmation required and anonymous Auth disabled. Configure a server password minimum of 12 characters with uppercase, lowercase and number requirements; the UI additionally caps entry at 128 characters. Configure appropriate sending/auth limits and alerts. Review bot protection before public signup: enabling Supabase CAPTCHA without implementing token collection on **all** affected login/signup/recovery forms would break them. The current release does not implement CAPTCHA.
+5. Apply only the reviewed additive migration using the normal migration runner after confirming project identity/history. Inspect schema/advisors and test anonymous/member/researcher/admin permissions. The migration leaves `community.settings.enabled=false` and does not open Auth signup.
+6. Build a reviewed web release with `VITE_COMMUNITY_ENABLED=true`; `.env.example` defaults to false. Initially keep the server gate false. Test existing administrator access and moderated-account setup. No private message data should ever appear for a guest or in a static build artifact.
+7. With owner approval, enable the singleton community setting using a controlled database-owner operation and open Supabase email signup. Test a designated new account through real email confirmation, login, recovery, sign-out, profile editing, specialist verification, separate approval, reporting and withdrawals. Check actual delivery to the owner's chosen test mailboxes; do not sign up unrelated people. Recheck guests and the read-only professor dashboard.
+8. Review production health, delivery failures, reports and limits after release. Record the deployed version, schema version, current plan, moderators, backup point and restore evidence here. Native deep links and device email round-trips need separate testing; a web release is not a verified native account release.
+
+Emergency shutdown: set `community.settings.enabled=false` to block new profiles, member feeds/submissions and public country aggregates; separately disable hosted Auth signup to stop new Auth accounts. Existing owners retain their account page, own-message withdrawal and country opt-out while the frontend feature remains available. Reverting to a build with the entire feature off removes these self-service controls, so arrange an alternative support route first. Preserve research/admin access and audit history; do not drop the schema or delete accounts as a shutdown shortcut.
+
+### Local verification on 21 October 2026
+
+The isolated retained Supabase stack is `.local/docker-verification` (`q-pro-verify-20260925`, API 55321, database 55322). The new schema was applied there without changing migration history or resetting the stack. Production is not a test target.
+
+- **812 database assertions passed** across nine suites: 567 existing and 245 community. Every SQL suite rolls its fixtures back. Community SQL lint is clean; advisors still report the pre-existing mutable-search-path warning on `private.filtered_research_responses`, not a new community finding.
+- **34 actual local Auth/HTTP checks passed** in `supabase/tests/community-http.mjs`: 24 concurrent identical submissions produced one row; 12 additional distinct submissions accepted only the four remaining daily slots; eight report retries produced one report. A real JWT lost community access immediately after its session was revoked. Direct schema access, identity projection, response cache headers and withdrawals were verified.
+- **123 synthetic contract assertions passed** with `npm run test:community`, covering payload validation, field projection, limits, errors/cancellation, navigation authorization and callback URLs.
+- **29 synthetic production-build browser scenarios passed** with `npm run test:community:browser`, including EN/FR/RO mobile/desktop layouts, guest access, confirmation/recovery, consent, moderation, account-switch races, shutdown/suspension withdrawal rights and failed-sign-out recovery. Every Auth/research/visitor request was intercepted; no real emails, accounts, visits or responses were created by browser tests.
+- Lint, TypeScript, hosted build, dashboard/map/visitor unit regressions, hosting checks, PWA checks and the full existing `npm run test:browser` regression passed. The latter includes the memory-only questionnaire, all 81 formal Romanian questions, research submission retry/consent, test-dataset isolation and EN/FR/RO participant-only professor portal. The build retains the existing large-main-chunk warning. The hosted Supabase runtime probe could not complete its initial request because this environment denied network access; this is not evidence of a production service failure or a passed live check.
+
+The three exact synthetic Auth accounts used by the local HTTP harness were removed afterward. Local community members/comments/reports/audit returned to empty and the server gate to false. The local stack was left running; no unrelated containers were changed. The final migration SHA-256 is `8c1142bef3e593fabac8bc820815aeae1fdec0495eebf1440d8f53f3e3eb91b9`.
+
+For repeat HTTP checks, pipe **local** Supabase `status --workdir .local/docker-verification --output json` directly into `node supabase/tests/community-http.mjs`; never print or store that status payload in a report because it contains local keys. The harness rejects any API origin other than `http://127.0.0.1:55321` and any unexpected container. It temporarily enables only the local community gate and cleans up exact generated fixtures. Use UTF-8 when piping SQL on Windows; the suite is `supabase/tests/database/009_community_members_and_comments.sql`. Recheck the installed CLI's help/version before executing commands.
+
+### Availability after development stops
+
+The public website runs on Cloudflare and does not depend on this computer staying on. No service can promise permanent 100% uptime without maintenance. For the account/database features, a free Supabase project can pause after one week of inactivity. The current Pro starting price is **USD 25/month**, with daily database backups retained for seven days; a paid plan does not remove outages, quota/billing risks or the need to test restores. No upgrade has been made. [Supabase plan details](https://supabase.com/pricing).
+
+Keep the domain renewed, billing and recovery contacts current, independent encrypted backups recoverable, and a named person responsible for alerts/moderation. Use read-only external availability monitoring, not artificial visits, questionnaire submissions or fake keepalive traffic. Periodically check database/API health, email delivery and dependencies, not only whether the static homepage loads.
+
 ## Research governance release gates
 
 Obtain research-owner review of purpose/consent translations, age/minor participation, lawful basis, processor agreements, actual data region, free-text identification risk, retention/deletion, account recovery, access recertification and breach procedure. A medical-themed app must not imply a validated clinical instrument or objective competence assessment without evidence. Selecting Supabase/Cloudflare does not settle these questions.

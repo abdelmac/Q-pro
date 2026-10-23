@@ -188,7 +188,7 @@ export async function verifyBrowserBranding({ page, fixtureDefinitions }) {
     const creators = page.getByRole('region', { name: copy.creditsCreatorsTitle, exact: true });
     await creators.waitFor({ state: 'visible' });
     assert.deepEqual(await creators.getByRole('heading', { level: 3 }).allTextContents(), [
-      'Dr Andrei Cristian Bondar', 'Prof. Univ. Dr. Gabriela Marian', 'MACHTA Abdelkader Saleh',
+      'Dr Andrei Cristian Bondar — Psychiatry MD, PhD', 'Prof. Univ. Dr. Gabriela Marian', 'MACHTA Abdelkader Saleh',
     ], `Credits list Dr Bondar first, followed by Professor Marian and Abdelkader, in ${language.code}`);
     const profileLink = creators.getByRole('link', { name: `${copy.creditsBondarProfile} (${copy.creditsProfileNewTab})`, exact: true });
     assert.equal(await creators.getByRole('listitem').first().getByRole('link').count(), 1, 'Dr Bondar’s first creator card retains his professional profile link');

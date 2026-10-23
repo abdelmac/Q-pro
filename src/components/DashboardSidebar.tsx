@@ -21,6 +21,7 @@ interface DashboardSidebarProps {
   displayName: string;
   portalRole: string;
   professorWorkspace?: boolean;
+  communityEnabled?: boolean;
   showClose?: boolean;
   onClose?: () => void;
   onSelectView: (view: DashboardView) => void;
@@ -39,6 +40,7 @@ export default function DashboardSidebar({
   displayName,
   portalRole,
   professorWorkspace = false,
+  communityEnabled = false,
   showClose = false,
   onClose,
   onSelectView,
@@ -47,7 +49,7 @@ export default function DashboardSidebar({
 }: DashboardSidebarProps) {
   const french = lang === 'fr';
   const romanian = lang === 'ro';
-  const items = getDashboardNavItems(canEdit, lang, professorWorkspace);
+  const items = getDashboardNavItems(canEdit, lang, professorWorkspace, communityEnabled);
   const roleLabels: Record<string, string> = {
     researcher: french ? 'Chercheur' : romanian ? 'Cercetător' : 'Researcher',
     doctor: french ? 'Médecin' : romanian ? 'Medic' : 'Doctor',

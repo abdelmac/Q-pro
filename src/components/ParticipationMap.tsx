@@ -15,6 +15,8 @@ import {
 import PageBackButton from './PageBackButton';
 import PageHomeButton from './PageHomeButton';
 import LanguageSwitcher from './LanguageSwitcher';
+import { COMMUNITY_FEATURE_ENABLED } from '@/lib/community';
+import CommunityCountryMap from './community/CommunityCountryMap';
 
 interface ParticipationMapProps {
   onBack: () => void;
@@ -281,6 +283,7 @@ export default function ParticipationMap({ onBack, onHome, embedded = false, ref
           <a href="https://www.naturalearthdata.com/about/terms-of-use/" target="_blank" rel="noreferrer" className="mt-5 inline-block text-xs text-ink-500 underline decoration-ink-200 underline-offset-4">{copy.attribution}</a>
         </div>
       </div>
+      {!embedded && !testDataset && COMMUNITY_FEATURE_ENABLED && <CommunityCountryMap />}
     </Content>
     {canFilter && <dialog ref={dialogRef} aria-labelledby="map-filter-title" className="fixed inset-x-0 bottom-0 top-auto m-0 max-h-[90dvh] w-full max-w-none overflow-y-auto rounded-t-3xl bg-white p-5 shadow-2xl backdrop:bg-ink-900/50 sm:inset-0 sm:m-auto sm:max-w-md sm:rounded-3xl" onClick={event => { if (event.target === event.currentTarget) dialogRef.current?.close(); }}>
       <div className="mb-6 flex items-center justify-between"><h2 id="map-filter-title" className="text-xl font-semibold text-ink-900">{copy.filters}</h2><button type="button" className={BUTTON} onClick={() => dialogRef.current?.close()} aria-label={copy.close}><X className="h-5 w-5" aria-hidden="true" /></button></div>

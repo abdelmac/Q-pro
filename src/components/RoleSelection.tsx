@@ -6,6 +6,7 @@ import LanguageSwitcher from './LanguageSwitcher';
 import BrandLogo from './BrandLogo';
 import PageHomeButton from './PageHomeButton';
 import VisitorCounter from './VisitorCounter';
+import CommunityNav from './CommunityNav';
 
 export interface RoleSelectionCopy {
   appName: string;
@@ -34,9 +35,10 @@ interface RoleSelectionViewProps {
   onOpenCredits: () => void;
   onOpenWorldMap?: () => void;
   visitorCounter?: ReactNode;
+  communityNavigation?: ReactNode;
 }
 
-export function RoleSelectionView({ copy, onSelectRole, onOpenCredits, onOpenWorldMap, visitorCounter }: RoleSelectionViewProps) {
+export function RoleSelectionView({ copy, onSelectRole, onOpenCredits, onOpenWorldMap, visitorCounter, communityNavigation }: RoleSelectionViewProps) {
   const choices = [
     {
       role: 'curious' as const,
@@ -72,6 +74,7 @@ export function RoleSelectionView({ copy, onSelectRole, onOpenCredits, onOpenWor
           <PageHomeButton current onClick={() => window.scrollTo({ top: 0, left: 0, behavior: 'auto' })} />
           <LanguageSwitcher />
         </div>
+        {communityNavigation}
       </header>
 
       <main className="flex flex-1 flex-col items-center justify-center px-6 py-8 sm:py-12">
@@ -132,7 +135,7 @@ export function RoleSelectionView({ copy, onSelectRole, onOpenCredits, onOpenWor
   );
 }
 
-export default function RoleSelection({ onSelectRole, onOpenCredits, onOpenWorldMap }: Omit<RoleSelectionViewProps, 'copy' | 'visitorCounter'>) {
+export default function RoleSelection({ onSelectRole, onOpenCredits, onOpenWorldMap, onOpenCommunity, onOpenAccount }: Omit<RoleSelectionViewProps, 'copy' | 'visitorCounter' | 'communityNavigation'> & { onOpenCommunity?: () => void; onOpenAccount?: () => void }) {
   const { t } = useLanguage();
 
   return (
@@ -141,6 +144,7 @@ export default function RoleSelection({ onSelectRole, onOpenCredits, onOpenWorld
       onOpenCredits={onOpenCredits}
       onOpenWorldMap={onOpenWorldMap}
       visitorCounter={<VisitorCounter />}
+      communityNavigation={<CommunityNav onCommunity={onOpenCommunity} onAccount={onOpenAccount} />}
       copy={{
         appName: t.appName,
         title: t.roleSelectionTitle,

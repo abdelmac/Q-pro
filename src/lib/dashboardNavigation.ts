@@ -4,6 +4,7 @@ import {
   Globe2,
   GraduationCap,
   LayoutDashboard,
+  MessageSquare,
   Settings2,
   Stethoscope,
   type LucideIcon,
@@ -11,9 +12,10 @@ import {
 import type { Language } from '@/data/i18n';
 import { PUBLIC_FEATURES_TRANSLATIONS } from '@/data/publicFeaturesI18n';
 import { PROFESSOR_PORTAL_COPY } from '@/data/professorPortalI18n';
+import { COMMUNITY_COPY } from '@/data/communityI18n';
 
 export type CohortView = 'specialists' | 'students';
-export type DashboardView = CohortView | 'overview' | 'analytics' | 'algorithm' | 'map' | 'configuration' | 'public-features';
+export type DashboardView = CohortView | 'overview' | 'analytics' | 'algorithm' | 'map' | 'configuration' | 'public-features' | 'community';
 
 export interface DashboardNavItem {
   id: DashboardView;
@@ -59,7 +61,7 @@ export function participantRoleSupportsStudyYear(value: string): boolean {
   return value !== 'curious';
 }
 
-export function getDashboardNavItems(canEdit: boolean, lang: Language, professorWorkspace = false): DashboardNavItem[] {
+export function getDashboardNavItems(canEdit: boolean, lang: Language, professorWorkspace = false, communityEnabled = false): DashboardNavItem[] {
   const items: DashboardNavItem[] = [
     {
       id: 'specialists',
@@ -102,6 +104,7 @@ export function getDashboardNavItems(canEdit: boolean, lang: Language, professor
     });
   }
   if (canEdit && !professorWorkspace) {
+    if (communityEnabled) items.push({ id: 'community', label: COMMUNITY_COPY[lang].moderation, section: 'administration', icon: MessageSquare });
     items.push({
       id: 'configuration',
       label: lang === 'ro' ? 'Configurare' : 'Configuration',

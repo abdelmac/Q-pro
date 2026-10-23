@@ -9,6 +9,8 @@ import {
 } from '@/lib/scoring';
 import { DEFAULT_PRIORITY_WEIGHTS } from '@/data/dimensions';
 import { LanguageProvider, useLanguage } from '@/lib/LanguageContext';
+import { CommunityAuthProvider, useCommunityAuth } from '@/lib/CommunityAuthContext';
+import { COMMUNITY_FEATURE_ENABLED } from '@/lib/community';
 import { PublicFeaturesProvider, usePublicFeatures } from '@/lib/PublicFeaturesContext';
 import { PUBLIC_FEATURES_TRANSLATIONS } from '@/data/publicFeaturesI18n';
 import { SpecialtyCatalogProvider, useSpecialtyCatalog } from '@/lib/SpecialtyCatalogContext';
@@ -56,6 +58,8 @@ import {
 
 const Dashboard = lazy(() => import('@/components/Dashboard'));
 const ParticipationMap = lazy(() => import('@/components/ParticipationMap'));
+const AccountPage = lazy(() => import('@/components/community/AccountPage'));
+const CommunityPage = lazy(() => import('@/components/community/CommunityPage'));
 
 type SpecialistQuestionnaireMode = 'completed' | 'skipped' | null;
 
@@ -85,13 +89,16 @@ function createSpecialistDraft(): SpecialistDraft {
 
 function AppContent() {
   const { t, lang } = useLanguage();
+  const { user: communityUser, recovery } = useCommunityAuth();
   const { publicMapEnabled, refresh: refreshPublicFeatures } = usePublicFeatures();
   const { specialties, lock: lockCatalog, unlock: unlockCatalog,
     source: catalogSource, isLoading: catalogLoading, error: catalogError, refresh: refreshCatalog } = useSpecialtyCatalog();
   const [navigation, dispatchNavigation] = useReducer(
     appNavigationReducer,
     undefined,
-    () => createAppNavigationState(),
+    () => COMMUNITY_FEATURE_ENABLED && new URLSearchParams(window.location.search).get('community') === 'account'
+      ? appNavigationReducer(createAppNavigationState(), navigateTo({ phase: 'account' }))
+      : createAppNavigationState(),
   );
   const location = getCurrentAppLocation(navigation);
   const phase = location.phase;
@@ -137,6 +144,10 @@ function AppContent() {
   const goBack = useCallback(() => {
     dispatchNavigation(navigateBack());
   }, []);
+
+  useEffect(() => {
+    if (COMMUNITY_FEATURE_ENABLED && recovery) goTo({ phase: 'account' });
+  }, [recovery, goTo]);
 
   const replaceCurrentPage = useCallback((nextLocation: AppLocation) => {
     dispatchNavigation(replaceNavigation(nextLocation));
@@ -321,6 +332,13 @@ function AppContent() {
   ));
 
   const renderPage = () => {
+  if (COMMUNITY_FEATURE_ENABLED && (phase === 'account' || phase === 'community')) {
+    return <Suspense fallback={<main className="min-h-screen p-6"><PageBackButton onClick={goBack} label={t.back} /></main>}>
+      {phase === 'account'
+        ? <AccountPage key={communityUser?.id ?? 'guest'} onBack={goBack} onHome={returnHome} />
+        : <CommunityPage key={communityUser?.id ?? 'guest'} onBack={goBack} onHome={returnHome} onAccount={() => goTo({ phase: 'account' })} />}
+    </Suspense>;
+  }
   if (phase === 'credits') {
     return <ProjectCredits onBack={goBack} onHome={returnHome} />;
   }
@@ -348,13 +366,13 @@ function AppContent() {
   }
 
   if (phase === 'role' || participantRole === null) {
-    return <RoleSelection onSelectRole={selectParticipantRole} onOpenCredits={() => goTo({ phase: 'credits' })} onOpenWorldMap={publicMapEnabled ? () => goTo({ phase: 'participation-map' }) : undefined} />;
+    return <RoleSelection onSelectRole={selectParticipantRole} onOpenCredits={() => goTo({ phase: 'credits' })} onOpenWorldMap={publicMapEnabled ? () => goTo({ phase: 'participation-map' }) : undefined} onOpenCommunity={COMMUNITY_FEATURE_ENABLED ? () => goTo({ phase: 'community' }) : undefined} onOpenAccount={COMMUNITY_FEATURE_ENABLED ? () => goTo({ phase: 'account' }) : undefined} />;
   }
 
   if (phase === 'intro') {
     return (
       <>
-        <Intro onStart={startQuiz} totalQuestions={totalQuestions} participantRole={participantRole} onBack={goBack} onHome={returnHome} onChangeRole={changeParticipantRole} onOpenExplorer={() => goTo({ phase: 'explorer' })} onOpenMethodology={() => goTo({ phase: 'methodology' })} onOpenDashboard={() => goTo({ phase: 'dashboard' })} onOpenCredits={() => goTo({ phase: 'credits' })} onOpenWorldMap={publicMapEnabled ? () => goTo({ phase: 'participation-map' }) : undefined} />
+        <Intro onStart={startQuiz} totalQuestions={totalQuestions} participantRole={participantRole} onBack={goBack} onHome={returnHome} onChangeRole={changeParticipantRole} onOpenExplorer={() => goTo({ phase: 'explorer' })} onOpenMethodology={() => goTo({ phase: 'methodology' })} onOpenDashboard={() => goTo({ phase: 'dashboard' })} onOpenCredits={() => goTo({ phase: 'credits' })} onOpenWorldMap={publicMapEnabled ? () => goTo({ phase: 'participation-map' }) : undefined} onOpenCommunity={COMMUNITY_FEATURE_ENABLED ? () => goTo({ phase: 'community' }) : undefined} onOpenAccount={COMMUNITY_FEATURE_ENABLED ? () => goTo({ phase: 'account' }) : undefined} />
         {(catalogGateMessage || (catalogError && catalogSource !== 'remote')) && (
           <div role="alert" className="fixed bottom-5 left-1/2 z-50 w-[min(92vw,680px)] -translate-x-1/2 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 shadow-lift">
             <p className="font-semibold">{catalogGateMessage ?? (lang === 'fr' ? 'Catalogue publié indisponible.' : 'Published catalog unavailable.')}</p>
@@ -648,7 +666,7 @@ export default function App() {
     <LanguageProvider>
       <PublicFeaturesProvider>
         <SpecialtyCatalogProvider>
-          <AppContent />
+          <CommunityAuthProvider><AppContent /></CommunityAuthProvider>
         </SpecialtyCatalogProvider>
       </PublicFeaturesProvider>
     </LanguageProvider>

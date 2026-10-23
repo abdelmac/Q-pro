@@ -5,6 +5,7 @@ import LanguageSwitcher from './LanguageSwitcher';
 import PageBackButton from './PageBackButton';
 import PageHomeButton from './PageHomeButton';
 import BrandLogo from './BrandLogo';
+import CommunityNav from './CommunityNav';
 import { Stethoscope, Brain, Heart, HeartPulse, Sparkles, ArrowRight, Compass, Globe2, BookOpen, BarChart3, GraduationCap, RefreshCw } from 'lucide-react';
 
 interface IntroProps {
@@ -19,9 +20,11 @@ interface IntroProps {
   onOpenDashboard: () => void;
   onOpenCredits: () => void;
   onOpenWorldMap?: () => void;
+  onOpenCommunity?: () => void;
+  onOpenAccount?: () => void;
 }
 
-export default function Intro({ onStart, totalQuestions, participantRole, onBack, onHome, onChangeRole, onOpenExplorer, onOpenMethodology, onOpenDashboard, onOpenCredits, onOpenWorldMap }: IntroProps) {
+export default function Intro({ onStart, totalQuestions, participantRole, onBack, onHome, onChangeRole, onOpenExplorer, onOpenMethodology, onOpenDashboard, onOpenCredits, onOpenWorldMap, onOpenCommunity, onOpenAccount }: IntroProps) {
   const { t } = useLanguage();
   const isSpecialist = participantRole === 'specialist';
   const isCurious = participantRole === 'curious';
@@ -51,6 +54,7 @@ export default function Intro({ onStart, totalQuestions, participantRole, onBack
           </button>
           <LanguageSwitcher />
         </div>
+        <CommunityNav onAccount={onOpenAccount} />
       </header>
 
       <main className="flex-1 flex items-center justify-center px-6 pb-16">
@@ -123,6 +127,7 @@ export default function Intro({ onStart, totalQuestions, participantRole, onBack
           <button onClick={onOpenExplorer} className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold text-ink-500 hover:text-ink-900 hover:bg-ink-100 transition-colors">
             <Compass className="w-3.5 h-3.5" /> {t.navExplorer}
           </button>
+          <CommunityNav onCommunity={onOpenCommunity} />
           {FEATURE_FLAGS.methodology && (
             <button onClick={onOpenMethodology} className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold text-ink-500 hover:text-ink-900 hover:bg-ink-100 transition-colors">
               <BookOpen className="w-3.5 h-3.5" /> {t.navMethodology}

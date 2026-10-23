@@ -48,6 +48,8 @@ import ResearchAnalytics from './ResearchAnalytics';
 import ProfessorOverview from './ProfessorOverview';
 import PortalPasswordSettings from './PortalPasswordSettings';
 import { PROFESSOR_PORTAL_COPY } from '@/data/professorPortalI18n';
+import { COMMUNITY_COPY } from '@/data/communityI18n';
+import { COMMUNITY_FEATURE_ENABLED } from '@/lib/community';
 import { isProfessorWorkspace, parsePortalProfile, type PortalProfile } from '@/lib/portalAccess';
 import {
   ArrowLeft,
@@ -69,6 +71,7 @@ import {
 
 const PAGE_SIZE = 50;
 const ParticipationMap = lazy(() => import('@/components/ParticipationMap'));
+const CommunityModeration = lazy(() => import('@/components/community/CommunityModeration'));
 const EXPORT_BATCH_SIZE = 250;
 const INTERACTIVE_EXPORT_LIMIT = 1000;
 const IDLE_SIGN_OUT_MS = 30 * 60 * 1000;
@@ -102,7 +105,7 @@ type SpecialistListRow = Pick<
   | 'language'
   | 'created_at'
 >;
-type AccessState = 'checking' | 'signed_out' | 'checking_access' | 'authorized';
+type AccessState = 'checking' | 'signed_out' | 'checking_access' | 'authorized' | 'denied';
 type CompletenessFilter = 'all' | 'complete' | 'partial';
 type QuestionnaireFilter = 'all' | 'completed' | 'skipped';
 type ParticipantRoleFilter = 'all' | 'student' | 'curious';
@@ -552,8 +555,22 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
         setError(accessError
           ? formatSupabaseError(accessError, lang)
           : PROFESSOR_PORTAL_COPY[lang].unauthorized);
-        await client.auth.signOut();
-        setAccessState('signed_out');
+        if (COMMUNITY_FEATURE_ENABLED) {
+          // A community member is allowed to stay signed in without staff access.
+          // Denial must still clear every previously authorized research result.
+          dataAbort.current.abort();
+          loadRequest.current++; detailRequest.current++; analysisRequest.current++; exportRequest.current++;
+          administrativeIdentityRef.current = null;
+          verifiedWorkspaceRef.current = null;
+          setPortalProfile(null); setStudents([]); setSpecialists([]);
+          setDetailedResponse(null); setAnalysisRows(null); setExporting(null);
+          setActiveTotal(0); setCounts(EMPTY_COUNTS); setOverviewCountsReady(false);
+          setExportsOpen(false); setSidebarOpen(false);
+          setAccessState('denied');
+        } else {
+          await client.auth.signOut();
+          setAccessState('signed_out');
+        }
         return;
       }
       const isAdministrator = profile.can_edit && (profile.portal_role === 'doctor' || profile.portal_role === 'professor');
@@ -1048,6 +1065,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
   };
 
   const leaveDashboard = async () => {
+    if (accessState === 'denied') { onBack(); return; }
     exportRequest.current += 1;
     setExporting(null);
     try {
@@ -1068,7 +1086,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
       void refreshPublicFeatures();
       return;
     }
-    if (view === 'map' || view === 'analytics') {
+    if (view === 'map' || view === 'analytics' || view === 'community') {
       if (view === 'map') void refreshPublicFeatures();
       setMapRefreshKey(value => value + 1);
       return;
@@ -1086,7 +1104,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
   };
 
   const selectDashboardView = (nextView: DashboardView) => {
-    if (!getDashboardNavItems(portalProfile?.can_edit ?? false, lang, professorWorkspace).some(item => item.id === nextView)) return;
+    if (!getDashboardNavItems(portalProfile?.can_edit ?? false, lang, professorWorkspace, COMMUNITY_FEATURE_ENABLED).some(item => item.id === nextView)) return;
     if (sidebarOpen) closeMobileSidebar();
     if (view === nextView) return;
     setError(null);
@@ -1112,6 +1130,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
   };
 
   const viewCopy: Record<DashboardView, { title: string; description: string }> = {
+    community: { title: COMMUNITY_COPY[lang].moderation, description: COMMUNITY_COPY[lang].moderationHelp },
     overview: {
       title: professorCopy.overview,
       description: professorCopy.overviewDescription,
@@ -1181,6 +1200,18 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
     ? buildCalibrationSummary(analysisRows, specialtyFilter === 'all' ? null : specialtyFilter, specialties)
     : null, [analysisRows, analysisSource, sourceKey, testBlocked, specialtyFilter, specialties]);
 
+  if (accessState === 'denied') return <main data-dashboard-denied className="flex min-h-screen items-center justify-center bg-accent-50 p-6">
+    <section className="w-full max-w-md rounded-2xl border border-ink-100 bg-white p-6 shadow-soft">
+      <BrandLogo className="mb-6 w-52" />
+      <h1 className="text-2xl font-semibold text-ink-900">{professorCopy.loginTitle}</h1>
+      <p role="alert" className="mt-4 text-sm text-ink-600">{professorCopy.unauthorized}</p>
+      <div className="mt-6 flex flex-wrap gap-3">
+        <button type="button" onClick={onBack} className="min-h-11 rounded-full bg-brand-800 px-5 text-sm font-semibold text-white">{COMMUNITY_COPY[lang].back}</button>
+        <button type="button" onClick={() => void signOutDashboard()} className="min-h-11 rounded-full border border-ink-200 px-5 text-sm">{COMMUNITY_COPY[lang].signout}</button>
+      </div>
+    </section>
+  </main>;
+
   if (accessState !== 'authorized') return (
     <main className="min-h-screen bg-accent-50 flex items-center justify-center px-6">
       <form onSubmit={signIn} className="w-full max-w-md p-8 rounded-2xl bg-white border border-ink-100 shadow-soft">
@@ -1214,6 +1245,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
           displayName={portalProfile?.display_name ?? (french ? 'Compte autorisé' : romanian ? 'Cont autorizat' : 'Authorized account')}
           portalRole={portalProfile?.portal_role ?? ''}
           professorWorkspace={professorWorkspace}
+          communityEnabled={COMMUNITY_FEATURE_ENABLED}
           onSelectView={selectDashboardView}
           onBack={() => void leaveDashboard()}
           onSignOut={() => void signOutDashboard()}
@@ -1243,6 +1275,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
               displayName={portalProfile?.display_name ?? (french ? 'Compte autorisé' : romanian ? 'Cont autorizat' : 'Authorized account')}
               portalRole={portalProfile?.portal_role ?? ''}
               professorWorkspace={professorWorkspace}
+              communityEnabled={COMMUNITY_FEATURE_ENABLED}
               showClose
               onClose={closeMobileSidebar}
               onSelectView={selectDashboardView}
@@ -1304,14 +1337,14 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
                 )}
               </header>
 
-        {canManageTestData && <PublicFeaturesSettings
+        {canManageTestData && view !== 'community' && <PublicFeaturesSettings
           key={authIdentity}
           testMode={testMode}
           quick={view !== 'map' && view !== 'public-features'}
           compact={view === 'map'}
           onOpenSettings={() => selectDashboardView('public-features')}
         />}
-        {canManageTestData && <PortalTestDataPanel lang={lang} manager={testManager} />}
+        {canManageTestData && (view !== 'community' || testMode) && <PortalTestDataPanel lang={lang} manager={testManager} />}
         {error && <p className="mb-5 rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-700">{error}</p>}
         {!testBlocked && <>
 
@@ -1357,6 +1390,10 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
 
         {view === 'analytics' && !professorWorkspace && <ResearchAnalytics testMode={testMode} refreshToken={mapRefreshKey} />}
 
+        {view === 'community' && COMMUNITY_FEATURE_ENABLED && portalProfile?.can_edit && !professorWorkspace && (
+          testMode ? <p className="rounded-xl border border-amber-300 bg-amber-50 p-5 text-sm text-amber-950">{testCopy.locked}</p>
+            : <Suspense fallback={<p role="status">{COMMUNITY_COPY[lang].loading}</p>}><CommunityModeration key={`${authIdentity}:${mapRefreshKey}`} /></Suspense>
+        )}
         {view === 'configuration' && testMode && <p data-test-configuration-locked className="rounded-xl border border-amber-300 bg-amber-50 p-5 text-sm text-amber-950">{testCopy.locked}</p>}
         {view === 'configuration' && portalProfile?.can_edit && !testMode && (
           <SpecialtyConfigurationEditor french={french} portalProfile={portalProfile} onPublished={() => void refreshCatalog()} />
