@@ -307,6 +307,16 @@ Include an explicit, encrypted inventory of scheduled jobs: name, schedule, comm
 - **Scoring/configuration:** select or publish an authorized, audited version through the established catalog workflow. Do not rewrite the historical model attached to already accepted submissions. Analysis runs are descriptive and cannot promote themselves.
 - **Mobile:** halt a problematic rollout and distribute an owner-signed corrective version; do not assume store installations instantly revert when the website rolls back.
 
+## Credits-only production release — 24 October 2026
+
+Published the owner's requested title **Dr Andrei Cristian Bondar — Psychiatry MD, PhD** in the shared EN/FR/RO credits. Cloudflare version **`8f9925bf-dba1-4c4c-869a-de426f601a15`** now serves the two existing custom domains and Workers fallback. Main asset: `/assets/index-BEiF7nC9.js`. The previous version, **`d0ed799c-9396-4823-91e7-92f4cb8d18a4`**, is the recorded rollback point.
+
+This was an isolated release from **`944d0a6960b85135fa75532292dbdf6d3ee578da`**, with only the title line in `src/components/ProjectCredits.tsx` and its expected browser-test heading updated. The newer `f7cd9f6` commit also contains unpublished community/account work and was **not deployed**. Reproduction files and the live browser verifier are retained locally under the ignored `.local/credits-release-2026-10-24/` directory. No Git commit or push was made by the deployment operation.
+
+Before editing, the isolated baseline's main JavaScript, CSS, visitor-counter module and dashboard module matched the live hashes exactly; archived HTML/template line endings accounted for the shell/cache-checksum differences. After editing, all 13 compiled assets matched that baseline after normalizing only the requested title and generated import filenames. No community chunks or account-feature code were added. Lint, TypeScript, hosting checks, the strict Cloudflare dry run, and branding tests in EN/FR/RO at 320/375/768/1440 pixels passed. The existing large-main-chunk warning remains.
+
+After publication, eight static file hashes and security headers matched the final isolated build on all three hosts. Nine real-site browser cases (EN/FR/RO at 320/375/1440 pixels) passed the exact title, author order, responsive layout and absence of community controls; a mobile screenshot was visually inspected. All backend requests were mocked or blocked, so these checks created no visits, accounts or questionnaire responses. No database, authentication configuration, DNS, subscription or paid service was changed. The account/community release remains unpublished and subject to the checks below. Existing installed-app sessions may need all site windows closed and reopened to activate the waiting service worker; finish any memory-only questionnaire first.
+
 ## Community accounts and specialist perspectives
 
 Prepared locally on **21 October 2026**. This is not a production release: the live website, Auth configuration, subscriptions and production database have not been changed for this feature. Chat is deliberately deferred. The owner is considering a higher monthly budget but has not approved any paid upgrade.
